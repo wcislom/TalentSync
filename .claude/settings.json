@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet restore)",
+      "Bash(docker compose -f deploy/docker-compose.yml *)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff *)"
+    ],
+    "ask": [
+      "Bash(dotnet add *)",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet tool install *)"
+    ],
+    "deny": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(dotnet user-secrets *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-rules.sh\"",
+            "timeout": 30,
+            "statusMessage": "Checking naming and clock rules"
+          }
+        ]
+      }
+    ]
+  }
+}
