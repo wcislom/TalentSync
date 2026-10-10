@@ -9,7 +9,7 @@ Accepted
 Teamtailor webhooks can arrive out of order, and their payloads are partial: job application events carry no CV,
 and `destroy` events carry a reduced `data`. Redelivery is unclear: the changelog (2026-03-19) says failed
 deliveries are not retried, while the best-practices section says to be prepared for retries. Webhook payloads
-contain PII, which must not reach the outbox or Event Hubs (invariant 14).
+contain PII, which must not reach the outbox or Event Hubs.
 
 ## Decision
 

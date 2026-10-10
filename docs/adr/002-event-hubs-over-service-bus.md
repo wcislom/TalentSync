@@ -29,13 +29,13 @@ store; no MassTransit or other messaging abstraction).
   unclassified exceptions after 5 attempts are written to a `ParkingLot` table in the worker's own schema
   (`sync.ParkingLot`, `matching.ParkingLot`), then checkpointed.
 - **Cost: failure classification and retries are our code.** Returning from the handler without a checkpoint does
-  not redeliver the event, so transient failures are retried in a loop inside `ProcessEventAsync`
-  (invariant 8). This logic is implemented once in `TalentSync.Infrastructure.Messaging`.
-- Checkpoints are our responsibility: only after the event is handled (invariant 6). Checkpointing late means
+  not redeliver the event, so transient failures are retried in a loop inside `ProcessEventAsync`.
+  This logic is implemented once in `TalentSync.Infrastructure.Messaging`.
+- Checkpoints are our responsibility: only after the event is handled, never before. Checkpointing late means
   events are processed again after a restart, so delivery is at-least-once and effects must be idempotent
-  (invariants 1 and 2).
+  (see `.claude/rules/invariants.md`).
 - Ordering is guaranteed only within a partition. Events of one candidate share a partition because the partition
-  key is `candidateId` (invariant 10).
+  key is `candidateId`.
 - Replaying parked events needs a replay endpoint or job, which is out of MVP scope.
 - Local development needs Azurite for checkpoints and partition ownership, next to the Event Hubs emulator.
 
