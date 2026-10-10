@@ -32,12 +32,12 @@ Scenario: S2 Duplicate webhook produces one CRM call
   And sync.Inbox has exactly 1 row for that EventId
 
 # Illustrates: D1
-Scenario: S3 Deleted candidate removes CRM contact
+Scenario: S3 Deleted candidate marks the CRM contact as deleted
   Given candidate "c-s3" has a contact in FakeCrm
   When candidate "c-s3" is deleted in FakeTeamtailor
   # FakeTeamtailor sends candidate.destroy and /v1/candidates/c-s3 returns 404
   Then FakeCrm /calls shows 1 DELETE /contacts/c-s3
-  And FakeCrm has no contact for "c-s3"
+  And FakeCrm has a contact for "c-s3" with status Deleted
   And sync.ParkingLot has no row for that EventId
 
 # Illustrates: invariant 8 (transient)
@@ -78,6 +78,15 @@ Scenario: S7 Killed worker resumes without duplicate records
   Then FakeCrm has exactly 1 contact for "c-s7"
   And FakeCrm /calls shows at least 1 PUT /contacts/c-s7
   # 2 PUTs is correct behaviour: at-least-once delivery, made safe by the idempotent upsert
+
+# Illustrates: D1, invariant 2
+Scenario: S8 Deleting a candidate without a CRM contact succeeds
+  Given candidate "c-s8" exists in FakeTeamtailor and has no contact in FakeCrm
+  When candidate "c-s8" is deleted in FakeTeamtailor
+  # FakeCrm answers DELETE /contacts/c-s8 with 404: the contact counts as already deleted
+  Then FakeCrm /calls shows 1 DELETE /contacts/c-s8
+  And sync.ParkingLot has no row for that EventId
+  And sync.Inbox has exactly 1 row for that EventId
 ```
 
 ## Matching (Matching.Worker → Matching Platform)

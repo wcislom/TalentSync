@@ -37,7 +37,9 @@ Two separate surfaces, plus the test endpoints above:
 
 ## FakeCrm
 
-- `PUT /contacts/{candidateId}` upsert, `DELETE /contacts/{candidateId}`, `GET /contacts`.
+- `PUT /contacts/{candidateId}` upsert, `GET /contacts` (each contact with its status `Active` / `Deleted`).
+- `DELETE /contacts/{candidateId}` is a soft delete: the contact stays with status `Deleted`, 204.
+  Already deleted → 204. Unknown contact → 404.
 - Chaos modes: `503`, `timeout`.
 
 ## FakeMatchingPlatform

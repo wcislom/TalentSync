@@ -19,7 +19,7 @@ flowchart LR
   mw --> llm["LLM"]
 ```
 
-- **Sync.Worker**: candidate created, updated or deleted → CRM contact upserted or removed.
+- **Sync.Worker**: candidate created, updated or deleted → CRM contact upserted or marked as deleted.
 - **Matching.Worker**: job application reaches the qualified stage → the LLM suggests skills and seniority →
   consultant profile upserted. If the LLM fails, the profile is created as `NotEnriched`.
 

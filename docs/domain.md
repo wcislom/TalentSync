@@ -54,7 +54,9 @@ One candidate has many job applications. Sync is one-way: Teamtailor → TalentS
 
 ## Domain rules
 
-- **D1** Candidate data is synced to the CRM on create, update and delete (delete = remove the contact).
+- **D1** Candidate data is synced to the CRM on create, update and delete. Delete = the CRM marks the contact as
+  deleted; the record stays, because the CRM owns relationship data on it. A contact that does not exist counts as
+  already deleted.
 - **D2** When a job application reaches the stage configured as qualified, a `ConsultantProfile` is created or updated.
   The ACL maps the customer-defined stage name to `ApplicationStatus` (config `Teamtailor:QualifiedStageName`);
   the use case checks the status and calls `ConsultantProfile.CreateFromQualifiedCandidate`.

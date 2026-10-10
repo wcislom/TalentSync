@@ -143,7 +143,8 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
-- Candidate delete: CRM contact removed; profile archiving and anonymisation in the Matching Platform is out of MVP.
+- Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
+  CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.
 - A profile is not refreshed when the candidate's CV changes, only on the next qualification.
 - If a recruiter renames the qualified stage and `Teamtailor:QualifiedStageName` is not updated, applications
   are processed as "not qualified" and no profiles are created. Nothing fails, so this is silent.

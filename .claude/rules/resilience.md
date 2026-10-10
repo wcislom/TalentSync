@@ -28,6 +28,8 @@ Normative: the split of responsibilities and the classification. Descriptive: re
 
 - **CRM, Matching Platform**: pipeline with attempt timeout, at most 2 retries, circuit breaker.
   When it gives up, the exception reaches the handler and is classified as transient.
+- **CRM `DELETE /contacts/{candidateId}`**: 404 is success (the contact never existed, so it counts as already
+  deleted, D1), never `Rejected`. Otherwise a redelivered or early delete would be parked.
 - **Teamtailor API**: the generic pipeline must **not** retry 429. Teamtailor sends no `Retry-After`, so a generic
   retry would hit the API again inside the window (scenario S5 expects exactly 2 GETs). The ACL handles 429 itself:
   wait for `X-Rate-Limit-Reset` (via `TimeProvider`), retry once; a second 429 is thrown as transient.
