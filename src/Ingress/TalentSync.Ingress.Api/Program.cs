@@ -1,15 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using TalentSync.Ingress.Api.Persistence;
+using TalentSync.Ingress.Api;
+using TalentSync.Ingress.Api.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var sqlConnectionString = builder.Configuration.GetConnectionString("Sql")
-    ?? throw new InvalidOperationException("Missing configuration 'ConnectionStrings:Sql'.");
-
-builder.Services.AddDbContext<IngressDbContext>(options => options.UseSqlServer(
-    sqlConnectionString,
-    sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", IngressDbContext.Schema)));
+builder.Services.AddIngress(builder.Configuration);
 
 var app = builder.Build();
+
+app.MapTeamtailorWebhook();
 
 app.Run();

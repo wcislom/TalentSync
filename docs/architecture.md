@@ -118,6 +118,17 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
 | Application does not depend on Infrastructure | Project references (compiler) |
 | A bug in our signature verifier is not mirrored in the signer | FakeTeamtailor implements signature v2 independently |
 
+## Service registration (normative)
+
+One convention in every project, host or library, so the registrations are always in the same place:
+
+- A project that registers services has exactly one `DependencyInjection.cs` with `static class DependencyInjection`
+  (`public` in libraries, `internal` in hosts) and one entry point `Add<Name>(this IServiceCollection, IConfiguration)`,
+  e.g. `AddTeamtailor`, `AddIngress`. No `*ServiceCollectionExtensions` classes.
+- `Program.cs` holds no registrations: it creates the builder, calls the host's own `Add<Host>()`, maps endpoints, runs.
+- A host's `Add<Host>()` calls the `Add<Name>()` of the libraries it references; it never registers their
+  `internal` types itself.
+
 ## Key flow: application qualified
 
 1. FakeTeamtailor sends a signed `job_application.update`. Ingress verifies it, inserts into `ingress.Outbox`,
