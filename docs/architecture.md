@@ -68,7 +68,7 @@ tests/
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
 deploy/                                     docker-compose.yml
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
-                                            adr/ (not written yet)
+                                            adr/ (index: adr/README.md)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
@@ -155,13 +155,14 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 
 ## ADRs
 
-Not written yet. Planned:
+Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summarises all of them, written and planned.
 
 | ADR | Decision |
 |---|---|
-| 001 | Event Hubs over Service Bus: replay, independent consumers; cost: no DLQ → parking lot and failure classification |
-| 002 | Notify-then-fetch: event is a signal, API state is the truth (ordering, partial payloads, unclear redelivery) |
-| 003 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
-| 004 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
-| 005 | LLM provider abstraction, PII masking, validation, fallback |
-| 006 | Source of truth and sync direction |
+| [001](adr/001-project-structure.md) | Project structure: by context first, then by layer; a project wherever the compiler should enforce a rule; no Common project |
+| [002](adr/002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus: replay, independent consumers; cost: no DLQ → parking lot and failure classification |
+| [003](adr/003-notify-then-fetch.md) | Notify-then-fetch: event is a signal, API state is the truth (ordering, partial payloads, unclear redelivery) |
+| 004 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
+| 005 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
+| 006 | LLM provider abstraction, PII masking, validation, fallback |
+| 007 | Source of truth and sync direction |

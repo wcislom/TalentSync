@@ -15,7 +15,7 @@ under failure: duplicates, retries, crashes, outages.
 | `docs/domain.md` | Normative: business language and domain rules | Always (imported above) |
 | `docs/architecture.md` | Dependency rules are normative; layout and flows are descriptive | Always (imported above) |
 | `docs/acceptance-scenarios.md` | Normative: expected behaviour, one integration test per scenario | Open it before writing or changing tests or behaviour |
-| `docs/adr/` | Normative: decisions and rationale | **Not written yet.** The ADR table in `architecture.md` is the summary. Do not create ADRs |
+| `docs/adr/` | Normative: decisions and rationale. Index: `docs/adr/README.md` | Open the relevant ADR before changing what it decides. ADRs not written yet are listed in the ADR table in `architecture.md` |
 | `.claude/rules/invariants.md` | Normative | Always |
 | Other `.claude/rules/*.md` | Rules for specific paths (`paths:` frontmatter) | When a matching file is read or written |
 | `simulators/CLAUDE.md` | Rules for the fake external systems | When a file in `simulators/` is read or written |
