@@ -70,7 +70,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-  ev["event"] --> seen{"in inbox?"}
+  ev["event"] --> rd{"read envelope"}
+  rd -->|unreadable| pk
+  rd -->|unknown or unhandled type| cp
+  rd -->|ok| seen{"in inbox?"}
   seen -->|yes| cp["checkpoint"]
   seen -->|no| uc["run use case"]
   uc -->|Done| ib["insert inbox"] --> cp

@@ -25,7 +25,7 @@ One sentence each; the rule file in brackets holds the details. Acceptance scena
 8. **Transient failures wait, permanent failures are parked, retries loop inside the handler.** Transient
    (timeout, 5xx, 429, open circuit): retry in a loop inside `ProcessEventAsync`, no checkpoint, no parking;
    returning without a checkpoint does not redeliver the event. Permanent (a `Rejected` result: invalid data,
-   mapping error, unexpected 4xx): write to the worker's `ParkingLot`, then checkpoint. Unclassified exceptions:
+   mapping error, unexpected 4xx; or an envelope that cannot be read): write to the worker's `ParkingLot`, then checkpoint. Unclassified exceptions:
    parked after 5 attempts. [resilience.md, messaging.md]
 9. `EventProcessorClient` and `EventHubProducerClient` are **singletons**.
 10. Every published event has **partition key = `candidateId`**.

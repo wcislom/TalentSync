@@ -51,6 +51,8 @@ from the HTTP stack anyway. This keeps the dependency rules intact: no shared ex
 
 - `reason` goes to `ParkingLot.Error`: status code and endpoint or field name, never response bodies or PII (invariant 14).
 - Adapters never throw for a permanent failure, and `*.Application` never catches HTTP exceptions.
+- One permanent failure has no `Rejected` value: an envelope the skeleton cannot read (`EventEnvelopeJson.TryDeserialize`
+  returns `false`). The skeleton parks it before any handler runs, with `Error` = `unreadable envelope`.
 
 ## Classification of exceptions (implemented once, in the skeleton)
 

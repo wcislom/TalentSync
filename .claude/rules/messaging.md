@@ -66,7 +66,10 @@ ProcessEventAsync(args):
   unclassifiedAttempts = 0
   loop:                                         # retries stay inside this call; returning moves on to the next event
     try:
-      envelope = tolerant read (unknown or unhandled type → checkpoint, return)
+      envelope = tolerant read
+        unreadable (malformed JSON, missing required field) →
+          insert ParkingLot row (partition + sequence number, raw body ≤ 4 KB), checkpoint, return
+        unknown or unhandled type → checkpoint, return
       if inbox contains (Source, EventId) → checkpoint, return
       result = worker handler (runs the use case)
       if result is Permanent(reason):

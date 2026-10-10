@@ -39,7 +39,10 @@ Same table shape, separate tables per worker (invariant 4).
 - `Outbox`: `Id`, `EventId`, `CandidateId`, `Type`, `Envelope` (json), `CreatedAt`, `PublishedAt` (null until published).
   Filtered index on `PublishedAt IS NULL`.
 - `Inbox`: `Id`, `Source`, `EventId`, `ProcessedAt`.
-- `ParkingLot`: `Id`, `Source`, `EventId`, `Envelope`, `Error` (type and message, no PII), `ParkedAt`.
+- `ParkingLot`: `Id`, `Source` (nullable), `EventId` (nullable), `PartitionId`, `SequenceNumber`, `Envelope`,
+  `Error` (type and message, no PII), `ParkedAt`. An envelope that cannot be read has no `Source` or `EventId`:
+  it is identified by `PartitionId` + `SequenceNumber`, and `Envelope` holds the raw event body truncated to 4 KB.
+  No unique index: a crash between the insert and the checkpoint parks the event twice (accepted in the MVP).
 - `EnrichmentResults`: `Id`, `CandidateId`, `CvHash`, `Result` (json), `ModelId`, `CreatedAt`.
 
 ## Rules
