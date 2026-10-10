@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TalentSync.Recruitment.Domain\TalentSync.Recruitment.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TalentSync.Infrastructure.Teamtailor.Tests" />
+  </ItemGroup>
 </Project>
