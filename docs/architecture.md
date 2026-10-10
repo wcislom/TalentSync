@@ -33,7 +33,7 @@ src/
   Shared/
     TalentSync.Contracts                    event envelope, event names, SchemaVersion. References nothing
     TalentSync.Recruitment.Domain           our read-only model of recruitment: Candidate, JobApplication,
-                                            ApplicationStatus, Lookup<T> (Found | Deleted | Rejected),
+                                            ApplicationStatus, FetchResult<T> (Found | Deleted | Rejected),
                                             port IRecruitmentSource. References nothing
     TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource, internal JSON:API DTOs, 429 handling,
                                             stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,

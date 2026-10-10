@@ -44,7 +44,7 @@ from the HTTP stack anyway. This keeps the dependency rules intact: no shared ex
 
 | Who | Returns |
 |---|---|
-| `IRecruitmentSource` (ACL) | `Lookup<T>` = `Found(T)` \| `Deleted` \| `Rejected(reason)` |
+| `IRecruitmentSource` (ACL) | `FetchResult<T>` = `Found(T)` \| `Deleted` \| `Rejected(reason)` |
 | `ICrm`, `IMatchingPlatform` (adapters) | success, or `Rejected(reason)` for an unexpected 4xx |
 | Use case (`*.Application`) | its own result type with a rejected case carrying the reason |
 | Worker host | translates the use case result into `HandlerResult` (`Done` \| `Permanent(reason)`) from `Infrastructure.Messaging` |

@@ -41,6 +41,7 @@ One sentence each; the rule file in brackets holds the details. Acceptance scena
 ## Security and privacy
 
 14. **No PII in logs, traces, the outbox, Event Hubs or `ParkingLot.Error`.** The envelope carries IDs only.
+    Log ids, never domain objects or DTOs (`ToString()` and `{@...}` destructuring print every property).
 15. Send the LLM only the CV text, with email addresses and phone numbers masked. [llm.md]
 16. **LLM output is untrusted input:** schema and domain validation, timeout, circuit breaker, fallback to
     `NotEnriched`. [llm.md]

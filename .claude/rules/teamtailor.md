@@ -62,7 +62,7 @@ implementation. Do not share this code with the simulator: a shared bug would ma
 ## Port and ACL rules
 
 - Port: `IRecruitmentSource` in `TalentSync.Recruitment.Domain`, named after the need, not the provider.
-  Returns `Lookup<Candidate>` / `Lookup<JobApplication>` = `Found(T) | Deleted | Rejected(reason)`.
+  Returns `FetchResult<Candidate>` / `FetchResult<JobApplication>` = `Found(T) | Deleted | Rejected(reason)`.
 - Mapping of responses (normative):
 
 | Response | Result |
