@@ -8,3 +8,4 @@ plus Alternatives considered.
 | [001](001-project-structure.md) | Project structure | Accepted |
 | [002](002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus | Accepted |
 | [003](003-notify-then-fetch.md) | Notify-then-fetch | Accepted |
+| [004](004-transactional-outbox.md) | Transactional outbox in Ingress | Accepted |

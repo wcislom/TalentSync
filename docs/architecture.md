@@ -163,7 +163,8 @@ Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summar
 | [001](adr/001-project-structure.md) | Project structure: by context first, then by layer; a project wherever the compiler should enforce a rule; no Common project |
 | [002](adr/002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus: replay, independent consumers; cost: no DLQ → parking lot and failure classification |
 | [003](adr/003-notify-then-fetch.md) | Notify-then-fetch: event is a signal, API state is the truth (ordering, partial payloads, unclear redelivery) |
-| 004 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
-| 005 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
-| 006 | LLM provider abstraction, PII masking, validation, fallback |
-| 007 | Source of truth and sync direction |
+| [004](adr/004-transactional-outbox.md) | Transactional outbox in Ingress: persist before 200, a single relay publishes; cost: 503 when SQL is down loses the event |
+| 005 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
+| 006 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
+| 007 | LLM provider abstraction, PII masking, validation, fallback |
+| 008 | Source of truth and sync direction |
