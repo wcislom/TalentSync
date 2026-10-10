@@ -88,7 +88,8 @@ are outside this rule.
 - Resilience: `Microsoft.Extensions.Http.Resilience` (Polly v8). Who retries what and how failures are
   classified: `.claude/rules/resilience.md`.
 - LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and chaos scenarios.
-- Tests: xUnit. How integration tests run the system (docker compose, or in-process hosts with Testcontainers)
+- Tests: xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`; VSTest syntax such as
+  `--filter "FullyQualifiedName~..."` does not work). How integration tests run the system (docker compose, or in-process hosts with Testcontainers)
   is an open decision, see `.claude/rules/testing.md`.
 
 ## Configuration keys
@@ -128,9 +129,9 @@ architecture tests.
 - `docker compose -f deploy/docker-compose.yml up -d`
 - Reset local state (SQL data, checkpoints): `docker compose -f deploy/docker-compose.yml down -v`
 - `dotnet build`
-- `dotnet test`
-- One scenario: `dotnet test tests/TalentSync.IntegrationTests --filter "FullyQualifiedName~S2_"`
-- Unit tests only: `dotnet test tests/TalentSync.Matching.Domain.Tests`
+- `dotnet test` (exit code 8 = no tests ran, e.g. a project without tests yet or a filter that matched nothing)
+- One scenario: `dotnet test --project tests/TalentSync.IntegrationTests --filter-method "*.S2_*"`
+- Unit tests only: `dotnet test --project tests/TalentSync.Matching.Domain.Tests`
 - EF migration, example for Sync (descriptive: verify once the first `DbContext` exists; needs the `dotnet-ef`
   tool and `Microsoft.EntityFrameworkCore.Design`, ask before adding them):
   `dotnet ef migrations add <Name> --project src/Sync/TalentSync.Sync.Infrastructure --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext`

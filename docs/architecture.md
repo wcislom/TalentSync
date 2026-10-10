@@ -25,6 +25,10 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 
 ```
 README.md                                   for humans: overview, running locally, simplifications
+TalentSync.slnx                             solution, folders mirror the directories below
+global.json                                 SDK pin, test runner = Microsoft.Testing.Platform
+Directory.Build.props                       net10.0, nullable, implicit usings, warnings as errors
+Directory.Packages.props                    central package versions (CPM)
 src/
   Shared/
     TalentSync.Contracts                    event envelope, event names, SchemaVersion. References nothing

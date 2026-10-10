@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>dotnet-TalentSync.Matching.Worker-fcb410b1-4e65-4ee9-8da5-1924ac0c35e5</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TalentSync.Matching.Application\TalentSync.Matching.Application.csproj" />
+    <ProjectReference Include="..\TalentSync.Matching.Infrastructure\TalentSync.Matching.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Teamtailor\TalentSync.Infrastructure.Teamtailor.csproj" />
+    <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Messaging\TalentSync.Infrastructure.Messaging.csproj" />
+    <ProjectReference Include="..\..\Shared\TalentSync.Contracts\TalentSync.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

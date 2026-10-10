@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\TalentSync.Recruitment.Domain\TalentSync.Recruitment.Domain.csproj" />
+  </ItemGroup>
+</Project>

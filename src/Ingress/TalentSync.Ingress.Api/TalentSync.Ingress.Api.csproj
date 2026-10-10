@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\TalentSync.Contracts\TalentSync.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Teamtailor\TalentSync.Infrastructure.Teamtailor.csproj" />
+  </ItemGroup>
+</Project>

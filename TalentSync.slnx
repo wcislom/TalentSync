@@ -1,0 +1,33 @@
+<Solution>
+  <Folder Name="/simulators/">
+    <Project Path="simulators/FakeCrm/FakeCrm.csproj" />
+    <Project Path="simulators/FakeMatchingPlatform/FakeMatchingPlatform.csproj" />
+    <Project Path="simulators/FakeTeamtailor/FakeTeamtailor.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Ingress/">
+    <Project Path="src/Ingress/TalentSync.Ingress.Api/TalentSync.Ingress.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Matching/">
+    <Project Path="src/Matching/TalentSync.Matching.Application/TalentSync.Matching.Application.csproj" />
+    <Project Path="src/Matching/TalentSync.Matching.Domain/TalentSync.Matching.Domain.csproj" />
+    <Project Path="src/Matching/TalentSync.Matching.Infrastructure/TalentSync.Matching.Infrastructure.csproj" />
+    <Project Path="src/Matching/TalentSync.Matching.Worker/TalentSync.Matching.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/TalentSync.Contracts/TalentSync.Contracts.csproj" />
+    <Project Path="src/Shared/TalentSync.Infrastructure.Messaging/TalentSync.Infrastructure.Messaging.csproj" />
+    <Project Path="src/Shared/TalentSync.Infrastructure.Teamtailor/TalentSync.Infrastructure.Teamtailor.csproj" />
+    <Project Path="src/Shared/TalentSync.Recruitment.Domain/TalentSync.Recruitment.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Sync/">
+    <Project Path="src/Sync/TalentSync.Sync.Application/TalentSync.Sync.Application.csproj" />
+    <Project Path="src/Sync/TalentSync.Sync.Infrastructure/TalentSync.Sync.Infrastructure.csproj" />
+    <Project Path="src/Sync/TalentSync.Sync.Worker/TalentSync.Sync.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TalentSync.Infrastructure.Teamtailor.Tests/TalentSync.Infrastructure.Teamtailor.Tests.csproj" />
+    <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
+    <Project Path="tests/TalentSync.Matching.Domain.Tests/TalentSync.Matching.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
