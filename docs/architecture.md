@@ -118,6 +118,17 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
 | Application does not depend on Infrastructure | Project references (compiler) |
 | A bug in our signature verifier is not mirrored in the signer | FakeTeamtailor implements signature v2 independently |
 
+## Service registration (normative)
+
+One convention in every project, host or library, so the registrations are always in the same place:
+
+- A project that registers services has exactly one `DependencyInjection.cs` with `static class DependencyInjection`
+  (`public` in libraries, `internal` in hosts) and one entry point `Add<Name>(this IServiceCollection, IConfiguration)`,
+  e.g. `AddTeamtailor`, `AddIngress`. No `*ServiceCollectionExtensions` classes.
+- `Program.cs` holds no registrations: it creates the builder, calls the host's own `Add<Host>()`, maps endpoints, runs.
+- A host's `Add<Host>()` calls the `Add<Name>()` of the libraries it references; it never registers their
+  `internal` types itself.
+
 ## Key flow: application qualified
 
 1. FakeTeamtailor sends a signed `job_application.update`. Ingress verifies it, inserts into `ingress.Outbox`,
@@ -163,7 +174,8 @@ Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summar
 | [001](adr/001-project-structure.md) | Project structure: by context first, then by layer; a project wherever the compiler should enforce a rule; no Common project |
 | [002](adr/002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus: replay, independent consumers; cost: no DLQ → parking lot and failure classification |
 | [003](adr/003-notify-then-fetch.md) | Notify-then-fetch: event is a signal, API state is the truth (ordering, partial payloads, unclear redelivery) |
-| 004 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
-| 005 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
-| 006 | LLM provider abstraction, PII masking, validation, fallback |
-| 007 | Source of truth and sync direction |
+| [004](adr/004-transactional-outbox.md) | Transactional outbox in Ingress: persist before 200, a single relay publishes; cost: 503 when SQL is down loses the event |
+| 005 | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
+| 006 | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
+| 007 | LLM provider abstraction, PII masking, validation, fallback |
+| 008 | Source of truth and sync direction |

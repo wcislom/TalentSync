@@ -25,6 +25,14 @@ One `DbContext` per owner, each mapped to its own schema with its own migrations
 The configuration takes the schema name as a parameter; each worker's `DbContext` applies it with its own schema.
 Same table shape, separate tables per worker (invariant 4).
 
+## Folder layout
+
+Entities are models used by the rest of the code, so they live in a folder named after the concept
+(`Outbox/`, `Inbox/`, `ParkingLot/`, `Enrichment/`). `Persistence/` holds only EF: the `DbContext`, one
+`IEntityTypeConfiguration<T>` per entity (Fluent API, never mapping inside `OnModelCreating`) and `Migrations/`.
+Configurations are applied explicitly with `ApplyConfiguration(...)`; the shared `Inbox` and `ParkingLot`
+configurations take the schema as a constructor parameter.
+
 ## Keys (normative)
 
 - Clustered primary key: `Id bigint IDENTITY`. `Guid.CreateVersion7()` is not sequential in SQL Server's
