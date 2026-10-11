@@ -91,6 +91,11 @@ internal sealed class OutboxRelay(
                 """)
             .ToListAsync(stoppingToken);
 
+        // One send per row, on purpose. A send of several events takes a single partition key, so batching could only
+        // group rows of the same candidate, and a batch rarely holds two events of one candidate: the gain is near
+        // zero, while grouping adds the 1 MB send limit (EventDataBatch) and marking per group. The producer reuses
+        // one AMQP connection, so a send costs a round trip, which recruitment webhook volume easily affords.
+        //
         // The first failed send ends the batch: sending the rows after it could publish a later event of a candidate
         // before an earlier one. Rows sent so far are still marked, so they are not published twice.
         ExceptionDispatchInfo? sendFailure = null;
