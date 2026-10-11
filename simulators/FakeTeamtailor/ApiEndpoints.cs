@@ -1,18 +1,13 @@
-using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FakeTeamtailor;
 
 /// <summary>
-/// The fake Teamtailor REST API that the TalentSync ACL calls. JSON:API with kebab-case attribute keys.
+/// The fake Teamtailor REST API that the TalentSync ACL calls. Shapes come from <see cref="TeamtailorJson"/>.
 /// </summary>
 public static class ApiEndpoints
 {
     private const string JsonApiContentType = "application/vnd.api+json";
-
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
-    };
 
     public static void MapApi(this IEndpointRouteBuilder app)
     {
@@ -20,7 +15,7 @@ public static class ApiEndpoints
 
         v1.MapGet("/candidates/{id}", (string id, Store store) =>
             store.Candidates.TryGetValue(id, out var candidate)
-                ? JsonApi(new { data = ToResource(id, candidate) })
+                ? JsonApi(new JsonObject { ["data"] = TeamtailorJson.CandidateResource(id, candidate) })
                 : NotFound());
 
         v1.MapGet("/job-applications/{id}", (string id, string? include, Store store) =>
@@ -30,11 +25,14 @@ public static class ApiEndpoints
                 return NotFound();
             }
 
-            var data = ToResource(id, application);
+            var document = new JsonObject { ["data"] = TeamtailorJson.JobApplicationResource(id, application) };
             var includesStage = include?.Split(',').Contains("stage") == true;
-            return includesStage && store.Stages.TryGetValue(application.StageId, out var stage)
-                ? JsonApi(new { data, included = new[] { ToResource(application.StageId, stage) } })
-                : JsonApi(new { data });
+            if (includesStage && store.Stages.TryGetValue(application.StageId, out var stage))
+            {
+                document["included"] = new JsonArray(TeamtailorJson.StageResource(application.StageId, stage));
+            }
+
+            return JsonApi(document);
         });
     }
 
@@ -61,54 +59,14 @@ public static class ApiEndpoints
         return await next(context);
     }
 
-    private static object ToResource(string id, Candidate candidate) => new
-    {
-        id,
-        type = "candidates",
-        attributes = new
-        {
-            candidate.FirstName,
-            candidate.LastName,
-            candidate.Email,
-            candidate.Phone,
-            candidate.ResumeText,
-            candidate.CreatedAt,
-            candidate.UpdatedAt,
-        },
-    };
-
-    private static object ToResource(string id, JobApplication application) => new
-    {
-        id,
-        type = "job-applications",
-        attributes = new
-        {
-            application.CreatedAt,
-            application.UpdatedAt,
-            application.RejectedAt,
-        },
-        relationships = new
-        {
-            candidate = Relationship(application.CandidateId, "candidates"),
-            job = Relationship(application.JobId, "jobs"),
-            stage = Relationship(application.StageId, "stages"),
-        },
-    };
-
-    private static object ToResource(string id, Stage stage) => new
-    {
-        id,
-        type = "stages",
-        attributes = new { stage.Name },
-    };
-
-    private static object Relationship(string id, string type) => new { data = new { id, type } };
-
-    private static IResult JsonApi(object document, int statusCode = StatusCodes.Status200OK) =>
-        Results.Json(document, Json, JsonApiContentType, statusCode);
+    private static IResult JsonApi(JsonObject document, int statusCode = StatusCodes.Status200OK) =>
+        Results.Json(document, contentType: JsonApiContentType, statusCode: statusCode);
 
     private static IResult NotFound() => Error(StatusCodes.Status404NotFound, "Record not found");
 
     private static IResult Error(int status, string title) =>
-        JsonApi(new { errors = new[] { new { status = status.ToString(), title } } }, status);
+        JsonApi(new JsonObject
+        {
+            ["errors"] = new JsonArray(new JsonObject { ["status"] = status.ToString(), ["title"] = title }),
+        }, status);
 }

@@ -100,6 +100,29 @@ public sealed class Store
         ["job-application-7"] = Application("candidate-6", "job-2", "stage-3"),
     };
 
+    private int lastCandidateNumber = 6;
+    private int lastJobApplicationNumber = 7;
+
+    public string NewCandidateId() => NewId("candidate", ref lastCandidateNumber, Candidates);
+
+    public string NewJobApplicationId() => NewId("job-application", ref lastJobApplicationNumber, JobApplications);
+
+    public string? FindStageId(string name) =>
+        Stages.FirstOrDefault(stage => string.Equals(stage.Value.Name, name, StringComparison.OrdinalIgnoreCase)).Key;
+
+    // Skips ids a test already took by passing its own candidateId.
+    private static string NewId<T>(string prefix, ref int lastNumber, ConcurrentDictionary<string, T> existing)
+    {
+        string id;
+        do
+        {
+            id = $"{prefix}-{Interlocked.Increment(ref lastNumber)}";
+        }
+        while (existing.ContainsKey(id));
+
+        return id;
+    }
+
     private static Candidate Person(string firstName, string lastName, string email, string? phone, string cv) =>
         new(firstName, lastName, email, phone, cv, SeededAt, SeededAt);
 

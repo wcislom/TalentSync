@@ -20,17 +20,22 @@ Two separate surfaces, plus the test endpoints above:
 
 | Surface | Endpoints | Purpose |
 |---|---|---|
-| Scenario driving `/sim` (not Teamtailor API) | `GET /sim/jobs`, `POST /sim/jobs/{id}/apply` (name, email, phone, `cv.txt`), `PATCH /sim/job-applications/{id}/stage`, `DELETE /sim/candidates/{id}` | Drive the recruitment scenario from `.http` files and tests |
+| Scenario driving `/sim` (not Teamtailor API) | `GET /sim/jobs`, `POST /sim/jobs/{id}/apply` (name, email, phone, `cv.txt`, optional `candidateId`), `PATCH /sim/job-applications/{id}/stage`, `PATCH /sim/candidates/{id}`, `DELETE /sim/candidates/{id}` | Drive the recruitment scenario from `.http` files and tests |
 | Fake API `/v1` | `GET /v1/candidates/{id}`, `GET /v1/job-applications/{id}?include=stage` | What the TalentSync ACL calls. JSON:API, kebab-case |
 
 - Every state change sends a webhook to Ingress (`candidate.create`, `job_application.update`, ...),
-  shaped as in `.claude/rules/teamtailor.md`, including `relationships.candidate` on job application events.
+  shaped as in `.claude/rules/teamtailor.md`, including `relationships.candidate` on job application events
+  (also on `destroy`, otherwise Ingress has no partition key).
+  A state change that changes nothing (same stage, same values) sends no webhook, like Teamtailor.
+- `apply` with an existing `candidateId` adds an application to that candidate (no `candidate.create`); without one
+  a new candidate is created. Tests pass their own ids (`c-s1`, ...) so `/calls` counts never mix between scenarios.
 - Webhooks are signed with signature v2 using `FakeTeamtailor:SignatureKey` (must equal `Teamtailor:SignatureKey`
   in Ingress). Own implementation, never shared with `src/`.
 - Chaos modes:
   - `rate-limit`: `/v1` returns 429 with `X-Rate-Limit-*` headers; `X-Rate-Limit-Reset` = seconds until the mode ends.
   - `bad-request`: `/v1` returns 400 (a permanent failure, scenario S6).
-  - `delay`, `duplicate-webhook` (send the same body N times, default 2), `bad-signature`, `stale-timestamp`.
+  - `delay`, `duplicate-webhook` (send the same body N times, default 2).
+  - No signature modes: invalid and stale signatures are covered by scenarios I3 and I4, which call Ingress directly.
 - `/v1` requires `Authorization: Token token=...` and `X-Api-Version`; reject without them (400/401) so the ACL is tested.
 - Stages: `New`, `Screening`, `Interview`, `Qualified`, `Rejected`.
 - Deleted candidates return 404 from `/v1`.
