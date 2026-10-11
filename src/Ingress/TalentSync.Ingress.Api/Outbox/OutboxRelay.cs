@@ -1,6 +1,4 @@
 using System.Runtime.ExceptionServices;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Producer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TalentSync.Ingress.Api.Persistence;
@@ -8,9 +6,8 @@ using TalentSync.Ingress.Api.Persistence;
 namespace TalentSync.Ingress.Api.Outbox;
 
 /// <summary>
-/// Publishes unpublished outbox rows to Event Hubs in <see cref="OutboxMessage.Id"/> order, with partition key
-/// <c>candidateId</c> (invariant 10), and marks them published. Second half of the transactional outbox (ADR 004).
-/// Exactly one replica runs (invariant 13).
+/// Publishes unpublished outbox rows in <see cref="OutboxMessage.Id"/> order and marks them published: the second
+/// half of the transactional outbox (ADR 004). Exactly one replica runs (invariant 13).
 /// </summary>
 /// <remarks>
 /// Delivery is at-least-once: a crash, or a failed commit, after a send and before the row is marked publishes the
@@ -18,8 +15,8 @@ namespace TalentSync.Ingress.Api.Outbox;
 /// their inbox (same <c>EventId</c>, invariant 1).
 /// </remarks>
 internal sealed class OutboxRelay(
-    IServiceScopeFactory scopeFactory,
-    EventHubProducerClient producer,
+    IDbContextFactory<IngressDbContext> dbContextFactory,
+    OutboxPublisher publisher,
     IOptions<OutboxRelayOptions> options,
     TimeProvider timeProvider,
     ILogger<OutboxRelay> logger) : BackgroundService
@@ -35,7 +32,7 @@ internal sealed class OutboxRelay(
             TimeSpan delay;
             try
             {
-                var fetched = await PublishBatchAsync(stoppingToken);
+                var fetched = await RelayBatchAsync(stoppingToken);
                 failedAttempts = 0;
 
                 // A full batch means more rows may be waiting: publish them without waiting.
@@ -70,26 +67,12 @@ internal sealed class OutboxRelay(
         }
     }
 
-    /// <returns>The number of rows fetched, published or not.</returns>
-    private async Task<int> PublishBatchAsync(CancellationToken stoppingToken)
+    /// <returns>The number of rows fetched.</returns>
+    private async Task<int> RelayBatchAsync(CancellationToken stoppingToken)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<IngressDbContext>();
+        await using var db = await dbContextFactory.CreateDbContextAsync(stoppingToken);
         await using var transaction = await db.Database.BeginTransactionAsync(stoppingToken);
-
-        // The only raw SQL in Ingress (persistence rule). Locks are held until commit, i.e. across the sends:
-        // UPDLOCK reserves the rows for this transaction, ROWLOCK keeps the locks per row, READPAST skips rows locked
-        // by someone else instead of waiting. READPAST also skips a row whose insert is not committed yet, so a later
-        // row can be published before an earlier one; notify-then-fetch makes that harmless (ADR 003).
-        var batchSize = _options.BatchSize;
-        var rows = await db.Outbox
-            .FromSql($"""
-                SELECT TOP ({batchSize}) *
-                FROM [ingress].[Outbox] WITH (UPDLOCK, READPAST, ROWLOCK)
-                WHERE [PublishedAt] IS NULL
-                ORDER BY [Id]
-                """)
-            .ToListAsync(stoppingToken);
+        var rows = await db.ClaimUnpublishedAsync(_options.BatchSize, stoppingToken);
 
         // One send per row, on purpose. A send of several events takes a single partition key, so batching could only
         // group rows of the same candidate, and a batch rarely holds two events of one candidate: the gain is near
@@ -104,12 +87,9 @@ internal sealed class OutboxRelay(
         {
             try
             {
-                await producer.SendAsync(
-                    [new EventData(BinaryData.FromString(row.Envelope)) { ContentType = "application/json", MessageId = row.EventId }],
-                    new SendEventOptions { PartitionKey = row.CandidateId },
-                    stoppingToken);
+                await publisher.PublishAsync(row, stoppingToken);
             }
-            catch (Exception exception) 
+            catch (Exception exception)
             {
                 sendFailure = ExceptionDispatchInfo.Capture(exception);
                 break;

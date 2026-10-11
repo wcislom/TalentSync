@@ -40,6 +40,10 @@ written without them. **Before creating the first file in a project, read the ru
 - If something is uncertain (SDK behaviour, emulator limitation, Teamtailor API detail), say so.
   Do not guess. Facts about Teamtailor live in `.claude/rules/teamtailor.md`.
 - Never hide complexity behind a library without saying so.
+- Comments say only what the code cannot: a non-obvious reason, a trade-off, a distributed-systems edge case.
+  Never restate the code or standard .NET / EF behaviour (e.g. "fresh DbContext per batch",
+  "locks are held until commit").
+- Tunables (batch sizes, intervals, back-off limits) come from configuration, never constants in code.
 
 ## When docs and code disagree
 

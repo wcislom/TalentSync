@@ -19,7 +19,7 @@ internal static class DependencyInjection
         var hubName = configuration["EventHubs:HubName"]
             ?? throw new InvalidOperationException("Missing configuration 'EventHubs:HubName'.");
 
-        services.AddDbContext<IngressDbContext>(options => options.UseSqlServer(
+        services.AddDbContextFactory<IngressDbContext>(options => options.UseSqlServer(
             sqlConnectionString,
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", IngressDbContext.Schema)));
 
@@ -30,6 +30,7 @@ internal static class DependencyInjection
             .Bind(configuration.GetSection(OutboxRelayOptions.SectionName))
             .Validate(o => o.IsValid(), $"'{OutboxRelayOptions.SectionName}' needs BatchSize > 0, PollInterval > 0 and MaxBackoff >= PollInterval.")
             .ValidateOnStart();
+        services.AddSingleton<OutboxPublisher>();
         services.AddHostedService<OutboxRelay>();
 
         services.TryAddSingleton(TimeProvider.System);
