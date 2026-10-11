@@ -10,3 +10,6 @@ var app = builder.Build();
 app.MapTeamtailorWebhook();
 
 app.Run();
+
+/// <summary>Public so integration tests can host it with <c>WebApplicationFactory&lt;Program&gt;</c>.</summary>
+public partial class Program;
