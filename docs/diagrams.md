@@ -14,11 +14,11 @@ flowchart TB
     relay["Outbox relay"]
   end
   eh{{"Event Hubs: ats-events<br/>partition key = candidateId"}}
-  subgraph sync["Sync.Worker · group crm-sync"]
+  subgraph sync["Sync.Worker · group sync-worker"]
     sh["Handler + use case"]
     sdb[("sync.Inbox, sync.ParkingLot")]
   end
-  subgraph mat["Matching.Worker · group matching"]
+  subgraph mat["Matching.Worker · group matching-worker"]
     mh["Handler + use case"]
     mdb[("matching.Inbox, ParkingLot,<br/>EnrichmentResults")]
   end

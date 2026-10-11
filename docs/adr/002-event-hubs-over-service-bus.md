@@ -16,8 +16,8 @@ Use Azure Event Hubs, through `Azure.Messaging.EventHubs` directly (`EventProces
 store; no MassTransit or other messaging abstraction).
 
 - One hub, `ats-events`, partition key `candidateId`.
-- One consumer group per worker: `crm-sync` (Sync.Worker) and `matching` (Matching.Worker). Each group has its own
-  checkpoints in Blob storage (Azurite locally), so each worker has an independent read position in the same log.
+- One consumer group per worker, named after it: `sync-worker` (Sync.Worker) and `matching-worker` (Matching.Worker).
+  Each group has its own checkpoints in Blob storage (Azurite locally), so each worker has an independent read position in the same log.
 - The producer (the outbox relay in Ingress.Api) publishes each event once and does not know who consumes it.
   A new consumer is a new consumer group, with no change to the producer.
 - Events stay in the log after they are read, so a consumer can replay from an earlier position.

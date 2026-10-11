@@ -13,8 +13,9 @@ paths:
 ## Topology
 
 - One hub: `ats-events`, 4 partitions, partition key = `candidateId`.
-- Consumer groups: `crm-sync` (Sync.Worker), `matching` (Matching.Worker). Each group has its own checkpoints
-  in Blob storage (Azurite locally). The producer does not know who consumes.
+- Consumer groups are named after the consuming host: `sync-worker` (Sync.Worker), `matching-worker`
+  (Matching.Worker). Each group has its own checkpoints in Blob storage (Azurite locally).
+  The producer does not know who consumes.
 - Never a hub per worker: the producer would have to publish twice.
 - Hub name and consumer group names must match between the emulator `Config.json` and `appsettings`.
 
@@ -49,6 +50,12 @@ No attributes, no payload body: the envelope is a notification. Workers fetch cu
   `WITH (UPDLOCK, READPAST, ROWLOCK)` ordered by `Id`, publish with partition key, mark published, commit.
 - Crash after publish and before mark → the event is published again. Expected; consumers handle it.
 - One replica (invariant 13).
+- Implemented in `TalentSync.Ingress.Api/Outbox/`: `OutboxRelay` (loop, batch, marking), `OutboxPublisher` (one send),
+  `OutboxQueries` (the locking query). Tunables in `OutboxRelay:*`.
+- The first failed send ends the batch: rows sent so far are marked and committed, the rest wait for the next
+  batch. Continuing would publish a later event of a candidate before an earlier one.
+- `READPAST` also skips a row whose insert is not committed yet, so rows can be published out of `Id` order.
+  Harmless with notify-then-fetch (ADR 003).
 
 ## Consumer handler skeleton (`TalentSync.Infrastructure.Messaging`, used by both workers)
 

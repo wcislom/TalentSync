@@ -40,6 +40,10 @@ written without them. **Before creating the first file in a project, read the ru
 - If something is uncertain (SDK behaviour, emulator limitation, Teamtailor API detail), say so.
   Do not guess. Facts about Teamtailor live in `.claude/rules/teamtailor.md`.
 - Never hide complexity behind a library without saying so.
+- Comments say only what the code cannot: a non-obvious reason, a trade-off, a distributed-systems edge case.
+  Never restate the code or standard .NET / EF behaviour (e.g. "fresh DbContext per batch",
+  "locks are held until commit").
+- Tunables (batch sizes, intervals, back-off limits) come from configuration, never constants in code.
 
 ## When docs and code disagree
 
@@ -100,7 +104,8 @@ Proposed names (descriptive: once implemented, the code is the reference).
 |---|---|---|
 | `ConnectionStrings:Sql` | all three hosts | each host uses only its own schema |
 | `EventHubs:ConnectionString`, `EventHubs:HubName` | all three hosts | hub `ats-events` |
-| `EventHubs:ConsumerGroup` | workers | `crm-sync` / `matching` |
+| `EventHubs:ConsumerGroup` | workers | `sync-worker` / `matching-worker` |
+| `OutboxRelay:BatchSize`, `OutboxRelay:PollInterval`, `OutboxRelay:MaxBackoff` | Ingress.Api | defaults in `appsettings.json` |
 | `Checkpoints:BlobConnectionString`, `Checkpoints:Container` | workers | Azurite locally |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:SignatureKey` | Ingress.Api | must equal `FakeTeamtailor:SignatureKey` |

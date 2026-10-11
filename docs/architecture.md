@@ -14,8 +14,8 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 | Container | Responsibility | Does not | Owns |
 |---|---|---|---|
 | **Ingress.Api** | Verify signature, persist a notification envelope, return 200. Relay publishes outbox → Event Hubs | Call any API, interpret stages, hold domain logic | `ingress.*` |
-| **Sync.Worker** | `candidate.*` → fetch candidate → upsert or delete CRM contact | Handle application events | `sync.*`, checkpoints of `crm-sync` |
-| **Matching.Worker** | `job_application.*` → qualified? → fetch candidate + CV → enrichment (stored) → upsert profile | Decide matches, block on LLM failure, handle `candidate.*` (D6) | `matching.*`, checkpoints of `matching` |
+| **Sync.Worker** | `candidate.*` → fetch candidate → upsert or delete CRM contact | Handle application events | `sync.*`, checkpoints of `sync-worker` |
+| **Matching.Worker** | `job_application.*` → qualified? → fetch candidate + CV → enrichment (stored) → upsert profile | Decide matches, block on LLM failure, handle `candidate.*` (D6) | `matching.*`, checkpoints of `matching-worker` |
 | SQL Server | Three schemas, one owner each | Act as a channel between workers | |
 | Event Hubs | Hub `ats-events`, ordered log per partition, independent read position per consumer group | Dead-letter (there is no DLQ) | |
 | Azurite | Checkpoints and partition ownership | | |
@@ -48,7 +48,7 @@ src/
     TalentSync.Sync.Application             use case SyncCandidateToCrm, port ICrm. → Recruitment.Domain
     TalentSync.Sync.Infrastructure          CrmClient + resilience, SyncDbContext. → Sync.Application, Infrastructure.Messaging
     TalentSync.Sync.Worker                  host: candidate.* handler (use case result → HandlerResult),
-                                            composition root, group "crm-sync"
+                                            composition root, group "sync-worker"
   Matching/
     TalentSync.Matching.Domain              ConsultantProfile, Seniority, Skill, EnrichmentStatus,
                                             suggestion validation. References nothing
@@ -57,7 +57,7 @@ src/
     TalentSync.Matching.Infrastructure      CV masking, IChatClient adapter, EnrichmentResults, MatchingPlatformClient,
                                             MatchingDbContext. → Matching.Application, Infrastructure.Messaging
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
-                                            composition root, group "matching"
+                                            composition root, group "matching-worker"
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
   FakeTeamtailor                            No references to src/. Signature v2 is implemented independently.
   FakeCrm

@@ -1,0 +1,23 @@
+{
+  "UserConfig": {
+    "NamespaceConfig": [
+      {
+        "Type": "EventHub",
+        "Name": "emulatorNs1",
+        "Entities": [
+          {
+            "Name": "ats-events",
+            "PartitionCount": "4",
+            "ConsumerGroups": [
+              { "Name": "sync-worker" },
+              { "Name": "matching-worker" }
+            ]
+          }
+        ]
+      }
+    ],
+    "LoggingConfig": {
+      "Type": "Console"
+    }
+  }
+}
