@@ -10,3 +10,4 @@ plus Alternatives considered.
 | [003](003-notify-then-fetch.md) | Notify-then-fetch | Accepted |
 | [004](004-transactional-outbox.md) | Transactional outbox in Ingress | Accepted |
 | [005](005-idempotency.md) | Idempotency | Accepted |
+| [006](006-partition-key-candidate-id.md) | Partition key = candidateId | Proposed |
