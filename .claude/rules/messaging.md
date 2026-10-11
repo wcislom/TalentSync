@@ -50,6 +50,11 @@ No attributes, no payload body: the envelope is a notification. Workers fetch cu
   `WITH (UPDLOCK, READPAST, ROWLOCK)` ordered by `Id`, publish with partition key, mark published, commit.
 - Crash after publish and before mark → the event is published again. Expected; consumers handle it.
 - One replica (invariant 13).
+- Implemented in `TalentSync.Ingress.Api/Outbox/OutboxRelay.cs`; tunables in `OutboxRelay:*`.
+- The first failed send ends the batch: rows sent so far are marked and committed, the rest wait for the next
+  batch. Continuing would publish a later event of a candidate before an earlier one.
+- `READPAST` also skips a row whose insert is not committed yet, so rows can be published out of `Id` order.
+  Harmless with notify-then-fetch (ADR 003).
 
 ## Consumer handler skeleton (`TalentSync.Infrastructure.Messaging`, used by both workers)
 
