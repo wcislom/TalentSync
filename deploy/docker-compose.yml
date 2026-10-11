@@ -1,4 +1,4 @@
-# Local infrastructure. MVP so far: SQL Server only; Event Hubs emulator and Azurite come with the outbox relay.
+# Local infrastructure: SQL Server, Event Hubs emulator and Azurite (emulator metadata, later worker checkpoints).
 # Secrets come from deploy/.env (gitignored, copy deploy/.env.example).
 name: talentsync
 
@@ -18,6 +18,32 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+
+  # Hub, partitions and consumer groups come from eventhubs/Config.json and must match the hosts' appsettings.
+  # Events and entities do not survive a restart of this container (documented emulator limitation).
+  # After changing Config.json recreate both containers: entity metadata lives in Azurite, so a restart keeps the old
+  # entities. `docker compose -f deploy/docker-compose.yml up -d --force-recreate azurite eventhubs`
+  # The namespace name in Config.json is a preset of the emulator and cannot be renamed.
+  # No healthcheck: the image documents no health endpoint.
+  eventhubs:
+    image: mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.2.1
+    environment:
+      ACCEPT_EULA: "Y"
+      BLOB_SERVER: azurite
+      METADATA_SERVER: azurite
+    volumes:
+      - ./eventhubs/Config.json:/Eventhubs_Emulator/ConfigFiles/Config.json:ro
+    ports:
+      - "5672:5672"
+    depends_on:
+      - azurite
 
 volumes:
   sql-data:
