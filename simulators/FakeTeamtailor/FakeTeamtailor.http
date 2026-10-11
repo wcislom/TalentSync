@@ -1,0 +1,25 @@
+@host = http://localhost:5111
+@auth = Token token=fake-api-key
+
+GET {{host}}/v1/candidates/candidate-1
+Authorization: {{auth}}
+X-Api-Version: 20240904
+
+###
+
+GET {{host}}/v1/job-applications/job-application-1?include=stage
+Authorization: {{auth}}
+X-Api-Version: 20240904
+
+###
+
+# 404: unknown or deleted candidate
+GET {{host}}/v1/candidates/candidate-404
+Authorization: {{auth}}
+X-Api-Version: 20240904
+
+###
+
+# 401: missing API version header
+GET {{host}}/v1/candidates/candidate-1
+Authorization: {{auth}}
