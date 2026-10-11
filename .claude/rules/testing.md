@@ -35,11 +35,17 @@ paths:
     after the event under test, send a handled event for the same candidate (same partition, so it is processed
     after the first one), wait for the marker in the `Inbox`, then assert.
 
-## Open decision: how the system under test runs
+## How the system under test runs
 
-Not decided yet. Options: the docker compose stack with all hosts and simulators running, or hosts and simulators
-started in-process by the test (SQL via Testcontainers). The choice also decides how tests read `FakeChatClient`
-call counts. In the first integration test step, propose an option with trade-offs and wait for my decision.
+- Hosts run in process (`WebApplicationFactory<Program>`; each host has `public partial class Program;`).
+  Infrastructure runs in Testcontainers: SQL Server (`Testcontainers.MsSql`) and the Event Hubs emulator with its
+  Azurite (`Testcontainers.EventHubs`). The docker compose stack is for running the system by hand, not for tests.
+- Containers start once per xUnit collection fixture (`tests/TalentSync.IntegrationTests/Infrastructure/`).
+  The fixture applies migrations before the host starts.
+- The emulator configuration in the fixture must match `deploy/eventhubs/Config.json`.
+- Event Hubs outage: pause the emulator container (`PauseAsync`), never stop it. A restarted container gets a new
+  host port and loses its events. The fixture shortens the SDK's send timeout so a send to a paused hub fails fast.
+- How simulators and `FakeChatClient` call counts fit in is decided with the first worker scenario.
 
 ## Packages
 

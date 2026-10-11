@@ -1,3 +1,4 @@
+using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -24,7 +25,18 @@ internal static class DependencyInjection
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", IngressDbContext.Schema)));
 
         // Singleton (invariant 9): it holds the AMQP connection. The container disposes it on shutdown.
-        services.AddSingleton(_ => new EventHubProducerClient(eventHubsConnectionString, hubName));
+        // The SDK retries a send on its own before the relay sees a failure: up to MaxRetries attempts of TryTimeout each.
+        var producerOptions = new EventHubProducerClientOptions
+        {
+            RetryOptions = new EventHubsRetryOptions
+            {
+                TryTimeout = configuration.GetValue<TimeSpan?>("EventHubs:TryTimeout")
+                    ?? throw new InvalidOperationException("Missing configuration 'EventHubs:TryTimeout'."),
+                MaximumRetries = configuration.GetValue<int?>("EventHubs:MaxRetries")
+                    ?? throw new InvalidOperationException("Missing configuration 'EventHubs:MaxRetries'."),
+            },
+        };
+        services.AddSingleton(_ => new EventHubProducerClient(eventHubsConnectionString, hubName, producerOptions));
 
         services.AddOptions<OutboxRelayOptions>()
             .Bind(configuration.GetSection(OutboxRelayOptions.SectionName))

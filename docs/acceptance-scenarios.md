@@ -163,17 +163,32 @@ Scenario: M8 Candidate update is ignored by Matching
 
 ## Ingress
 
-Done last in the MVP (signature v2). The test sends the request to Ingress itself.
+The test sends the request to Ingress itself. I3–I4 are done last in the MVP (signature v2).
 
 ```gherkin
+# Illustrates: invariant 10, ADR 004 (transactional outbox)
+Scenario: I1 Accepted webhook is published to the hub
+  When a job_application.update webhook for candidate "c-i1" is sent to Ingress
+  Then Ingress responds 200
+  And the hub receives one event with that EventId and partition key "c-i1"
+  And the ingress.Outbox row for that EventId has PublishedAt set
+
+# Illustrates: invariant 1, ADR 004
+Scenario: I2 Event Hubs outage delays but does not lose events
+  Given Event Hubs is unavailable
+  When a candidate.update webhook for candidate "c-i2" is sent to Ingress
+  Then Ingress responds 200
+  When Event Hubs becomes available
+  Then the hub receives the event with that EventId
+
 # Illustrates: Teamtailor signature v2
-Scenario: I1 Invalid signature is rejected
+Scenario: I3 Invalid signature is rejected
   When a webhook with a TT-Signature computed with the wrong key is sent to Ingress
   Then Ingress responds 401
   And ingress.Outbox has no row for that EventId
 
 # Illustrates: Teamtailor signature v2 (replay window)
-Scenario: I2 Stale timestamp is rejected
+Scenario: I4 Stale timestamp is rejected
   When a correctly signed webhook with a timestamp 6 minutes in the past is sent to Ingress
   Then Ingress responds 401
   And ingress.Outbox has no row for that EventId

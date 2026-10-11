@@ -104,6 +104,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 |---|---|---|
 | `ConnectionStrings:Sql` | all three hosts | each host uses only its own schema |
 | `EventHubs:ConnectionString`, `EventHubs:HubName` | all three hosts | hub `ats-events` |
+| `EventHubs:TryTimeout`, `EventHubs:MaxRetries` | Ingress.Api | SDK retry of one send; defaults = SDK defaults (60 s, 3) |
 | `EventHubs:ConsumerGroup` | workers | `sync-worker` / `matching-worker` |
 | `OutboxRelay:BatchSize`, `OutboxRelay:PollInterval`, `OutboxRelay:MaxBackoff` | Ingress.Api | defaults in `appsettings.json` |
 | `Checkpoints:BlobConnectionString`, `Checkpoints:Container` | workers | Azurite locally |
