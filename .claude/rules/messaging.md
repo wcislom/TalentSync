@@ -13,8 +13,9 @@ paths:
 ## Topology
 
 - One hub: `ats-events`, 4 partitions, partition key = `candidateId`.
-- Consumer groups: `crm-sync` (Sync.Worker), `matching` (Matching.Worker). Each group has its own checkpoints
-  in Blob storage (Azurite locally). The producer does not know who consumes.
+- Consumer groups are named after the consuming host: `sync-worker` (Sync.Worker), `matching-worker`
+  (Matching.Worker). Each group has its own checkpoints in Blob storage (Azurite locally).
+  The producer does not know who consumes.
 - Never a hub per worker: the producer would have to publish twice.
 - Hub name and consumer group names must match between the emulator `Config.json` and `appsettings`.
 

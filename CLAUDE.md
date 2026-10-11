@@ -100,7 +100,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 |---|---|---|
 | `ConnectionStrings:Sql` | all three hosts | each host uses only its own schema |
 | `EventHubs:ConnectionString`, `EventHubs:HubName` | all three hosts | hub `ats-events` |
-| `EventHubs:ConsumerGroup` | workers | `crm-sync` / `matching` |
+| `EventHubs:ConsumerGroup` | workers | `sync-worker` / `matching-worker` |
 | `Checkpoints:BlobConnectionString`, `Checkpoints:Container` | workers | Azurite locally |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:SignatureKey` | Ingress.Api | must equal `FakeTeamtailor:SignatureKey` |
