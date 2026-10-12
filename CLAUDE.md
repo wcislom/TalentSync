@@ -91,7 +91,7 @@ are outside this rule.
   **No MassTransit or other messaging abstraction.**
 - Resilience: `Microsoft.Extensions.Http.Resilience` (Polly v8). Who retries what and how failures are
   classified: `.claude/rules/resilience.md`.
-- LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and chaos scenarios.
+- LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and anomaly scenarios.
 - Tests: xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`; VSTest syntax such as
   `--filter "FullyQualifiedName~..."` does not work). How integration tests run the system (docker compose, or in-process hosts with Testcontainers)
   is an open decision, see `.claude/rules/testing.md`.

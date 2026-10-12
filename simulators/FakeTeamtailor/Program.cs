@@ -1,17 +1,19 @@
-using FakeTeamtailor;
+using FakeTeamtailor.State;
+using FakeTeamtailor.Teamtailor;
+using FakeTeamtailor.Testing;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<Store>();
 builder.Services.AddSingleton<CallLog>();
-builder.Services.AddSingleton<ChaosRules>();
+builder.Services.AddSingleton<AnomalyRules>();
 builder.Services.AddHttpClient<WebhookSender>();
 
 var app = builder.Build();
 app.UseCallLog();
 app.MapApi();
-app.MapSim();
+app.MapRecruiter();
 app.MapCalls();
-app.MapChaos();
+app.MapAnomalies();
 
 app.Run();

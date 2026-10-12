@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using FakeTeamtailor.State;
+using FakeTeamtailor.Teamtailor;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.Testing;
 
 public sealed record StageChange(string Stage);
 
@@ -11,20 +13,20 @@ public sealed record CandidateChange(string? FirstName, string? LastName, string
 /// sends the webhook that Teamtailor would send for it. Responses list the deliveries, so a test can see
 /// whether Ingress accepted them.
 /// </summary>
-public static class SimEndpoints
+public static class RecruiterEndpoints
 {
-    public static void MapSim(this IEndpointRouteBuilder app)
+    public static void MapRecruiter(this IEndpointRouteBuilder app)
     {
-        var sim = app.MapGroup("/sim");
+        var recruiter = app.MapGroup("/recruiter");
 
-        sim.MapGet("/jobs", (Store store) =>
+        recruiter.MapGet("/jobs", (Store store) =>
             store.Jobs.OrderBy(job => job.Key).Select(job => new { id = job.Key, job.Value.Title }));
 
         // A browser form would need antiforgery; tests and .http files post multipart directly.
-        sim.MapPost("/jobs/{jobId}/apply", ApplyAsync).DisableAntiforgery();
-        sim.MapPatch("/job-applications/{id}/stage", ChangeStageAsync);
-        sim.MapPatch("/candidates/{id}", UpdateCandidateAsync);
-        sim.MapDelete("/candidates/{id}", DeleteCandidateAsync);
+        recruiter.MapPost("/jobs/{jobId}/apply", ApplyAsync).DisableAntiforgery();
+        recruiter.MapPatch("/job-applications/{id}/stage", ChangeStageAsync);
+        recruiter.MapPatch("/candidates/{id}", UpdateCandidateAsync);
+        recruiter.MapDelete("/candidates/{id}", DeleteCandidateAsync);
     }
 
     private static async Task<IResult> ApplyAsync(

@@ -26,13 +26,13 @@ Authorization: {{auth}}
 
 ###
 
-# Scenario driving (/sim). Each change sends a webhook to Ingress; the response lists the deliveries.
-GET {{host}}/sim/jobs
+# Scenario driving (/recruiter). Each change sends a webhook to Ingress; the response lists the deliveries.
+GET {{host}}/recruiter/jobs
 
 ###
 
 # New candidate with a chosen id: candidate.create + job_application.create
-POST {{host}}/sim/jobs/job-1/apply
+POST {{host}}/recruiter/jobs/job-1/apply
 Content-Type: multipart/form-data; boundary=sim
 
 --sim
@@ -65,40 +65,40 @@ Backend developer, 4 years of experience. Skills: C#, .NET, SQL Server. Contact:
 ###
 
 # Same stage again sends nothing
-PATCH {{host}}/sim/job-applications/job-application-1/stage
+PATCH {{host}}/recruiter/job-applications/job-application-1/stage
 Content-Type: application/json
 
 { "stage": "Qualified" }
 
 ###
 
-PATCH {{host}}/sim/candidates/candidate-1
+PATCH {{host}}/recruiter/candidates/candidate-1
 Content-Type: application/json
 
 { "phone": "+48 500 100 999" }
 
 ###
 
-DELETE {{host}}/sim/candidates/candidate-2
+DELETE {{host}}/recruiter/candidates/candidate-2
 
 ###
 
-# Chaos. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /chaos.
-POST {{host}}/chaos
+# Anomalies. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /anomalies.
+POST {{host}}/anomalies
 Content-Type: application/json
 
 { "mode": "rate-limit", "seconds": 10, "candidateId": "candidate-1" }
 
 ###
 
-POST {{host}}/chaos
+POST {{host}}/anomalies
 Content-Type: application/json
 
 { "mode": "bad-request", "candidateId": "candidate-2" }
 
 ###
 
-POST {{host}}/chaos
+POST {{host}}/anomalies
 Content-Type: application/json
 
 { "mode": "delay", "delayMs": 2000, "seconds": 30 }
@@ -106,19 +106,19 @@ Content-Type: application/json
 ###
 
 # The next webhook for candidate-3 is sent 3 times with identical bytes (same EventId in Ingress)
-POST {{host}}/chaos
+POST {{host}}/anomalies
 Content-Type: application/json
 
 { "mode": "duplicate-webhook", "count": 3, "candidateId": "candidate-3" }
 
 ###
 
-GET {{host}}/chaos
+GET {{host}}/anomalies
 
 ###
 
 # Clear one candidate's rules; without candidateId clears all
-DELETE {{host}}/chaos?candidateId=candidate-2
+DELETE {{host}}/anomalies?candidateId=candidate-2
 
 ###
 

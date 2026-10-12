@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.State;
 
 // The dictionary key is the resource id; records do not repeat it.
 public sealed record Stage(string Name);

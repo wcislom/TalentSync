@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
+using FakeTeamtailor.State;
+using FakeTeamtailor.Testing;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.Teamtailor;
 
 /// <summary>
 /// The fake Teamtailor REST API that the TalentSync ACL calls. Shapes come from <see cref="TeamtailorJson"/>.
@@ -11,7 +13,7 @@ public static class ApiEndpoints
 
     public static void MapApi(this IEndpointRouteBuilder app)
     {
-        var v1 = app.MapGroup("/v1").AddEndpointFilter(RequireApiHeaders).AddEndpointFilter(ChaosEndpoints.ApplyToApi);
+        var v1 = app.MapGroup("/v1").AddEndpointFilter(RequireApiHeaders).AddEndpointFilter(AnomalyEndpoints.ApplyToApi);
 
         v1.MapGet("/candidates/{id}", (string id, Store store) =>
             store.Candidates.TryGetValue(id, out var candidate)

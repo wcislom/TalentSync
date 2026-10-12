@@ -1,8 +1,9 @@
 using System.Net.Mime;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using FakeTeamtailor.Testing;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.Teamtailor;
 
 /// <summary>Outcome of one delivery; <c>StatusCode</c> is null when Ingress could not be reached.</summary>
 public sealed record WebhookDelivery(string EventName, int? StatusCode);
@@ -11,7 +12,7 @@ public sealed record WebhookDelivery(string EventName, int? StatusCode);
 /// Posts <c>{ "payload": { "event_name", "data" } }</c> to Ingress; <c>data</c> comes from <see cref="TeamtailorJson"/>.
 /// Not signed yet: signature v2 comes last, together with the verifier in Ingress.
 /// </summary>
-public sealed class WebhookSender(HttpClient http, IConfiguration configuration, ChaosRules chaos, ILogger<WebhookSender> logger)
+public sealed class WebhookSender(HttpClient http, IConfiguration configuration, AnomalyRules anomalies, ILogger<WebhookSender> logger)
 {
     private readonly string webhookUrl = configuration["FakeTeamtailor:WebhookUrl"]
         ?? throw new InvalidOperationException("FakeTeamtailor:WebhookUrl is not configured.");
@@ -27,7 +28,7 @@ public sealed class WebhookSender(HttpClient http, IConfiguration configuration,
         var bytes = JsonSerializer.SerializeToUtf8Bytes(body);
         var resourceId = data["id"]?.GetValue<string>();
         var candidateId = data["relationships"]?["candidate"]?["data"]?["id"]?.GetValue<string>() ?? resourceId;
-        var times = chaos.Find(ChaosRules.DuplicateWebhook, candidateId)?.Count ?? 1;
+        var times = anomalies.Find(AnomalyRules.DuplicateWebhook, candidateId)?.Count ?? 1;
 
         var deliveries = new List<WebhookDelivery>();
         for (var attempt = 0; attempt < times; attempt++)

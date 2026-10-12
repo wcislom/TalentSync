@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
+using FakeTeamtailor.State;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.Teamtailor;
 
 /// <summary>
 /// The only place that knows Teamtailor's JSON shapes: JSON:API resources returned by <c>/v1</c> and the

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
+using FakeTeamtailor.State;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.Testing;
 
 public sealed record CallCount(string Method, string Path, string? CandidateId, int StatusCode, int Count);
 
@@ -25,7 +26,7 @@ public sealed class CallLog
 
 public static class CallLogEndpoints
 {
-    // Counted after the response is produced, so 401 from the header filter (and later chaos 429/400) is included.
+    // Counted after the response is produced, so 401 from the header filter (and later anomaly 429/400) is included.
     public static void UseCallLog(this WebApplication app) =>
         app.Use(async (context, next) =>
         {
