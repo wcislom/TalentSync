@@ -1,6 +1,8 @@
 using System.Runtime.ExceptionServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Retry;
 using TalentSync.Ingress.Api.Persistence;
 
 namespace TalentSync.Ingress.Api.Outbox;
@@ -23,47 +25,46 @@ internal sealed class OutboxRelay(
 {
     private readonly OutboxRelayOptions _options = options.Value;
 
+    // Never let an exception escape: by default it stops the whole host, webhook endpoint included. While SQL or
+    // Event Hubs is unavailable the rows stay unpublished, webhooks keep getting 200, and the batch is retried for as
+    // long as the outage lasts (int.MaxValue attempts at the back-off cap is beyond any outage).
+    private readonly ResiliencePipeline _retry = new ResiliencePipelineBuilder { TimeProvider = timeProvider }
+        .AddRetry(new RetryStrategyOptions
+        {
+            ShouldHandle = args => ValueTask.FromResult(
+                args.Outcome.Exception is { } exception
+                && !(exception is OperationCanceledException && args.Context.CancellationToken.IsCancellationRequested)),
+            MaxRetryAttempts = int.MaxValue,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = false,
+            Delay = options.Value.PollInterval,
+            MaxDelay = options.Value.MaxBackoff,
+            OnRetry = args =>
+            {
+                logger.LogWarning(args.Outcome.Exception, "Outbox relay batch failed (attempt {Attempt}), retrying in {Delay}",
+                    args.AttemptNumber + 1, args.RetryDelay);
+                return ValueTask.CompletedTask;
+            },
+        })
+        .Build();
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var failedAttempts = 0;
-
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            TimeSpan delay;
-            try
+            while (true)
             {
-                var fetched = await RelayBatchAsync(stoppingToken);
-                failedAttempts = 0;
+                var fetched = await _retry.ExecuteAsync(async token => await RelayBatchAsync(token), stoppingToken);
 
                 // A full batch means more rows may be waiting: publish them without waiting.
-                if (fetched == _options.BatchSize)
+                if (fetched < _options.BatchSize)
                 {
-                    continue;
+                    await Task.Delay(_options.PollInterval, timeProvider, stoppingToken);
                 }
-
-                delay = _options.PollInterval;
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                return;
-            }
-            catch (Exception exception)
-            {
-                // Never let an exception escape: by default it stops the whole host, webhook endpoint included.
-                // SQL or Event Hubs is unavailable: the rows stay unpublished and webhooks keep getting 200.
-                failedAttempts++;
-                delay = Backoff(failedAttempts);
-                logger.LogWarning(exception, "Outbox relay batch failed (attempt {Attempt}), retrying in {Delay}", failedAttempts, delay);
-            }
-
-            try
-            {
-                await Task.Delay(delay, timeProvider, stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
         }
     }
 
@@ -110,12 +111,5 @@ internal sealed class OutboxRelay(
 
         sendFailure?.Throw();
         return rows.Count;
-    }
-
-    private TimeSpan Backoff(int failedAttempts)
-    {
-        var factor = Math.Pow(2, Math.Min(failedAttempts, 16));
-        var delay = _options.PollInterval * factor;
-        return delay < _options.MaxBackoff ? delay : _options.MaxBackoff;
     }
 }

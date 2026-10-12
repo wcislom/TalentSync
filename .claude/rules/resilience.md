@@ -23,6 +23,10 @@ Normative: the split of responsibilities and the classification. Descriptive: re
   redeliver the event: the processor moves on to the next one, and the next checkpoint covers the failed event,
   so it is lost. Never return to "retry later".
 - Back-off delays use `TimeProvider` and the processor's cancellation token (exponential, capped at 30 s).
+- Both layers are Polly, never a hand-written retry loop or back-off formula (`CLAUDE.md`, Tech stack). The handler
+  loop is a `Polly.Core` retry with `MaxRetryAttempts = int.MaxValue`; its `ShouldHandle` must exclude only the
+  shutdown `OperationCanceledException` (Polly's default skips every `OperationCanceledException`, so an HTTP
+  timeout would escape the handler, invariant 7).
 
 ## Per dependency
 
