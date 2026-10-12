@@ -1,4 +1,4 @@
-namespace TalentSync.Infrastructure.Messaging.Processing;
+namespace TalentSync.Infrastructure.Messaging.Handling;
 
 /// <summary>Tunables of the handler loop, bound from the <c>Consumer</c> configuration section.</summary>
 internal sealed class ConsumerOptions

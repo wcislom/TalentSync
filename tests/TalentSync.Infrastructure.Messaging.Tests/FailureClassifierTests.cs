@@ -3,7 +3,7 @@ using Azure;
 using Azure.Messaging.EventHubs;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
-using TalentSync.Infrastructure.Messaging.Processing;
+using TalentSync.Infrastructure.Messaging.Handling;
 
 namespace TalentSync.Infrastructure.Messaging.Tests;
 

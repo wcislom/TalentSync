@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using TalentSync.Infrastructure.Messaging.Processing;
+using TalentSync.Infrastructure.Messaging.EventHubs;
+using TalentSync.Infrastructure.Messaging.Handling;
+using TalentSync.Infrastructure.Messaging.Persistence;
 
 namespace TalentSync.Infrastructure.Messaging;
 

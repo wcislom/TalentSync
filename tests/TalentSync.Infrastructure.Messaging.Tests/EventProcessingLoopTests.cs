@@ -3,9 +3,10 @@ using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TalentSync.Contracts;
-using TalentSync.Infrastructure.Messaging.Processing;
+using TalentSync.Infrastructure.Messaging.Handling;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
+using TalentSync.Infrastructure.Messaging.Persistence;
 
 namespace TalentSync.Infrastructure.Messaging.Tests;
 

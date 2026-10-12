@@ -4,8 +4,9 @@ using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TalentSync.Infrastructure.Messaging.Handling;
 
-namespace TalentSync.Infrastructure.Messaging.Processing;
+namespace TalentSync.Infrastructure.Messaging.EventHubs;
 
 /// <summary>
 /// Starts and stops the worker's <see cref="EventProcessorClient"/> and hands each event to

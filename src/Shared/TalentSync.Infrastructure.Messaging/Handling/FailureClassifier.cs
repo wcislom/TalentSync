@@ -5,7 +5,7 @@ using Microsoft.Data.SqlClient;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
 
-namespace TalentSync.Infrastructure.Messaging.Processing;
+namespace TalentSync.Infrastructure.Messaging.Handling;
 
 /// <summary>
 /// Decides whether a failure is about the environment (wait and retry, never park) or unclassified

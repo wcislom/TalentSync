@@ -64,14 +64,15 @@ Implemented once and reused. Each worker plugs in its own handler for the event 
 use case and translates its result into `HandlerResult` (`Done` | `Permanent(reason)`); exceptions are classified
 by the skeleton (`.claude/rules/resilience.md`).
 
-Implemented in `TalentSync.Infrastructure.Messaging/Processing/` (internal); the classes are the reference for the steps, and
+Implemented in `TalentSync.Infrastructure.Messaging` (internal classes); they are the reference for the steps, and
 invariants 3, 6, 7, 8 still apply to them:
 
-- `EventProcessingLoop`: one event from tolerant read to checkpoint (unreadable → park, unhandled type or already in
-  the inbox → checkpoint, handler → park or inbox), with the retry loop, the unclassified retry limit and shutdown.
-- `FailureClassifier`: transient or unclassified (`.claude/rules/resilience.md`).
-- `EventProcessorHost`: `EventProcessorClient` → loop, a DI scope per event; creates the checkpoint container.
-- `ConsumerStore<TDbContext>`: inbox and parking lot in the worker's own schema.
+- `Handling/EventProcessingLoop`: one event from tolerant read to checkpoint (unreadable → park, unhandled type or
+  already in the inbox → checkpoint, handler → park or inbox), with the retry loop, the unclassified retry limit and
+  shutdown. Its input is `ReceivedEvent`, so it does not depend on the Event Hubs SDK.
+- `Handling/FailureClassifier`: transient or unclassified (`.claude/rules/resilience.md`).
+- `EventHubs/EventProcessorHost`: `EventProcessorClient` → loop, a DI scope per event; creates the checkpoint container.
+- `Persistence/ConsumerStore<TDbContext>`: inbox and parking lot in the worker's own schema.
 
 A worker sees only the public surface in the project root (`IEventHandler`, `HandlerResult`, `AddMessaging`) plus the
 `Inbox` / `ParkingLot` entities and their configurations. It registers its `IDbContextFactory<TDbContext>` and calls

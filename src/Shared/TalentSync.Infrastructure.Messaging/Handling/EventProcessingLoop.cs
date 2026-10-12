@@ -4,8 +4,9 @@ using Microsoft.Extensions.Options;
 using TalentSync.Contracts;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
+using TalentSync.Infrastructure.Messaging.Persistence;
 
-namespace TalentSync.Infrastructure.Messaging.Processing;
+namespace TalentSync.Infrastructure.Messaging.Handling;
 
 /// <summary>
 /// Processes one event until it is handled, skipped or parked, then checkpoints. Retries stay inside this call:

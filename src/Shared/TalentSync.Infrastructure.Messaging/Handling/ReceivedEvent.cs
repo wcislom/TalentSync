@@ -1,4 +1,4 @@
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Handling;
 
 /// <summary>
 /// An event as read from one partition, independent of the Event Hubs SDK types.
