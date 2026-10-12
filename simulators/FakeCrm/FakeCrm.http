@@ -1,0 +1,56 @@
+@host = http://localhost:5123
+
+# 201 on create, 200 on update
+PUT {{host}}/contacts/c-demo-1
+Content-Type: application/json
+
+{ "firstName": "Grace", "lastName": "Sampleton", "email": "grace.sampleton@example.com", "phone": "+48 500 100 199" }
+
+###
+
+# 400: missing required fields
+PUT {{host}}/contacts/c-demo-2
+Content-Type: application/json
+
+{ "firstName": "Grace" }
+
+###
+
+GET {{host}}/contacts
+
+###
+
+# Soft delete: 204, the contact stays with status Deleted. Again: 204. Unknown contact: 404.
+DELETE {{host}}/contacts/c-demo-1
+
+###
+
+DELETE {{host}}/contacts/c-unknown
+
+###
+
+# Anomalies. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /anomalies.
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "503", "seconds": 30, "candidateId": "c-demo-1" }
+
+###
+
+# The effect is applied, then the response hangs until the client gives up (recorded as 499 in /calls)
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "timeout", "candidateId": "c-demo-1" }
+
+###
+
+GET {{host}}/anomalies
+
+###
+
+DELETE {{host}}/anomalies?candidateId=c-demo-1
+
+###
+
+GET {{host}}/calls?candidateId=c-demo-1

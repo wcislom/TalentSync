@@ -59,7 +59,13 @@ Two separate surfaces, plus the test endpoints above:
 - `PUT /contacts/{candidateId}` upsert, `GET /contacts` (each contact with its status `Active` / `Deleted`).
 - `DELETE /contacts/{candidateId}` is a soft delete: the contact stays with status `Deleted`, 204.
   Already deleted → 204. Unknown contact → 404.
-- Anomaly modes: `503`, `timeout`.
+- `PUT` body: `firstName`, `lastName`, `email` (required, else 400), `phone`. 201 on create, 200 on update.
+  A `PUT` on a deleted contact makes it `Active` again.
+- Starts empty: every contact comes from Sync.Worker (scenario S8 needs a candidate without one).
+- Anomaly modes:
+  - `503`: `PUT` / `DELETE` return 503 without an effect.
+  - `timeout`: the effect is applied, then the response hangs until the client gives up (recorded as 499 in `/calls`).
+- `/calls` counts only `PUT` / `DELETE /contacts/{candidateId}`. `GET /contacts` is not counted and never broken.
 
 ## FakeMatchingPlatform
 
