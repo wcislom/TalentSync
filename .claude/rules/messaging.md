@@ -51,7 +51,8 @@ No attributes, no payload body: the envelope is a notification. Workers fetch cu
 - Crash after publish and before mark → the event is published again. Expected; consumers handle it.
 - One replica (invariant 13).
 - Implemented in `TalentSync.Ingress.Api/Outbox/`: `OutboxRelay` (loop, batch, marking), `OutboxPublisher` (one send),
-  `OutboxQueries` (the locking query). Tunables in `OutboxRelay:*`.
+  `OutboxQueries` (the locking query). Tunables in `OutboxRelay:*`. A failed batch is retried by a `Polly.Core`
+  retry pipeline (exponential from `PollInterval`, capped at `MaxBackoff`, never gives up).
 - The first failed send ends the batch: rows sent so far are marked and committed, the rest wait for the next
   batch. Continuing would publish a later event of a candidate before an earlier one.
 - `READPAST` also skips a row whose insert is not committed yet, so rows can be published out of `Id` order.

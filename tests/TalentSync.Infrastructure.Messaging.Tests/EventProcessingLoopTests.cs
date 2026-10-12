@@ -100,6 +100,27 @@ public class EventProcessingLoopTests
     }
 
     [Fact]
+    public async Task Backoff_DoublesFromInitialAndStaysCappedAfterManyAttempts()
+    {
+        // 100 failures: 2^100 × InitialBackoff overflows TimeSpan, the cap must still hold.
+        const int failures = 100;
+        for (var i = 0; i < failures; i++)
+        {
+            _handler.Results.Enqueue(() => throw new HttpRequestException(null, null, HttpStatusCode.ServiceUnavailable));
+        }
+
+        var time = new RecordingTimeProvider();
+        var loop = Loop(time, initialBackoff: TimeSpan.FromSeconds(1), maxBackoff: TimeSpan.FromSeconds(30));
+
+        await loop.ProcessAsync(Received(Serialize(Envelope())), CountCheckpoint, TestContext.Current.CancellationToken);
+
+        Assert.Equal(failures, time.Delays.Count);
+        Assert.Equal([1, 2, 4, 8, 16, 30, 30], time.Delays.Take(7).Select(d => d.TotalSeconds));
+        Assert.All(time.Delays.Skip(5), d => Assert.Equal(TimeSpan.FromSeconds(30), d));
+        Assert.Equal(1, _checkpoints);
+    }
+
+    [Fact]
     public async Task UnclassifiedFailure_IsParkedAfterTheRetryLimit()
     {
         for (var i = 0; i < MaxUnclassifiedAttempts; i++)
@@ -198,16 +219,16 @@ public class EventProcessingLoopTests
         return Task.CompletedTask;
     }
 
-    private EventProcessingLoop Loop() => new(
+    private EventProcessingLoop Loop(TimeProvider? timeProvider = null, TimeSpan initialBackoff = default, TimeSpan maxBackoff = default) => new(
         _handler,
         _store,
         Options.Create(new ConsumerOptions
         {
-            InitialBackoff = TimeSpan.Zero,
-            MaxBackoff = TimeSpan.Zero,
+            InitialBackoff = initialBackoff,
+            MaxBackoff = maxBackoff,
             MaxUnclassifiedAttempts = MaxUnclassifiedAttempts,
         }),
-        TimeProvider.System,
+        timeProvider ?? TimeProvider.System,
         NullLogger<EventProcessingLoop>.Instance);
 
     private static ReceivedEvent Received(byte[] body) => new("0", 42, body);
@@ -225,6 +246,30 @@ public class EventProcessingLoopTests
         CandidateId = "c-1",
         ReceivedAt = DateTimeOffset.UnixEpoch,
     };
+
+    /// <summary>Records every requested delay and fires it at once.</summary>
+    private sealed class RecordingTimeProvider : TimeProvider
+    {
+        public List<TimeSpan> Delays { get; } = [];
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Delays.Add(dueTime);
+            ThreadPool.QueueUserWorkItem(_ => callback(state));
+            return new NoopTimer();
+        }
+
+        private sealed class NoopTimer : ITimer
+        {
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Dispose()
+            {
+            }
+
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
+    }
 
     private sealed class FakeHandler : IEventHandler
     {

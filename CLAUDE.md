@@ -91,6 +91,10 @@ are outside this rule.
   **No MassTransit or other messaging abstraction.**
 - Resilience: `Microsoft.Extensions.Http.Resilience` (Polly v8). Who retries what and how failures are
   classified: `.claude/rules/resilience.md`.
+  **Retries, back-off, timeouts and circuit breakers come from Polly, never hand-written loops or delay math.**
+  HTTP clients use `Microsoft.Extensions.Http.Resilience`; other loops (handler loop, outbox relay) use a
+  `Polly.Core` `ResiliencePipeline` built with our `TimeProvider`. Our code keeps only what Polly does not know:
+  failure classification, parking, logging with event ids.
 - LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and anomaly scenarios.
 - Tests: xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`; VSTest syntax such as
   `--filter "FullyQualifiedName~..."` does not work). How integration tests run the system (docker compose, or in-process hosts with Testcontainers)

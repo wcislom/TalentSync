@@ -6,6 +6,7 @@
     <PackageReference Include="Azure.Messaging.EventHubs" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Polly.Core" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\TalentSync.Contracts\TalentSync.Contracts.csproj" />
