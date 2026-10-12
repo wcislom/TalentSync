@@ -1,7 +1,9 @@
 using System.Net;
+using Azure;
+using Azure.Messaging.EventHubs;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
-using TalentSync.Infrastructure.Messaging.Consumer;
+using TalentSync.Infrastructure.Messaging.Processing;
 
 namespace TalentSync.Infrastructure.Messaging.Tests;
 
@@ -52,6 +54,23 @@ public class FailureClassifierTests
     public void OpenCircuit_IsTransient()
     {
         Assert.True(FailureClassifier.IsTransient(new BrokenCircuitException()));
+    }
+
+    [Theory]
+    [InlineData(503, true)]
+    [InlineData(429, true)]
+    [InlineData(404, false)]
+    public void BlobStorageFailure_IsTransientOnlyForServerSideStatus(int status, bool transient)
+    {
+        Assert.Equal(transient, FailureClassifier.IsTransient(new RequestFailedException(status, "checkpoint failed")));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EventHubsFailure_FollowsTheSdkClassification(bool isTransient)
+    {
+        Assert.Equal(isTransient, FailureClassifier.IsTransient(new EventHubsException(isTransient, "ats-events")));
     }
 
     [Fact]

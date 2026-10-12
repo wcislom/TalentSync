@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
 
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Processing;
 
 /// <summary>
 /// <see cref="IConsumerStore"/> over the worker's own <c>DbContext</c>, which applies

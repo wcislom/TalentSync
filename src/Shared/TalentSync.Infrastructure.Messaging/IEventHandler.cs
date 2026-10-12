@@ -1,6 +1,6 @@
 using TalentSync.Contracts;
 
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging;
 
 /// <summary>
 /// A worker's part of event processing: runs its use case and translates the outcome. The inbox, parking lot,

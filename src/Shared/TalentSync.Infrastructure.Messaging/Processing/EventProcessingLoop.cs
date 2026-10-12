@@ -5,7 +5,7 @@ using TalentSync.Contracts;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
 
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Processing;
 
 /// <summary>
 /// Processes one event until it is handled, skipped or parked, then checkpoints. Retries stay inside this call:

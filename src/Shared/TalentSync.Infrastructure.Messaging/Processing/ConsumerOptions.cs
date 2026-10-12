@@ -1,7 +1,7 @@
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Processing;
 
 /// <summary>Tunables of the handler loop, bound from the <c>Consumer</c> configuration section.</summary>
-public sealed class ConsumerOptions
+internal sealed class ConsumerOptions
 {
     public const string SectionName = "Consumer";
 

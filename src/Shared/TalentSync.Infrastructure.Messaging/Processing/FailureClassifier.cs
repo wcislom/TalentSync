@@ -1,9 +1,11 @@
 using System.Net;
+using Azure;
+using Azure.Messaging.EventHubs;
 using Microsoft.Data.SqlClient;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
 
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Processing;
 
 /// <summary>
 /// Decides whether a failure is about the environment (wait and retry, never park) or unclassified
@@ -44,6 +46,10 @@ internal static class FailureClassifier
         TimeoutRejectedException => true,
         BrokenCircuitException => true,
         SqlException sql => TransientSqlErrors.Contains(sql.Number),
+
+        // A failed checkpoint (Blob storage) or a lost connection to the hub.
+        RequestFailedException { Status: >= 500 or 408 or 429 } => true,
+        EventHubsException { IsTransient: true } => true,
         _ => false,
     };
 

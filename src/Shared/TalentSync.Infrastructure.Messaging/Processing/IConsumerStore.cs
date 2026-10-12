@@ -1,7 +1,7 @@
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
 
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging.Processing;
 
 /// <summary>The worker's <c>Inbox</c> and <c>ParkingLot</c> tables, in its own schema.</summary>
 internal interface IConsumerStore

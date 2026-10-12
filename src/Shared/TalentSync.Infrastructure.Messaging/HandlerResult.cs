@@ -1,8 +1,8 @@
-namespace TalentSync.Infrastructure.Messaging.Consumer;
+namespace TalentSync.Infrastructure.Messaging;
 
 /// <summary>
 /// What a worker's handler made of one event. Transient failures are not results: they are exceptions, classified
-/// by the skeleton (<see cref="FailureClassifier"/>).
+/// by the skeleton.
 /// </summary>
 public abstract record HandlerResult
 {

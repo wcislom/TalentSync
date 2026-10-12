@@ -64,36 +64,18 @@ Implemented once and reused. Each worker plugs in its own handler for the event 
 use case and translates its result into `HandlerResult` (`Done` | `Permanent(reason)`); exceptions are classified
 by the skeleton (`.claude/rules/resilience.md`).
 
-This pseudocode is a specification for the first implementation. Once the shared handler exists, replace this
-section with a pointer to the class; from then on the class is the reference for the steps, and invariants
-3, 6, 7, 8 still apply to it.
+Implemented in `TalentSync.Infrastructure.Messaging/Processing/` (internal); the classes are the reference for the steps, and
+invariants 3, 6, 7, 8 still apply to them:
 
-```
-ProcessEventAsync(args):
-  unclassifiedAttempts = 0
-  loop:                                         # retries stay inside this call; returning moves on to the next event
-    try:
-      envelope = tolerant read
-        unreadable (malformed JSON, missing required field) →
-          insert ParkingLot row (partition + sequence number, raw body ≤ 4 KB), checkpoint, return
-        unknown or unhandled type → checkpoint, return
-      if inbox contains (Source, EventId) → checkpoint, return
-      result = worker handler (runs the use case)
-      if result is Permanent(reason):
-        insert ParkingLot row (envelope + reason, no PII), checkpoint, return
-      insert inbox row (2627/2601 → ignore)
-      checkpoint, return
-    catch OperationCanceledException when args.CancellationToken is cancelled:
-      return                                    # shutdown: no checkpoint, no parking, no error log
-    catch exception classified as transient:
-      log ids only, back off, continue loop
-    catch any other exception:
-      unclassifiedAttempts += 1
-      if unclassifiedAttempts < 5: log ids only, back off, continue loop
-      insert ParkingLot row ("retry limit exceeded: <exception type>"), checkpoint, return
-      # if this insert throws, the loop goes on: never checkpoint an event that was neither handled nor parked
-  never rethrow
-```
+- `EventProcessingLoop`: one event from tolerant read to checkpoint (unreadable → park, unhandled type or already in
+  the inbox → checkpoint, handler → park or inbox), with the retry loop, the unclassified retry limit and shutdown.
+- `FailureClassifier`: transient or unclassified (`.claude/rules/resilience.md`).
+- `EventProcessorHost`: `EventProcessorClient` → loop, a DI scope per event; creates the checkpoint container.
+- `ConsumerStore<TDbContext>`: inbox and parking lot in the worker's own schema.
+
+A worker sees only the public surface in the project root (`IEventHandler`, `HandlerResult`, `AddMessaging`) plus the
+`Inbox` / `ParkingLot` entities and their configurations. It registers its `IDbContextFactory<TDbContext>` and calls
+`AddMessaging<TDbContext, THandler>(configuration)`.
 
 A checkpoint is an offset, so skipping an unhandled type is safe even without an immediate checkpoint: the next
 checkpoint covers it. The same mechanism is why a failed event must never be left behind by returning: the next
