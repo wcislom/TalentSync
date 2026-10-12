@@ -66,13 +66,15 @@ tests/
   TalentSync.Matching.Domain.Tests
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
-deploy/                                     docker-compose.yml
+deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
+                                            eventhubs/Config.json
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
 .gitattributes                              *.sh keeps LF line endings (Git Bash on Windows)
+.dockerignore                               build context for simulator images (repo root)
 ```
 
 ## Layers and projects

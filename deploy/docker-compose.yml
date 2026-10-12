@@ -1,4 +1,5 @@
-# Local infrastructure: SQL Server, Event Hubs emulator and Azurite (emulator metadata, later worker checkpoints).
+# Local infrastructure: SQL Server, Event Hubs emulator and Azurite (emulator metadata, later worker checkpoints),
+# plus the three simulators. The TalentSync hosts run on the host with `dotnet run`.
 # Secrets come from deploy/.env (gitignored, copy deploy/.env.example).
 name: talentsync
 
@@ -44,6 +45,40 @@ services:
       - "5672:5672"
     depends_on:
       - azurite
+
+  # Simulators keep the host ports of their launchSettings.json, so the hosts' appsettings work whether a simulator
+  # runs here or with `dotnet run` (not both: same port). State is in memory and is lost on restart.
+  fake-teamtailor:
+    build:
+      context: ..
+      dockerfile: deploy/simulator.Dockerfile
+      args:
+        SIMULATOR: FakeTeamtailor
+    environment:
+      # Ingress.Api runs on the host, not in this network.
+      FakeTeamtailor__WebhookUrl: http://host.docker.internal:5065/webhooks/teamtailor
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5111:8080"
+
+  fake-crm:
+    build:
+      context: ..
+      dockerfile: deploy/simulator.Dockerfile
+      args:
+        SIMULATOR: FakeCrm
+    ports:
+      - "5123:8080"
+
+  fake-matching-platform:
+    build:
+      context: ..
+      dockerfile: deploy/simulator.Dockerfile
+      args:
+        SIMULATOR: FakeMatchingPlatform
+    ports:
+      - "5075:8080"
 
 volumes:
   sql-data:
