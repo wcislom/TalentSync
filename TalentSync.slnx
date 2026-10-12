@@ -26,6 +26,7 @@
     <Project Path="src/Sync/TalentSync.Sync.Worker/TalentSync.Sync.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/TalentSync.Infrastructure.Messaging.Tests/TalentSync.Infrastructure.Messaging.Tests.csproj" />
     <Project Path="tests/TalentSync.Infrastructure.Teamtailor.Tests/TalentSync.Infrastructure.Teamtailor.Tests.csproj" />
     <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
     <Project Path="tests/TalentSync.Matching.Domain.Tests/TalentSync.Matching.Domain.Tests.csproj" />

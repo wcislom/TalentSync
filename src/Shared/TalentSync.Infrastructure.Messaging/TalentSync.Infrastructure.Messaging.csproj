@@ -1,5 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Azure.Messaging.EventHubs.Processor" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Polly.Core" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TalentSync.Contracts\TalentSync.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TalentSync.Infrastructure.Messaging.Tests" />
   </ItemGroup>
 </Project>

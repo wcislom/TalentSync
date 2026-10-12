@@ -11,6 +11,7 @@ paths:
 |---|---|---|
 | `TalentSync.Matching.Domain.Tests` | Unit, no I/O | Suggestion validation, `ConsultantProfile` behaviour |
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
+| `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
 | `TalentSync.IntegrationTests` | Acceptance | Scenarios from `docs/acceptance-scenarios.md` |
 
 ## Acceptance tests
