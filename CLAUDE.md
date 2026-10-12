@@ -108,6 +108,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `EventHubs:ConsumerGroup` | workers | `sync-worker` / `matching-worker` |
 | `OutboxRelay:BatchSize`, `OutboxRelay:PollInterval`, `OutboxRelay:MaxBackoff` | Ingress.Api | defaults in `appsettings.json` |
 | `Checkpoints:BlobConnectionString`, `Checkpoints:Container` | workers | Azurite locally |
+| `Consumer:InitialBackoff`, `Consumer:MaxBackoff`, `Consumer:MaxUnclassifiedAttempts` | workers | handler loop; max back-off 30 s, 5 attempts (`resilience.md`) |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:SignatureKey` | Ingress.Api | must equal `FakeTeamtailor:SignatureKey` |
 | `Teamtailor:QualifiedStageName` | Matching.Worker | `Qualified` locally |
