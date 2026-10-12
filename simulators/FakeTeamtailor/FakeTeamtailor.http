@@ -23,3 +23,108 @@ X-Api-Version: 20240904
 # 401: missing API version header
 GET {{host}}/v1/candidates/candidate-1
 Authorization: {{auth}}
+
+###
+
+# Scenario driving (/recruiter). Each change sends a webhook to Ingress; the response lists the deliveries.
+GET {{host}}/recruiter/jobs
+
+###
+
+# New candidate with a chosen id: candidate.create + job_application.create
+POST {{host}}/recruiter/jobs/job-1/apply
+Content-Type: multipart/form-data; boundary=sim
+
+--sim
+Content-Disposition: form-data; name="candidateId"
+
+c-demo-1
+--sim
+Content-Disposition: form-data; name="firstName"
+
+Grace
+--sim
+Content-Disposition: form-data; name="lastName"
+
+Sampleton
+--sim
+Content-Disposition: form-data; name="email"
+
+grace.sampleton@example.com
+--sim
+Content-Disposition: form-data; name="phone"
+
++48 500 100 199
+--sim
+Content-Disposition: form-data; name="cv"; filename="cv.txt"
+Content-Type: text/plain
+
+Backend developer, 4 years of experience. Skills: C#, .NET, SQL Server. Contact: grace.sampleton@example.com.
+--sim--
+
+###
+
+# Same stage again sends nothing
+PATCH {{host}}/recruiter/job-applications/job-application-1/stage
+Content-Type: application/json
+
+{ "stage": "Qualified" }
+
+###
+
+PATCH {{host}}/recruiter/candidates/candidate-1
+Content-Type: application/json
+
+{ "phone": "+48 500 100 999" }
+
+###
+
+DELETE {{host}}/recruiter/candidates/candidate-2
+
+###
+
+# One of candidate-6's two applications; the candidate stays
+DELETE {{host}}/recruiter/job-applications/job-application-7
+
+###
+
+# Anomalies. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /anomalies.
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "rate-limit", "seconds": 10, "candidateId": "candidate-1" }
+
+###
+
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "bad-request", "candidateId": "candidate-2" }
+
+###
+
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "delay", "delayMs": 2000, "seconds": 30 }
+
+###
+
+# The next webhook for candidate-3 is sent 3 times with identical bytes (same EventId in Ingress)
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "duplicate-webhook", "count": 3, "candidateId": "candidate-3" }
+
+###
+
+GET {{host}}/anomalies
+
+###
+
+# Clear one candidate's rules; without candidateId clears all
+DELETE {{host}}/anomalies?candidateId=candidate-2
+
+###
+
+GET {{host}}/calls?candidateId=candidate-1

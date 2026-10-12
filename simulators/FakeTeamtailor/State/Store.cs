@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
-namespace FakeTeamtailor;
+namespace FakeTeamtailor.State;
 
 // The dictionary key is the resource id; records do not repeat it.
 public sealed record Stage(string Name);
@@ -99,6 +100,63 @@ public sealed class Store
         ["job-application-6"] = Application("candidate-6", "job-1", "stage-3"),
         ["job-application-7"] = Application("candidate-6", "job-2", "stage-3"),
     };
+
+    // Owners of removed applications: a worker still fetches a deleted application (and gets 404), and /calls
+    // and anomalies must count that call under its candidate, not under none.
+    private readonly ConcurrentDictionary<string, string> removedJobApplicationOwners = new();
+
+    private int lastCandidateNumber = 6;
+    private int lastJobApplicationNumber = 7;
+
+    public string NewCandidateId() => NewId("candidate", ref lastCandidateNumber, Candidates);
+
+    public string NewJobApplicationId() => NewId("job-application", ref lastJobApplicationNumber, JobApplications);
+
+    public string? FindStageId(string name) =>
+        Stages.FirstOrDefault(stage => string.Equals(stage.Value.Name, name, StringComparison.OrdinalIgnoreCase)).Key;
+
+    /// <summary>The candidate a <c>/v1</c> request is about; a job application path holds the application id.</summary>
+    public string? CandidateIdOf(HttpRequest request)
+    {
+        var id = request.RouteValues.TryGetValue("id", out var value) ? value as string : null;
+        if (!request.Path.StartsWithSegments("/v1/job-applications"))
+        {
+            return id;
+        }
+
+        if (id is null)
+        {
+            return null;
+        }
+
+        return JobApplications.TryGetValue(id, out var application)
+            ? application.CandidateId
+            : removedJobApplicationOwners.GetValueOrDefault(id);
+    }
+
+    public bool TryRemoveJobApplication(string id, [NotNullWhen(true)] out JobApplication? application)
+    {
+        if (!JobApplications.TryRemove(id, out application))
+        {
+            return false;
+        }
+
+        removedJobApplicationOwners[id] = application.CandidateId;
+        return true;
+    }
+
+    // Skips ids a test already took by passing its own candidateId.
+    private static string NewId<T>(string prefix, ref int lastNumber, ConcurrentDictionary<string, T> existing)
+    {
+        string id;
+        do
+        {
+            id = $"{prefix}-{Interlocked.Increment(ref lastNumber)}";
+        }
+        while (existing.ContainsKey(id));
+
+        return id;
+    }
 
     private static Candidate Person(string firstName, string lastName, string email, string? phone, string cv) =>
         new(firstName, lastName, email, phone, cv, SeededAt, SeededAt);
