@@ -1,0 +1,72 @@
+@host = http://localhost:5075
+
+# 201 on create, 200 on update
+PUT {{host}}/profiles/c-demo-1
+Content-Type: application/json
+
+{ "skills": ["C#", "Azure", "SQL Server"], "seniority": "Senior", "confidence": 0.82, "status": "Enriched" }
+
+###
+
+# Enrichment failed: no seniority or confidence needed
+PUT {{host}}/profiles/c-demo-2
+Content-Type: application/json
+
+{ "status": "NotEnriched" }
+
+###
+
+# 400: Enriched without seniority and confidence
+PUT {{host}}/profiles/c-demo-3
+Content-Type: application/json
+
+{ "skills": ["Java"], "status": "Enriched" }
+
+###
+
+# 400: unknown seniority
+PUT {{host}}/profiles/c-demo-3
+Content-Type: application/json
+
+{ "seniority": "Principal", "confidence": 0.5, "status": "Enriched" }
+
+###
+
+GET {{host}}/profiles
+
+###
+
+GET {{host}}/profiles/c-demo-1
+
+###
+
+# 404
+GET {{host}}/profiles/c-unknown
+
+###
+
+# Anomalies. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /anomalies.
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "503", "seconds": 30, "candidateId": "c-demo-1" }
+
+###
+
+# The effect is applied, then the response hangs until the client gives up (recorded as 499 in /calls)
+POST {{host}}/anomalies
+Content-Type: application/json
+
+{ "mode": "timeout", "candidateId": "c-demo-1" }
+
+###
+
+GET {{host}}/anomalies
+
+###
+
+DELETE {{host}}/anomalies?candidateId=c-demo-1
+
+###
+
+GET {{host}}/calls?candidateId=c-demo-1

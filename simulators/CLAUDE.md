@@ -70,5 +70,10 @@ Two separate surfaces, plus the test endpoints above:
 ## FakeMatchingPlatform
 
 - `PUT /profiles/{candidateId}` upsert (skills, seniority, confidence, status `Enriched` / `NotEnriched`).
-- `GET /profiles`, `GET /profiles/{candidateId}`: used in the demo to show the end result.
-- Anomaly modes: `503`, `timeout`.
+  201 on create, 200 on update, last write wins. 400 without `status`, with an unknown `status` or `seniority`,
+  with `Enriched` but no `seniority` or `confidence`, or with `confidence` outside 0–1.
+- `GET /profiles`, `GET /profiles/{candidateId}` (404 if none): the end result for tests and the demo.- No `DELETE`: archiving profiles is out of MVP. Starts empty (scenario M2 needs a candidate without a profile).
+- Anomaly modes, same as FakeCrm:
+  - `503`: `PUT` returns 503 without an effect.
+  - `timeout`: the effect is applied, then the response hangs until the client gives up (recorded as 499 in `/calls`).
+- `/calls` counts only `PUT /profiles/{candidateId}`. The `GET`s are not counted and never broken.
