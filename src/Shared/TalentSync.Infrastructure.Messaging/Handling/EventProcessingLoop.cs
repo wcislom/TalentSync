@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.Retry;
 using TalentSync.Contracts;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
@@ -25,6 +27,22 @@ internal sealed class EventProcessingLoop(
 
     private readonly ConsumerOptions _options = options.Value;
 
+    // Every failure but a shutdown is retried: transient ones for as long as the outage lasts, unclassified ones until
+    // the callback parks the event. int.MaxValue attempts at the 30 s cap is far beyond any outage, so the loop never
+    // gives up in practice.
+    private readonly ResiliencePipeline _retry = new ResiliencePipelineBuilder { TimeProvider = timeProvider }
+        .AddRetry(new RetryStrategyOptions
+        {
+            ShouldHandle = args => ValueTask.FromResult(
+                args.Outcome.Exception is { } exception && !IsShutdown(exception, args.Context.CancellationToken)),
+            MaxRetryAttempts = int.MaxValue,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = false,
+            Delay = options.Value.InitialBackoff,
+            MaxDelay = options.Value.MaxBackoff,
+        })
+        .Build();
+
     /// <param name="checkpoint">Marks this event and every earlier one in the partition as done.</param>
     /// <param name="cancellationToken">Cancelled when the processor shuts down or loses the partition.</param>
     public async Task ProcessAsync(ReceivedEvent received, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
@@ -33,48 +51,47 @@ internal sealed class EventProcessingLoop(
         var failedAttempts = 0;
         var unclassifiedAttempts = 0;
 
-        while (true)
+        try
         {
-            try
+            await _retry.ExecuteAsync(async token =>
             {
-                await HandleOnceAsync(received, envelope, checkpoint, cancellationToken);
-                return;
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                // Shutdown: no checkpoint, so the next owner of the partition processes the event again.
-                return;
-            }
-            catch (Exception exception) when (FailureClassifier.IsTransient(exception))
-            {
-                failedAttempts++;
-                logger.LogWarning(exception, "Transient failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt}",
-                    envelope?.EventId, received.PartitionId, received.SequenceNumber, failedAttempts);
-            }
-            catch (Exception exception)
-            {
-                failedAttempts++;
-                unclassifiedAttempts++;
-                logger.LogError(exception, "Unclassified failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt} of {MaxAttempts}",
-                    envelope?.EventId, received.PartitionId, received.SequenceNumber, unclassifiedAttempts, _options.MaxUnclassifiedAttempts);
-
-                if (unclassifiedAttempts >= _options.MaxUnclassifiedAttempts
-                    && await TryParkAsync(received, envelope, $"retry limit exceeded: {exception.GetType().FullName}", checkpoint, cancellationToken))
+                try
                 {
-                    return;
+                    await HandleOnceAsync(received, envelope, checkpoint, token);
                 }
-            }
+                catch (Exception exception) when (!IsShutdown(exception, token))
+                {
+                    failedAttempts++;
+                    if (FailureClassifier.IsTransient(exception))
+                    {
+                        logger.LogWarning(exception, "Transient failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt}",
+                            envelope?.EventId, received.PartitionId, received.SequenceNumber, failedAttempts);
+                        throw;
+                    }
 
-            try
-            {
-                await Task.Delay(Backoff(failedAttempts), timeProvider, cancellationToken);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
+                    unclassifiedAttempts++;
+                    logger.LogError(exception, "Unclassified failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt} of {MaxAttempts}",
+                        envelope?.EventId, received.PartitionId, received.SequenceNumber, unclassifiedAttempts, _options.MaxUnclassifiedAttempts);
+
+                    if (unclassifiedAttempts >= _options.MaxUnclassifiedAttempts
+                        && await TryParkAsync(received, envelope, $"retry limit exceeded: {exception.GetType().FullName}", checkpoint, token))
+                    {
+                        return;
+                    }
+
+                    throw;
+                }
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Shutdown, during an attempt or a back-off: no checkpoint, so the next owner of the partition processes
+            // the event again.
         }
     }
+
+    private static bool IsShutdown(Exception exception, CancellationToken cancellationToken) =>
+        exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 
     private async Task HandleOnceAsync(
         ReceivedEvent received, EventEnvelope? envelope, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
@@ -157,10 +174,4 @@ internal sealed class EventProcessingLoop(
     };
 
     private DateTime UtcNow() => timeProvider.GetUtcNow().UtcDateTime;
-
-    private TimeSpan Backoff(int failedAttempts)
-    {
-        var delay = _options.InitialBackoff * Math.Pow(2, Math.Min(failedAttempts - 1, 16));
-        return delay < _options.MaxBackoff ? delay : _options.MaxBackoff;
-    }
 }
