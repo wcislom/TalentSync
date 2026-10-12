@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FakeTeamtailor.State;
 
@@ -100,6 +101,10 @@ public sealed class Store
         ["job-application-7"] = Application("candidate-6", "job-2", "stage-3"),
     };
 
+    // Owners of removed applications: a worker still fetches a deleted application (and gets 404), and /calls
+    // and anomalies must count that call under its candidate, not under none.
+    private readonly ConcurrentDictionary<string, string> removedJobApplicationOwners = new();
+
     private int lastCandidateNumber = 6;
     private int lastJobApplicationNumber = 7;
 
@@ -119,7 +124,25 @@ public sealed class Store
             return id;
         }
 
-        return id is not null && JobApplications.TryGetValue(id, out var application) ? application.CandidateId : null;
+        if (id is null)
+        {
+            return null;
+        }
+
+        return JobApplications.TryGetValue(id, out var application)
+            ? application.CandidateId
+            : removedJobApplicationOwners.GetValueOrDefault(id);
+    }
+
+    public bool TryRemoveJobApplication(string id, [NotNullWhen(true)] out JobApplication? application)
+    {
+        if (!JobApplications.TryRemove(id, out application))
+        {
+            return false;
+        }
+
+        removedJobApplicationOwners[id] = application.CandidateId;
+        return true;
     }
 
     // Skips ids a test already took by passing its own candidateId.

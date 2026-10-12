@@ -25,6 +25,7 @@ public static class RecruiterEndpoints
         // A browser form would need antiforgery; tests and .http files post multipart directly.
         recruiter.MapPost("/jobs/{jobId}/apply", ApplyAsync).DisableAntiforgery();
         recruiter.MapPatch("/job-applications/{id}/stage", ChangeStageAsync);
+        recruiter.MapDelete("/job-applications/{id}", DeleteJobApplicationAsync);
         recruiter.MapPatch("/candidates/{id}", UpdateCandidateAsync);
         recruiter.MapDelete("/candidates/{id}", DeleteCandidateAsync);
     }
@@ -119,6 +120,25 @@ public static class RecruiterEndpoints
         return Results.Ok(new { jobApplicationId = id, webhooks = sent });
     }
 
+    private static async Task<IResult> DeleteJobApplicationAsync(
+        string id,
+        Store store,
+        WebhookSender webhooks,
+        CancellationToken cancellationToken)
+    {
+        if (!store.TryRemoveJobApplication(id, out var application))
+        {
+            return Results.NotFound($"Unknown job application {id}");
+        }
+
+        var sent = await webhooks.SendAsync(
+            "job_application.destroy",
+            TeamtailorJson.JobApplicationDestroyWebhookData(id, application.CandidateId),
+            cancellationToken);
+
+        return Results.Ok(new { jobApplicationId = id, webhooks = sent });
+    }
+
     private static async Task<IResult> UpdateCandidateAsync(
         string id,
         CandidateChange change,
@@ -171,7 +191,7 @@ public static class RecruiterEndpoints
         // job_application.destroy for each of them is not documented; the fake sends only candidate.destroy.
         foreach (var application in store.JobApplications.Where(a => a.Value.CandidateId == id))
         {
-            store.JobApplications.TryRemove(application.Key, out _);
+            store.TryRemoveJobApplication(application.Key, out _);
         }
 
         var sent = await webhooks.SendAsync(

@@ -83,6 +83,11 @@ DELETE {{host}}/recruiter/candidates/candidate-2
 
 ###
 
+# One of candidate-6's two applications; the candidate stays
+DELETE {{host}}/recruiter/job-applications/job-application-7
+
+###
+
 # Anomalies. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /anomalies.
 POST {{host}}/anomalies
 Content-Type: application/json

@@ -96,6 +96,17 @@ public static class TeamtailorJson
         },
     };
 
+    // Reduced like candidate.destroy, but the candidate stays: without it Ingress has no partition key.
+    public static JsonObject JobApplicationDestroyWebhookData(string id, string candidateId) => new()
+    {
+        ["id"] = id,
+        ["type"] = "job-applications",
+        ["relationships"] = new JsonObject
+        {
+            ["candidate"] = Relationship(candidateId, "candidates"),
+        },
+    };
+
     private static JsonObject Relationship(string id, string type) => new()
     {
         ["data"] = new JsonObject { ["id"] = id, ["type"] = type },
