@@ -80,3 +80,46 @@ Content-Type: application/json
 ###
 
 DELETE {{host}}/sim/candidates/candidate-2
+
+###
+
+# Chaos. Optional "candidateId" limits a rule to one candidate; without "seconds" it lasts until DELETE /chaos.
+POST {{host}}/chaos
+Content-Type: application/json
+
+{ "mode": "rate-limit", "seconds": 10, "candidateId": "candidate-1" }
+
+###
+
+POST {{host}}/chaos
+Content-Type: application/json
+
+{ "mode": "bad-request", "candidateId": "candidate-2" }
+
+###
+
+POST {{host}}/chaos
+Content-Type: application/json
+
+{ "mode": "delay", "delayMs": 2000, "seconds": 30 }
+
+###
+
+# The next webhook for candidate-3 is sent 3 times with identical bytes (same EventId in Ingress)
+POST {{host}}/chaos
+Content-Type: application/json
+
+{ "mode": "duplicate-webhook", "count": 3, "candidateId": "candidate-3" }
+
+###
+
+GET {{host}}/chaos
+
+###
+
+# Clear one candidate's rules; without candidateId clears all
+DELETE {{host}}/chaos?candidateId=candidate-2
+
+###
+
+GET {{host}}/calls?candidateId=candidate-1

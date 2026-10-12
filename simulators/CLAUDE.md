@@ -11,7 +11,10 @@ Fake external systems used to run and demo TalentSync locally. **They are not pa
 
 ## Test endpoints (the same on all three, at the root)
 
-- `POST /chaos` switches a failure mode for N seconds, optionally for one candidate ID only.
+- `POST /chaos` `{ "mode", "seconds"?, "candidateId"? }` switches a failure mode for N seconds (no `seconds` = until
+  cleared), optionally for one candidate ID only. Several rules can be active at once; the same mode and candidate
+  replaces the rule. `GET /chaos` lists active rules, `DELETE /chaos?candidateId=` clears them (all without the id).
+  Tests always pass `candidateId`, so a failure mode never leaks into another scenario running in parallel.
   Each simulator lists its modes below. Simulators must be **easy to break on purpose**.
 - `GET /calls`: counts per endpoint, per candidate and per response status code,
   so tests can prove "one effect" (see `docs/acceptance-scenarios.md`).
@@ -34,9 +37,12 @@ Two separate surfaces, plus the test endpoints above:
 - Webhooks are signed with signature v2 using `FakeTeamtailor:SignatureKey` (must equal `Teamtailor:SignatureKey`
   in Ingress). Own implementation, never shared with `src/`.
 - Chaos modes:
-  - `rate-limit`: `/v1` returns 429 with `X-Rate-Limit-*` headers; `X-Rate-Limit-Reset` = seconds until the mode ends.
+  - `rate-limit` (needs `seconds`): `/v1` returns 429 with `X-Rate-Limit-*` headers; `X-Rate-Limit-Reset` = seconds
+    until the mode ends, rounded up.
   - `bad-request`: `/v1` returns 400 (a permanent failure, scenario S6).
-  - `delay`, `duplicate-webhook` (send the same body N times, default 2).
+  - `delay` (needs `delayMs`): `/v1` answers after the delay. Webhooks are not delayed.
+  - `duplicate-webhook` (`count`, default 2): each webhook of the candidate is sent `count` times with identical bytes.
+  - The header check runs first: a wrong key still gets 401 while a chaos mode is on.
   - No signature modes: invalid and stale signatures are covered by scenarios I3 and I4, which call Ingress directly.
 - `/v1` requires `Authorization: Token token=...` and `X-Api-Version`; reject without them (400/401) so the ACL is tested.
 - Stages: `New`, `Screening`, `Interview`, `Qualified`, `Rejected`.

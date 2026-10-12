@@ -11,12 +11,12 @@ public sealed record WebhookDelivery(string EventName, int? StatusCode);
 /// Posts <c>{ "payload": { "event_name", "data" } }</c> to Ingress; <c>data</c> comes from <see cref="TeamtailorJson"/>.
 /// Not signed yet: signature v2 comes last, together with the verifier in Ingress.
 /// </summary>
-public sealed class WebhookSender(HttpClient http, IConfiguration configuration, ILogger<WebhookSender> logger)
+public sealed class WebhookSender(HttpClient http, IConfiguration configuration, ChaosRules chaos, ILogger<WebhookSender> logger)
 {
     private readonly string webhookUrl = configuration["FakeTeamtailor:WebhookUrl"]
         ?? throw new InvalidOperationException("FakeTeamtailor:WebhookUrl is not configured.");
 
-    public async Task<WebhookDelivery> SendAsync(string eventName, JsonObject data, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<WebhookDelivery>> SendAsync(string eventName, JsonObject data, CancellationToken cancellationToken)
     {
         var body = new JsonObject
         {
@@ -26,7 +26,20 @@ public sealed class WebhookSender(HttpClient http, IConfiguration configuration,
         // Bytes, not a string: Ingress derives EventId from the raw body, so a duplicate must be byte-identical.
         var bytes = JsonSerializer.SerializeToUtf8Bytes(body);
         var resourceId = data["id"]?.GetValue<string>();
+        var candidateId = data["relationships"]?["candidate"]?["data"]?["id"]?.GetValue<string>() ?? resourceId;
+        var times = chaos.Find(ChaosRules.DuplicateWebhook, candidateId)?.Count ?? 1;
 
+        var deliveries = new List<WebhookDelivery>();
+        for (var attempt = 0; attempt < times; attempt++)
+        {
+            deliveries.Add(await PostAsync(eventName, resourceId, bytes, cancellationToken));
+        }
+
+        return deliveries;
+    }
+
+    private async Task<WebhookDelivery> PostAsync(string eventName, string? resourceId, byte[] bytes, CancellationToken cancellationToken)
+    {
         try
         {
             using var content = new ByteArrayContent(bytes);

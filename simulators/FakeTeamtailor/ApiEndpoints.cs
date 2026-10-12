@@ -11,7 +11,7 @@ public static class ApiEndpoints
 
     public static void MapApi(this IEndpointRouteBuilder app)
     {
-        var v1 = app.MapGroup("/v1").AddEndpointFilter(RequireApiHeaders);
+        var v1 = app.MapGroup("/v1").AddEndpointFilter(RequireApiHeaders).AddEndpointFilter(ChaosEndpoints.ApplyToApi);
 
         v1.MapGet("/candidates/{id}", (string id, Store store) =>
             store.Candidates.TryGetValue(id, out var candidate)

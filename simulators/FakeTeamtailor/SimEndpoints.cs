@@ -64,7 +64,7 @@ public static class SimEndpoints
             // Lost race with a parallel apply for the same id: that call created the candidate and sent the webhook.
             if (store.Candidates.TryAdd(candidateId, candidate))
             {
-                deliveries.Add(await webhooks.SendAsync(
+                deliveries.AddRange(await webhooks.SendAsync(
                     "candidate.create", TeamtailorJson.CandidateWebhookData(candidateId, candidate), cancellationToken));
             }
         }
@@ -73,7 +73,7 @@ public static class SimEndpoints
         var applicationId = store.NewJobApplicationId();
         var application = new JobApplication(candidateId, jobId, newStageId, now, now, RejectedAt: null);
         store.JobApplications[applicationId] = application;
-        deliveries.Add(await webhooks.SendAsync(
+        deliveries.AddRange(await webhooks.SendAsync(
             "job_application.create",
             TeamtailorJson.JobApplicationWebhookData(applicationId, application, store.Stages[newStageId].Name),
             cancellationToken));
@@ -109,12 +109,12 @@ public static class SimEndpoints
 
         var updated = application with { StageId = stageId, UpdatedAt = timeProvider.GetUtcNow() };
         store.JobApplications[id] = updated;
-        var delivery = await webhooks.SendAsync(
+        var sent = await webhooks.SendAsync(
             "job_application.update",
             TeamtailorJson.JobApplicationWebhookData(id, updated, store.Stages[stageId].Name),
             cancellationToken);
 
-        return Results.Ok(new { jobApplicationId = id, webhooks = new[] { delivery } });
+        return Results.Ok(new { jobApplicationId = id, webhooks = sent });
     }
 
     private static async Task<IResult> UpdateCandidateAsync(
@@ -148,10 +148,10 @@ public static class SimEndpoints
         // documented). The fake fires for any change, so a test can trigger an update with any field.
         changed = changed with { UpdatedAt = timeProvider.GetUtcNow() };
         store.Candidates[id] = changed;
-        var delivery = await webhooks.SendAsync(
+        var sent = await webhooks.SendAsync(
             "candidate.update", TeamtailorJson.CandidateWebhookData(id, changed), cancellationToken);
 
-        return Results.Ok(new { candidateId = id, webhooks = new[] { delivery } });
+        return Results.Ok(new { candidateId = id, webhooks = sent });
     }
 
     private static async Task<IResult> DeleteCandidateAsync(
@@ -172,9 +172,9 @@ public static class SimEndpoints
             store.JobApplications.TryRemove(application.Key, out _);
         }
 
-        var delivery = await webhooks.SendAsync(
+        var sent = await webhooks.SendAsync(
             "candidate.destroy", TeamtailorJson.CandidateDestroyWebhookData(id), cancellationToken);
 
-        return Results.Ok(new { candidateId = id, webhooks = new[] { delivery } });
+        return Results.Ok(new { candidateId = id, webhooks = sent });
     }
 }

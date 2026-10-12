@@ -37,16 +37,7 @@ public static class CallLogEndpoints
             }
 
             var services = context.RequestServices;
-            context.Request.RouteValues.TryGetValue("id", out var routeId);
-            var id = routeId as string;
-
-            // The job application path holds the application id; the candidate comes from the store.
-            var candidateId = context.Request.Path.StartsWithSegments("/v1/job-applications")
-                ? services.GetRequiredService<Store>().JobApplications.TryGetValue(id ?? "", out var application)
-                    ? application.CandidateId
-                    : null
-                : id;
-
+            var candidateId = services.GetRequiredService<Store>().CandidateIdOf(context.Request);
             services.GetRequiredService<CallLog>().Record(
                 context.Request.Method, context.Request.Path.Value!, candidateId, context.Response.StatusCode);
         });

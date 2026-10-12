@@ -110,6 +110,18 @@ public sealed class Store
     public string? FindStageId(string name) =>
         Stages.FirstOrDefault(stage => string.Equals(stage.Value.Name, name, StringComparison.OrdinalIgnoreCase)).Key;
 
+    /// <summary>The candidate a <c>/v1</c> request is about; a job application path holds the application id.</summary>
+    public string? CandidateIdOf(HttpRequest request)
+    {
+        var id = request.RouteValues.TryGetValue("id", out var value) ? value as string : null;
+        if (!request.Path.StartsWithSegments("/v1/job-applications"))
+        {
+            return id;
+        }
+
+        return id is not null && JobApplications.TryGetValue(id, out var application) ? application.CandidateId : null;
+    }
+
     // Skips ids a test already took by passing its own candidateId.
     private static string NewId<T>(string prefix, ref int lastNumber, ConcurrentDictionary<string, T> existing)
     {
