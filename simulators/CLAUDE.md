@@ -4,6 +4,8 @@ Fake external systems used to run and demo TalentSync locally. **They are not pa
 
 - Minimal API, one `Program.cs` plus a few small files. Data in memory (`ConcurrentDictionary`). No database.
 - No Clean Architecture, no inbox/outbox, no resilience. The invariants in `.claude/rules/invariants.md` do not apply here.
+- Code quality is not a goal: simulators are test tooling, never deployed. Working, readable and easy to break is
+  enough. Do not refactor them for structure, and do not write tests for them; the integration tests exercise them.
 - Seed data is hard-coded and clearly fake (invented names, `example.com` emails).
 - No references to `src/` projects. Simulators speak HTTP only.
 
@@ -39,6 +41,8 @@ Two separate surfaces, plus the test endpoints above:
 - `/v1` requires `Authorization: Token token=...` and `X-Api-Version`; reject without them (400/401) so the ACL is tested.
 - Stages: `New`, `Screening`, `Interview`, `Qualified`, `Rejected`.
 - Deleted candidates return 404 from `/v1`.
+- `/calls` counts only `/v1` requests (what TalentSync calls), `?candidateId=` filters. A job application call is
+  counted under its candidate.
 
 ## FakeCrm
 
