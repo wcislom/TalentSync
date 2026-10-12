@@ -29,7 +29,7 @@ Two separate surfaces, plus the test endpoints above:
 
 | Surface | Endpoints | Purpose |
 |---|---|---|
-| Recruiter `/recruiter` (not Teamtailor API) | `GET /recruiter/jobs`, `POST /recruiter/jobs/{id}/apply` (name, email, phone, `cv.txt`, optional `candidateId`), `PATCH /recruiter/job-applications/{id}/stage`, `DELETE /recruiter/job-applications/{id}`, `PATCH /recruiter/candidates/{id}`, `DELETE /recruiter/candidates/{id}` | Drive the recruitment scenario from `.http` files and tests |
+| Recruiter `/recruiter` (not Teamtailor API) | `GET /recruiter/jobs`, `POST /recruiter/jobs/{id}/apply` (JSON: name, email, phone, `resumeText`, optional `candidateId`), `PATCH /recruiter/job-applications/{id}/stage`, `DELETE /recruiter/job-applications/{id}`, `PATCH /recruiter/candidates/{id}`, `DELETE /recruiter/candidates/{id}` | Drive the recruitment scenario from `.http` files and tests |
 | Fake API `/v1` | `GET /v1/candidates/{id}`, `GET /v1/job-applications/{id}?include=stage` | What the TalentSync ACL calls. JSON:API, kebab-case |
 
 - Every state change sends a webhook to Ingress (`candidate.create`, `job_application.update`, ...),

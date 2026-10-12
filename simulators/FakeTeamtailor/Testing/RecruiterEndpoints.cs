@@ -1,8 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
 using FakeTeamtailor.State;
 using FakeTeamtailor.Teamtailor;
 
 namespace FakeTeamtailor.Testing;
+
+// Teamtailor collects applications through a form with a CV file upload; that is irrelevant to the simulation,
+// because TalentSync only reads the CV back from the API as text. JSON keeps tests and .http files short.
+public sealed record ApplyRequest(string? CandidateId, string? FirstName, string? LastName, string? Email, string? Phone, string? ResumeText);
 
 public sealed record StageChange(string Stage);
 
@@ -22,8 +25,7 @@ public static class RecruiterEndpoints
         recruiter.MapGet("/jobs", (Store store) =>
             store.Jobs.OrderBy(job => job.Key).Select(job => new { id = job.Key, job.Value.Title }));
 
-        // A browser form would need antiforgery; tests and .http files post multipart directly.
-        recruiter.MapPost("/jobs/{jobId}/apply", ApplyAsync).DisableAntiforgery();
+        recruiter.MapPost("/jobs/{jobId}/apply", ApplyAsync);
         recruiter.MapPatch("/job-applications/{id}/stage", ChangeStageAsync);
         recruiter.MapDelete("/job-applications/{id}", DeleteJobApplicationAsync);
         recruiter.MapPatch("/candidates/{id}", UpdateCandidateAsync);
@@ -32,12 +34,7 @@ public static class RecruiterEndpoints
 
     private static async Task<IResult> ApplyAsync(
         string jobId,
-        [FromForm] string? candidateId,
-        [FromForm] string? firstName,
-        [FromForm] string? lastName,
-        [FromForm] string? email,
-        [FromForm] string? phone,
-        IFormFile? cv,
+        ApplyRequest request,
         Store store,
         WebhookSender webhooks,
         TimeProvider timeProvider,
@@ -50,19 +47,18 @@ public static class RecruiterEndpoints
 
         var now = timeProvider.GetUtcNow();
         var deliveries = new List<WebhookDelivery>();
-        candidateId = string.IsNullOrWhiteSpace(candidateId) ? store.NewCandidateId() : candidateId;
+        var candidateId = string.IsNullOrWhiteSpace(request.CandidateId) ? store.NewCandidateId() : request.CandidateId;
 
         if (!store.Candidates.ContainsKey(candidateId))
         {
-            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName)
-                || string.IsNullOrWhiteSpace(email) || cv is null)
+            if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName)
+                || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.ResumeText))
             {
-                return Results.BadRequest("A new candidate needs firstName, lastName, email and cv");
+                return Results.BadRequest("A new candidate needs firstName, lastName, email and resumeText");
             }
 
-            using var reader = new StreamReader(cv.OpenReadStream());
-            var resumeText = await reader.ReadToEndAsync(cancellationToken);
-            var candidate = new Candidate(firstName, lastName, email, phone, resumeText, now, now);
+            var candidate = new Candidate(
+                request.FirstName, request.LastName, request.Email, request.Phone, request.ResumeText, now, now);
 
             // Lost race with a parallel apply for the same id: that call created the candidate and sent the webhook.
             if (store.Candidates.TryAdd(candidateId, candidate))

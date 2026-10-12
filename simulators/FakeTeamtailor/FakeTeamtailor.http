@@ -33,34 +33,16 @@ GET {{host}}/recruiter/jobs
 
 # New candidate with a chosen id: candidate.create + job_application.create
 POST {{host}}/recruiter/jobs/job-1/apply
-Content-Type: multipart/form-data; boundary=sim
+Content-Type: application/json
 
---sim
-Content-Disposition: form-data; name="candidateId"
-
-c-demo-1
---sim
-Content-Disposition: form-data; name="firstName"
-
-Grace
---sim
-Content-Disposition: form-data; name="lastName"
-
-Sampleton
---sim
-Content-Disposition: form-data; name="email"
-
-grace.sampleton@example.com
---sim
-Content-Disposition: form-data; name="phone"
-
-+48 500 100 199
---sim
-Content-Disposition: form-data; name="cv"; filename="cv.txt"
-Content-Type: text/plain
-
-Backend developer, 4 years of experience. Skills: C#, .NET, SQL Server. Contact: grace.sampleton@example.com.
---sim--
+{
+  "candidateId": "c-demo-1",
+  "firstName": "Grace",
+  "lastName": "Sampleton",
+  "email": "grace.sampleton@example.com",
+  "phone": "+48 500 100 199",
+  "resumeText": "Backend developer, 4 years of experience. Skills: C#, .NET, SQL Server. Contact: grace.sampleton@example.com."
+}
 
 ###
 
