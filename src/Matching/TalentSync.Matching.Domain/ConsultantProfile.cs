@@ -6,12 +6,21 @@ namespace TalentSync.Matching.Domain;
 /// </summary>
 public sealed class ConsultantProfile
 {
-    private ConsultantProfile(string candidateId)
+    /// <summary>
+    /// A profile starts <see cref="EnrichmentStatus.NotEnriched"/> and stays so unless <see cref="Enrich"/> is called:
+    /// it never waits for enrichment (D5).
+    /// </summary>
+    /// <remarks>
+    /// Whether the candidate is qualified is not checked here: qualification is a recruitment concept this context
+    /// does not know. The use case translating between the two contexts decides when a profile is created (D2).
+    /// </remarks>
+    public ConsultantProfile(CandidateId candidateId)
     {
+        ArgumentNullException.ThrowIfNull(candidateId);
         CandidateId = candidateId;
     }
 
-    public string CandidateId { get; }
+    public CandidateId CandidateId { get; }
 
     public IReadOnlyList<Skill> Skills { get; private set; } = [];
 
@@ -21,17 +30,6 @@ public sealed class ConsultantProfile
     public Confidence? Confidence { get; private set; }
 
     public EnrichmentStatus EnrichmentStatus { get; private set; } = EnrichmentStatus.NotEnriched;
-
-    /// <summary>
-    /// The profile of a candidate whose application reached the qualified stage (D2). It starts
-    /// <see cref="EnrichmentStatus.NotEnriched"/> and stays so unless <see cref="Enrich"/> is called: the profile never
-    /// waits for enrichment (D5).
-    /// </summary>
-    public static ConsultantProfile CreateFromQualifiedCandidate(string candidateId)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(candidateId);
-        return new ConsultantProfile(candidateId);
-    }
 
     /// <summary>Puts a validated LLM suggestion on the profile. A suggestion, never a match decision (D5).</summary>
     /// <remarks>

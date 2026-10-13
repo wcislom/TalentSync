@@ -53,8 +53,8 @@ src/
                                             composition root, group "sync-worker". Web host: only /health/live
                                             (liveness for an orchestrator, no dependency checks)
   Matching/
-    TalentSync.Matching.Domain              ConsultantProfile, Seniority, Skill, EnrichmentStatus,
-                                            suggestion validation. References nothing
+    TalentSync.Matching.Domain              ConsultantProfile, CandidateId, Skill, Confidence, Seniority,
+                                            EnrichmentStatus, EnrichmentSuggestion. References nothing
     TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform
                                             (IEnrichmentService, IEnrichmentResultStore come with LLM enrichment).
                                             → Matching.Domain, Recruitment.Domain

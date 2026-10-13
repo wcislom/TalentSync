@@ -10,7 +10,7 @@ namespace TalentSync.Matching.Infrastructure.Tests;
 /// <summary>The Matching Platform client with its real HTTP pipeline from <c>AddMatchingInfrastructure</c>, over a stub handler.</summary>
 public sealed class MatchingPlatformClientTests : IDisposable
 {
-    private static readonly ConsultantProfile Profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+    private static readonly ConsultantProfile Profile = new(new CandidateId("c-1"));
 
     private readonly StubHandler _platform = new();
     private readonly ServiceProvider _services;

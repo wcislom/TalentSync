@@ -3,27 +3,21 @@ namespace TalentSync.Matching.Domain.Tests;
 public sealed class ConsultantProfileTests
 {
     [Fact]
-    public void CreateFromQualifiedCandidate_IsNotEnrichedAndKeyedByCandidateId()
+    public void New_IsNotEnrichedAndKeyedByCandidateId()
     {
-        var profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+        var profile = new ConsultantProfile(new CandidateId("c-1"));
 
-        Assert.Equal("c-1", profile.CandidateId);
+        Assert.Equal(new CandidateId("c-1"), profile.CandidateId);
         Assert.Equal(EnrichmentStatus.NotEnriched, profile.EnrichmentStatus);
         Assert.Empty(profile.Skills);
         Assert.Null(profile.Seniority);
         Assert.Null(profile.Confidence);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void CreateFromQualifiedCandidate_WithoutCandidateId_Throws(string candidateId) =>
-        Assert.Throws<ArgumentException>(() => ConsultantProfile.CreateFromQualifiedCandidate(candidateId));
-
     [Fact]
     public void Enrich_TakesSkillsSeniorityAndConfidenceFromTheSuggestion()
     {
-        var profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+        var profile = new ConsultantProfile(new CandidateId("c-1"));
 
         profile.Enrich(Suggestion(["C#"], "Lead", 0.9));
 
@@ -36,7 +30,7 @@ public sealed class ConsultantProfileTests
     [Fact]
     public void Enrich_AlreadyEnriched_Throws()
     {
-        var profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+        var profile = new ConsultantProfile(new CandidateId("c-1"));
         profile.Enrich(Suggestion(["C#"], "Lead", 0.9));
 
         Assert.Throws<InvalidOperationException>(() => profile.Enrich(Suggestion(["Go"], "Mid", 0.5)));

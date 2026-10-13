@@ -18,7 +18,7 @@ public sealed class CreateConsultantProfileUseCaseTests
 
         Assert.IsType<CreateConsultantProfileResult.UpsertedResult>(result);
         var profile = Assert.Single(_platform.Upserted);
-        Assert.Equal("c-from-api", profile.CandidateId);
+        Assert.Equal(new CandidateId("c-from-api"), profile.CandidateId);
         Assert.Equal(EnrichmentStatus.NotEnriched, profile.EnrichmentStatus);
     }
 
