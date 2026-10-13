@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" />
+    <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Testcontainers.EventHubs" />
     <PackageReference Include="Testcontainers.MsSql" />
@@ -19,6 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ingress\TalentSync.Ingress.Api\TalentSync.Ingress.Api.csproj" />
+    <!-- Aliased: every web host has a public global Program, and WebApplicationFactory needs to name each one. -->
+    <ProjectReference Include="..\..\src\Sync\TalentSync.Sync.Worker\TalentSync.Sync.Worker.csproj" Aliases="SyncWorker" />
+    <ProjectReference Include="..\..\simulators\FakeTeamtailor\FakeTeamtailor.csproj" Aliases="FakeTeamtailor" />
+    <ProjectReference Include="..\..\simulators\FakeCrm\FakeCrm.csproj" Aliases="FakeCrm" />
   </ItemGroup>
 
 </Project>

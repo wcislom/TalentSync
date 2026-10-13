@@ -1,4 +1,13 @@
-var builder = Host.CreateApplicationBuilder(args);
+using TalentSync.Sync.Worker;
 
-var host = builder.Build();
-host.Run();
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSyncWorker(builder.Configuration);
+
+var app = builder.Build();
+
+app.MapHealthChecks("/health/live");
+
+app.Run();
+
+public partial class Program;

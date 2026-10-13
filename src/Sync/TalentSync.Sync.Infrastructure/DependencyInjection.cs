@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using TalentSync.Sync.Application;
+using TalentSync.Sync.Application.Ports;
 using TalentSync.Sync.Infrastructure.Crm;
+using TalentSync.Sync.Infrastructure.Persistence;
 
 namespace TalentSync.Sync.Infrastructure;
 
@@ -10,8 +12,8 @@ namespace TalentSync.Sync.Infrastructure;
 public static class DependencyInjection
 {
     /// <summary>
-    /// <see cref="ICrm"/> over the CRM's REST API. Reads <c>Crm:BaseUrl</c>, and the standard resilience handler's
-    /// options from <c>Crm:Resilience</c>.
+    /// <see cref="ICrm"/> over the CRM's REST API, and <see cref="SyncDbContext"/>. Reads <c>Crm:BaseUrl</c>, the standard
+    /// resilience handler's options from <c>Crm:Resilience</c>, and <c>ConnectionStrings:Sql</c>.
     /// </summary>
     public static IServiceCollection AddSyncInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
@@ -27,6 +29,11 @@ public static class DependencyInjection
         services.AddHttpClient<ICrm, CrmClient>((provider, client) =>
                 client.BaseAddress = provider.GetRequiredService<IOptions<CrmOptions>>().Value.BaseUrl)
             .AddStandardResilienceHandler(section.GetSection("Resilience"));
+
+        services.AddDbContextFactory<SyncDbContext>(options => options.UseSqlServer(
+            configuration.GetConnectionString("Sql")
+                ?? throw new InvalidOperationException("Missing configuration 'ConnectionStrings:Sql'."),
+            sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", SyncDbContext.Schema)));
 
         return services;
     }

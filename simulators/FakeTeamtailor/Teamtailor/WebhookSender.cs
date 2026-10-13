@@ -28,6 +28,12 @@ public sealed class WebhookSender(HttpClient http, IConfiguration configuration,
         var bytes = JsonSerializer.SerializeToUtf8Bytes(body);
         var resourceId = data["id"]?.GetValue<string>();
         var candidateId = data["relationships"]?["candidate"]?["data"]?["id"]?.GetValue<string>() ?? resourceId;
+        if (anomalies.Find(AnomalyRules.DropWebhook, candidateId) is not null)
+        {
+            logger.LogInformation("Webhook {EventName} for {ResourceId} dropped (anomaly)", eventName, resourceId);
+            return [];
+        }
+
         var times = anomalies.Find(AnomalyRules.DuplicateWebhook, candidateId)?.Count ?? 1;
 
         var deliveries = new List<WebhookDelivery>();

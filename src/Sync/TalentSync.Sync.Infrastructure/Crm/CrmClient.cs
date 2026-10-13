@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using TalentSync.Recruitment.Domain;
-using TalentSync.Sync.Application;
+using TalentSync.Sync.Application.Ports;
 
 namespace TalentSync.Sync.Infrastructure.Crm;
 

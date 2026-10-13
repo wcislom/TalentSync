@@ -18,8 +18,9 @@ public sealed class AnomalyRules(TimeProvider timeProvider)
     public const string BadRequest = "bad-request";
     public const string Delay = "delay";
     public const string DuplicateWebhook = "duplicate-webhook";
+    public const string DropWebhook = "drop-webhook";
 
-    public static readonly string[] Modes = [RateLimit, BadRequest, Delay, DuplicateWebhook];
+    public static readonly string[] Modes = [RateLimit, BadRequest, Delay, DuplicateWebhook, DropWebhook];
 
     private readonly ConcurrentDictionary<(string Mode, string? CandidateId), AnomalyRule> rules = new();
 
