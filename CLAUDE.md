@@ -118,6 +118,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Teamtailor:QualifiedStageName` | workers | `Qualified` locally. Only Matching.Worker maps stages, but `AddTeamtailorApi` validates it on start in both |
 | `Teamtailor:Resilience:*` | workers | `HttpStandardResilienceOptions` of the API client (e.g. `Retry:MaxRetryAttempts` = 2); unset keys keep the library defaults |
 | `Crm:BaseUrl` | Sync.Worker | |
+| `Crm:Resilience:*` | Sync.Worker | `HttpStandardResilienceOptions` of the CRM client (e.g. `Retry:MaxRetryAttempts` = 2) |
 | `MatchingPlatform:BaseUrl` | Matching.Worker | |
 | `Llm:Provider` | Matching.Worker | `Gemini` or `Fake` |
 | `Llm:Gemini:ApiKey` | Matching.Worker | user-secrets only, never in the repo |

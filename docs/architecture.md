@@ -68,6 +68,7 @@ tests/
   TalentSync.Matching.Domain.Tests
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
+  TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
 deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
                                             eventhubs/Config.json
