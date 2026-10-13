@@ -1,8 +1,13 @@
 using TalentSync.Matching.Worker;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMatchingWorker(builder.Configuration);
 
-var host = builder.Build();
-host.Run();
+var app = builder.Build();
+
+app.MapHealthChecks("/health/live");
+
+app.Run();
+
+public partial class Program;

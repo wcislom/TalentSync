@@ -61,7 +61,8 @@ src/
     TalentSync.Matching.Infrastructure      CV masking, IChatClient adapter, EnrichmentResults, MatchingPlatformClient,
                                             MatchingDbContext. → Matching.Application, Infrastructure.Messaging
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
-                                            composition root, group "matching-worker"
+                                            composition root, group "matching-worker". Web host: only /health/live
+                                            (liveness for an orchestrator, no dependency checks)
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
   FakeTeamtailor                            No references to src/. Signature v2 is implemented independently.
   FakeCrm
