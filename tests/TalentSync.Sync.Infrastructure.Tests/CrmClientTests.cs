@@ -3,7 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TalentSync.Recruitment.Domain;
-using TalentSync.Sync.Application;
+using TalentSync.Sync.Application.Ports;
 
 namespace TalentSync.Sync.Infrastructure.Tests;
 

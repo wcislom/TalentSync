@@ -1,4 +1,4 @@
-namespace TalentSync.Sync.Application;
+namespace TalentSync.Sync.Application.Ports;
 
 /// <summary>
 /// What the CRM made of one effect. Transient failures are not results: they are exceptions, classified by the

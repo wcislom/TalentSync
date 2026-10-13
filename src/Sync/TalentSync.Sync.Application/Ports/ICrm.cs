@@ -1,6 +1,6 @@
 using TalentSync.Recruitment.Domain;
 
-namespace TalentSync.Sync.Application;
+namespace TalentSync.Sync.Application.Ports;
 
 /// <summary>
 /// Port to the CRM. Both effects are keyed by the candidate id, so repeating one creates no second contact
