@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TalentSync.Sync.Application\TalentSync.Sync.Application.csproj" />
     <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Messaging\TalentSync.Infrastructure.Messaging.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TalentSync.Sync.Infrastructure.Tests" />
   </ItemGroup>
 </Project>

@@ -46,7 +46,7 @@ internal static class DependencyInjection
         services.AddHostedService<OutboxRelay>();
 
         services.TryAddSingleton(TimeProvider.System);
-        services.AddTeamtailor(configuration);
+        services.AddTeamtailorWebhooks(configuration);
 
         return services;
     }

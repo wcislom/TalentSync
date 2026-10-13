@@ -38,7 +38,12 @@ Normative: the split of responsibilities and the classification. Descriptive: re
   retry would hit the API again inside the window (scenario S5 expects exactly 2 GETs). The ACL handles 429 itself:
   wait for `X-Rate-Limit-Reset` (via `TimeProvider`), retry once; a second 429 is thrown as transient.
   5xx and timeouts go through the pipeline as for the other clients.
-  **UNCERTAIN:** whether the standard handler retries 429 by default. Check its predicate before relying on it.
+  The standard handler's predicate (`HttpClientResiliencePredicates.IsTransient`) **does** treat 429 as transient
+  (pinned by a unit test), so its retry and circuit breaker get a predicate without 429.
+  Composed in `AddTeamtailorApi` (`Infrastructure.Teamtailor/DependencyInjection.cs`), 429 logic in
+  `Api/TeamtailorRateLimit.cs`: an outer Polly retry for 429 (one attempt,
+  delay from `X-Rate-Limit-Reset`, no retry without the header), then the standard handler bound from
+  `Teamtailor:Resilience`.
 - **LLM (`IChatClient`)**: timeout and circuit breaker, **no retry** (cost, free-tier limits). Any failure ends in
   `NotEnriched` inside the use case (D5); it never reaches the handler's classification.
 

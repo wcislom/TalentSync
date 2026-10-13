@@ -30,5 +30,6 @@
     <Project Path="tests/TalentSync.Infrastructure.Teamtailor.Tests/TalentSync.Infrastructure.Teamtailor.Tests.csproj" />
     <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
     <Project Path="tests/TalentSync.Matching.Domain.Tests/TalentSync.Matching.Domain.Tests.csproj" />
+    <Project Path="tests/TalentSync.Sync.Infrastructure.Tests/TalentSync.Sync.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>
