@@ -46,6 +46,8 @@ Two separate surfaces, plus the test endpoints above:
   - `bad-request`: `/v1` returns 400 (a permanent failure, scenario S6).
   - `delay` (needs `delayMs`): `/v1` answers after the delay. Webhooks are not delayed.
   - `duplicate-webhook` (`count`, default 2): each webhook of the candidate is sent `count` times with identical bytes.
+  - `drop-webhook`: state changes of the candidate apply, but no webhook is sent (a delivery Teamtailor never made).
+    Scenario S8 uses it for a candidate that has no CRM contact.
   - The header check runs first: a wrong key still gets 401 while an anomaly mode is on.
   - No signature modes: invalid and stale signatures are covered by scenarios I3 and I4, which call Ingress directly.
 - `/v1` requires `Authorization: Token token=...` and `X-Api-Version`; reject without them (400/401) so the ACL is tested.

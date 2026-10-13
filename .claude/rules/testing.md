@@ -47,7 +47,12 @@ paths:
 - The emulator configuration in the fixture must match `deploy/eventhubs/Config.json`.
 - Event Hubs outage: pause the emulator container (`PauseAsync`), never stop it. A restarted container gets a new
   host port and loses its events. The fixture shortens the SDK's send timeout so a send to a paused hub fails fast.
-- How simulators and `FakeChatClient` call counts fit in is decided with the first worker scenario.
+- Simulators run in process too (`WebApplicationFactory`). Every web host has a public global `Program` (.NET 10),
+  so the test project references the workers and simulators with `Aliases`. Hosts reach each other through
+  `HostRouter`, installed as the primary handler of every `HttpClient` (`ingress.test`, `teamtailor.test`,
+  `crm.test`), so the clients' resilience pipelines run unchanged. All scenarios share one `SystemFixture`
+  (`SystemCollection`).
+- How `FakeChatClient` call counts fit in is decided with the first Matching scenario.
 
 ## Packages
 

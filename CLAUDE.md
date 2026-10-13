@@ -97,8 +97,8 @@ are outside this rule.
   failure classification, parking, logging with event ids.
 - LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and anomaly scenarios.
 - Tests: xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`; VSTest syntax such as
-  `--filter "FullyQualifiedName~..."` does not work). How integration tests run the system (docker compose, or in-process hosts with Testcontainers)
-  is an open decision, see `.claude/rules/testing.md`.
+  `--filter "FullyQualifiedName~..."` does not work). Integration tests run the hosts and simulators in process with
+  Testcontainers infrastructure, see `.claude/rules/testing.md`.
 
 ## Configuration keys
 
