@@ -6,8 +6,8 @@ using TalentSync.IntegrationTests.Infrastructure;
 namespace TalentSync.IntegrationTests.Ingress;
 
 /// <summary>Scenarios I1–I2 of <c>docs/acceptance-scenarios.md</c>.</summary>
-[Collection(IngressCollection.Name)]
-public sealed class IngressScenarios(IngressFixture fixture)
+[Collection(SystemCollection.Name)]
+public sealed class IngressScenarios(SystemFixture fixture)
 {
     [Fact]
     public async Task I1_AcceptedWebhookIsPublishedToTheHub()
