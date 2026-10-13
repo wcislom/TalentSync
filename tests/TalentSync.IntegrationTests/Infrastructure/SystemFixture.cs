@@ -1,5 +1,7 @@
 extern alias FakeCrm;
+extern alias FakeMatchingPlatform;
 extern alias FakeTeamtailor;
+extern alias MatchingWorker;
 extern alias SyncWorker;
 
 using Azure.Storage.Blobs;
@@ -13,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TalentSync.Ingress.Api.Persistence;
+using TalentSync.Matching.Infrastructure.Persistence;
 using TalentSync.Sync.Infrastructure.Persistence;
 using Testcontainers.Azurite;
 using Testcontainers.EventHubs;
@@ -22,7 +25,7 @@ namespace TalentSync.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// The whole system for the <see cref="SystemCollection"/>: SQL Server, the Event Hubs emulator and its Azurite in
-/// containers; Ingress.Api, Sync.Worker, FakeTeamtailor and FakeCrm in process, wired to each other by
+/// containers; Ingress.Api, both workers and the three simulators in process, wired to each other by
 /// <see cref="HostRouter"/>. Started once; scenarios stay independent through their own candidate ids.
 /// </summary>
 public sealed class SystemFixture : IAsyncLifetime
@@ -33,6 +36,7 @@ public sealed class SystemFixture : IAsyncLifetime
     private const string IngressHost = "ingress.test";
     private const string TeamtailorHost = "teamtailor.test";
     private const string CrmHost = "crm.test";
+    private const string MatchingPlatformHost = "matching.test";
 
     private readonly INetwork _network = new NetworkBuilder().Build();
     private readonly MsSqlContainer _sql = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2025-latest").Build();
@@ -42,7 +46,9 @@ public sealed class SystemFixture : IAsyncLifetime
     private WebApplicationFactory<Program>? _ingress;
     private WebApplicationFactory<FakeTeamtailor::Program>? _fakeTeamtailor;
     private WebApplicationFactory<FakeCrm::Program>? _fakeCrm;
+    private WebApplicationFactory<FakeMatchingPlatform::Program>? _fakeMatchingPlatform;
     private WebApplicationFactory<SyncWorker::Program>? _syncWorker;
+    private WebApplicationFactory<MatchingWorker::Program>? _matchingWorker;
 
     public SystemFixture()
     {
@@ -71,8 +77,13 @@ public sealed class SystemFixture : IAsyncLifetime
 
     public FakeCrmTestClient FakeCrm { get; private set; } = null!;
 
+    public FakeMatchingPlatformTestClient FakeMatchingPlatform { get; private set; } = null!;
+
     /// <summary>How far Sync.Worker has processed each partition.</summary>
     public CheckpointReader SyncCheckpoints { get; private set; } = null!;
+
+    /// <summary>How far Matching.Worker has processed each partition.</summary>
+    public CheckpointReader MatchingCheckpoints { get; private set; } = null!;
 
     public async ValueTask InitializeAsync()
     {
@@ -83,15 +94,9 @@ public sealed class SystemFixture : IAsyncLifetime
         var eventHubsConnectionString = _eventHubs.GetConnectionString();
 
         // Migrate before the hosts start, so neither the relay nor a worker meets a missing table.
-        await using (var db = CreateIngressDbContext(sqlConnectionString))
-        {
-            await db.Database.MigrateAsync();
-        }
-
-        await using (var db = CreateSyncDbContext(sqlConnectionString))
-        {
-            await db.Database.MigrateAsync();
-        }
+        await MigrateAsync<IngressDbContext>(sqlConnectionString, IngressDbContext.Schema, options => new IngressDbContext(options));
+        await MigrateAsync<SyncDbContext>(sqlConnectionString, SyncDbContext.Schema, options => new SyncDbContext(options));
+        await MigrateAsync<MatchingDbContext>(sqlConnectionString, MatchingDbContext.Schema, options => new MatchingDbContext(options));
 
         _ingress = new WebApplicationFactory<Program>().WithWebHostBuilder(host => host
             .UseSetting("ConnectionStrings:Sql", sqlConnectionString)
@@ -115,31 +120,37 @@ public sealed class SystemFixture : IAsyncLifetime
         _fakeCrm = new WebApplicationFactory<FakeCrm::Program>();
         FakeCrm = new FakeCrmTestClient(_fakeCrm.CreateClient());
 
-        _syncWorker = new WebApplicationFactory<SyncWorker::Program>().WithWebHostBuilder(host => host
-            .UseSetting("ConnectionStrings:Sql", sqlConnectionString)
-            .UseSetting("EventHubs:ConnectionString", eventHubsConnectionString)
-            .UseSetting("Checkpoints:BlobConnectionString", _azurite.GetConnectionString())
-            .UseSetting("Teamtailor:BaseUrl", $"http://{TeamtailorHost}")
-            .UseSetting("Teamtailor:ApiKey", "fake-api-key")
-            .UseSetting("Crm:BaseUrl", $"http://{CrmHost}")
-            // Outages in scenarios last seconds; the production cap of 30 s would only make them slower.
-            .UseSetting("Consumer:MaxBackoff", "00:00:05")
-            // With 5 attempts, a 503 misclassified as unclassified would outlast S4's 30 s outage and still succeed;
-            // with 2 it is parked during the outage, so S4 proves that transient failures wait (invariant 8).
-            .UseSetting("Consumer:MaxUnclassifiedAttempts", "2")
-            .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
-            {
-                [TeamtailorHost] = _fakeTeamtailor.Server,
-                [CrmHost] = _fakeCrm.Server,
-            })));
+        _fakeMatchingPlatform = new WebApplicationFactory<FakeMatchingPlatform::Program>();
+        FakeMatchingPlatform = new FakeMatchingPlatformTestClient(_fakeMatchingPlatform.CreateClient());
+
+        _syncWorker = new WebApplicationFactory<SyncWorker::Program>().WithWebHostBuilder(host =>
+        {
+            ConfigureWorker(host, sqlConnectionString, eventHubsConnectionString);
+            host.UseSetting("Crm:BaseUrl", $"http://{CrmHost}")
+                .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
+                {
+                    [TeamtailorHost] = _fakeTeamtailor.Server,
+                    [CrmHost] = _fakeCrm.Server,
+                }));
+        });
+
+        _matchingWorker = new WebApplicationFactory<MatchingWorker::Program>().WithWebHostBuilder(host =>
+        {
+            ConfigureWorker(host, sqlConnectionString, eventHubsConnectionString);
+            host.UseSetting("MatchingPlatform:BaseUrl", $"http://{MatchingPlatformHost}")
+                .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
+                {
+                    [TeamtailorHost] = _fakeTeamtailor.Server,
+                    [MatchingPlatformHost] = _fakeMatchingPlatform.Server,
+                }));
+        });
 
         // A worker has no request to trigger its start: touching the server starts the host and its event processor.
         _ = _syncWorker.Server;
+        _ = _matchingWorker.Server;
 
-        // The container and consumer group the worker itself uses, not a copy of their names.
-        SyncCheckpoints = new CheckpointReader(
-            _syncWorker.Services.GetRequiredService<BlobContainerClient>(),
-            _syncWorker.Services.GetRequiredService<IConfiguration>()["EventHubs:ConsumerGroup"]!);
+        SyncCheckpoints = CreateCheckpointReader(_syncWorker.Services);
+        MatchingCheckpoints = CreateCheckpointReader(_matchingWorker.Services);
 
         Hub = new HubReader(eventHubsConnectionString, HubName);
     }
@@ -150,12 +161,11 @@ public sealed class SystemFixture : IAsyncLifetime
         return await query(scope.ServiceProvider.GetRequiredService<IngressDbContext>());
     }
 
-    public async Task<TResult> QuerySyncDbAsync<TResult>(Func<SyncDbContext, Task<TResult>> query)
-    {
-        var factory = _syncWorker!.Services.GetRequiredService<IDbContextFactory<SyncDbContext>>();
-        await using var db = await factory.CreateDbContextAsync();
-        return await query(db);
-    }
+    public Task<TResult> QuerySyncDbAsync<TResult>(Func<SyncDbContext, Task<TResult>> query) =>
+        QueryWorkerDbAsync(_syncWorker!.Services, query);
+
+    public Task<TResult> QueryMatchingDbAsync<TResult>(Func<MatchingDbContext, Task<TResult>> query) =>
+        QueryWorkerDbAsync(_matchingWorker!.Services, query);
 
     /// <summary>
     /// Unpublished outbox rows of the candidate that the relay could claim right now. A row the relay holds during a
@@ -179,7 +189,7 @@ public sealed class SystemFixture : IAsyncLifetime
     public async ValueTask DisposeAsync()
     {
         // Workers first: they consume what the others produce.
-        foreach (var host in new IAsyncDisposable?[] { _syncWorker, _fakeCrm, _fakeTeamtailor, _ingress })
+        foreach (var host in new IAsyncDisposable?[] { _matchingWorker, _syncWorker, _fakeMatchingPlatform, _fakeCrm, _fakeTeamtailor, _ingress })
         {
             if (host is not null)
             {
@@ -199,18 +209,42 @@ public sealed class SystemFixture : IAsyncLifetime
         await _eventHubs.StartAsync();
     }
 
+    /// <summary>Settings both workers share: infrastructure, the Teamtailor API and the handler loop's test tunables.</summary>
+    private void ConfigureWorker(IWebHostBuilder host, string sqlConnectionString, string eventHubsConnectionString) => host
+        .UseSetting("ConnectionStrings:Sql", sqlConnectionString)
+        .UseSetting("EventHubs:ConnectionString", eventHubsConnectionString)
+        .UseSetting("Checkpoints:BlobConnectionString", _azurite.GetConnectionString())
+        .UseSetting("Teamtailor:BaseUrl", $"http://{TeamtailorHost}")
+        .UseSetting("Teamtailor:ApiKey", "fake-api-key")
+        // Outages in scenarios last seconds; the production cap of 30 s would only make them slower.
+        .UseSetting("Consumer:MaxBackoff", "00:00:05")
+        // With 5 attempts, a 503 misclassified as unclassified would outlast S4's 30 s outage and still succeed;
+        // with 2 it is parked during the outage, so S4 proves that transient failures wait (invariant 8).
+        .UseSetting("Consumer:MaxUnclassifiedAttempts", "2");
+
+    // The container and consumer group the worker itself uses, not a copy of their names.
+    private static CheckpointReader CreateCheckpointReader(IServiceProvider worker) =>
+        new(worker.GetRequiredService<BlobContainerClient>(), worker.GetRequiredService<IConfiguration>()["EventHubs:ConsumerGroup"]!);
+
+    private static async Task<TResult> QueryWorkerDbAsync<TDbContext, TResult>(IServiceProvider worker, Func<TDbContext, Task<TResult>> query)
+        where TDbContext : DbContext
+    {
+        await using var db = await worker.GetRequiredService<IDbContextFactory<TDbContext>>().CreateDbContextAsync();
+        return await query(db);
+    }
+
+    private static async Task MigrateAsync<TDbContext>(string connectionString, string schema, Func<DbContextOptions<TDbContext>, TDbContext> create)
+        where TDbContext : DbContext
+    {
+        var options = new DbContextOptionsBuilder<TDbContext>()
+            .UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", schema))
+            .Options;
+        await using var db = create(options);
+        await db.Database.MigrateAsync();
+    }
+
     private static void RouteHttpClients(IServiceCollection services, IReadOnlyDictionary<string, TestServer> servers) =>
         services.ConfigureHttpClientDefaults(client => client.ConfigurePrimaryHttpMessageHandler(() => new HostRouter(servers)));
-
-    private static IngressDbContext CreateIngressDbContext(string connectionString) =>
-        new(new DbContextOptionsBuilder<IngressDbContext>()
-            .UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", IngressDbContext.Schema))
-            .Options);
-
-    private static SyncDbContext CreateSyncDbContext(string connectionString) =>
-        new(new DbContextOptionsBuilder<SyncDbContext>()
-            .UseSqlServer(connectionString, sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", SyncDbContext.Schema))
-            .Options);
 }
 
 [CollectionDefinition(Name)]

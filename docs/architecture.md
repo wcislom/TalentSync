@@ -55,18 +55,23 @@ src/
   Matching/
     TalentSync.Matching.Domain              ConsultantProfile, Seniority, Skill, EnrichmentStatus,
                                             suggestion validation. References nothing
-    TalentSync.Matching.Application         use case HandleApplicationQualified, ports IEnrichmentService,
-                                            IEnrichmentResultStore, IMatchingPlatform. → Matching.Domain, Recruitment.Domain
+    TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform
+                                            (IEnrichmentService, IEnrichmentResultStore come with LLM enrichment).
+                                            → Matching.Domain, Recruitment.Domain
     TalentSync.Matching.Infrastructure      CV masking, IChatClient adapter, EnrichmentResults, MatchingPlatformClient,
                                             MatchingDbContext. → Matching.Application, Infrastructure.Messaging
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
-                                            composition root, group "matching-worker"
+                                            composition root, group "matching-worker". Web host: only /health/live
+                                            (liveness for an orchestrator, no dependency checks)
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
   FakeTeamtailor                            No references to src/. Signature v2 is implemented independently.
   FakeCrm
   FakeMatchingPlatform
 tests/
   TalentSync.Matching.Domain.Tests
+  TalentSync.Sync.Application.Tests             use case: fetch result and CRM result → use case result
+  TalentSync.Matching.Application.Tests         use case: qualified / not qualified / deleted / rejected
+  TalentSync.Matching.Infrastructure.Tests      Matching Platform client: request body, status mapping, resilience
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
