@@ -50,7 +50,8 @@ src/
     TalentSync.Sync.Application             UseCases/SyncCandidateToCrmUseCase, Ports/ICrm. → Recruitment.Domain
     TalentSync.Sync.Infrastructure          CrmClient + resilience, SyncDbContext. → Sync.Application, Infrastructure.Messaging
     TalentSync.Sync.Worker                  host: candidate.* handler (use case result → HandlerResult),
-                                            composition root, group "sync-worker"
+                                            composition root, group "sync-worker". Web host: only /health/live
+                                            (liveness for an orchestrator, no dependency checks)
   Matching/
     TalentSync.Matching.Domain              ConsultantProfile, Seniority, Skill, EnrichmentStatus,
                                             suggestion validation. References nothing

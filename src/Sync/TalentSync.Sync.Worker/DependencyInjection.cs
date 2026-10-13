@@ -16,6 +16,7 @@ internal static class DependencyInjection
         services.AddSyncInfrastructure(configuration);
         services.AddScoped<SyncCandidateToCrmUseCase>();
         services.AddMessaging<SyncDbContext, CandidateEventHandler>(configuration);
+        services.AddHealthChecks();
 
         return services;
     }
