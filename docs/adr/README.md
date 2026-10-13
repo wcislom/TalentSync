@@ -10,5 +10,6 @@ plus Alternatives considered.
 | [003](003-notify-then-fetch.md) | Notify-then-fetch | Accepted |
 | [004](004-transactional-outbox.md) | Transactional outbox in Ingress | Accepted |
 | [005](005-idempotency.md) | Idempotency | Accepted |
-| [006](006-partition-key-candidate-id.md) | Partition key = candidateId | Proposed |
-| [007](007-llm-enrichment.md) | LLM enrichment | Proposed |
+| [006](006-partition-key-candidate-id.md) | Partition key = candidateId | Accepted |
+| [007](007-llm-enrichment.md) | LLM enrichment | Accepted |
+| [008](008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction | Accepted |
