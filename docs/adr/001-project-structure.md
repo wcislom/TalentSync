@@ -4,6 +4,10 @@
 
 Accepted
 
+Amended 2026-10-12: the decision is unchanged. The ADR named the adapter's registration method `AddTeamtailor()`,
+which has since been split into `AddTeamtailorWebhooks()` (Ingress) and `AddTeamtailorApi()` (workers). Method names
+are a detail, so the ADR now points to `docs/architecture.md`, the only place that defines the public surface.
+
 ## Context
 
 TalentSync has three deployables, split by runtime behaviour: Ingress.Api, Sync.Worker and Matching.Worker. They
@@ -23,8 +27,8 @@ Clean Architecture, with the hosts as the presentation layer (driving adapters a
   `Recruitment.Domain`, `Infrastructure.Teamtailor`, `Infrastructure.Messaging`, each with its own dependency rules.
 - **Port `IRecruitmentSource` lives in `Recruitment.Domain`**, named after the need. The adapter
   `TeamtailorRecruitmentSource` lives in `Infrastructure.Teamtailor`, which only hosts reference. Implementations
-  and JSON:API DTOs are `internal`; the public surface is `AddTeamtailor()` plus the webhook verifier and parser
-  interfaces and the parser's result type.
+  and JSON:API DTOs are `internal`; the public surface is limited to the registration entry points and the webhook
+  types Ingress needs (listed in the dependency rules of `docs/architecture.md`).
 - **`Matching.Domain` does not reference `Recruitment.Domain`.** The two contexts do not share models;
   `Matching.Application` translates between them.
 - **Deliberate asymmetries:** Sync has no business rules, so there is no `Sync.Domain`. Ingress has no domain and

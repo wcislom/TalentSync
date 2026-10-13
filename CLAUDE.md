@@ -115,7 +115,8 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Consumer:InitialBackoff`, `Consumer:MaxBackoff`, `Consumer:MaxUnclassifiedAttempts` | workers | handler loop; max back-off 30 s, 5 attempts (`resilience.md`) |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:SignatureKey` | Ingress.Api | must equal `FakeTeamtailor:SignatureKey` |
-| `Teamtailor:QualifiedStageName` | Matching.Worker | `Qualified` locally |
+| `Teamtailor:QualifiedStageName` | workers | `Qualified` locally. Only Matching.Worker maps stages, but `AddTeamtailorApi` validates it on start in both |
+| `Teamtailor:Resilience:*` | workers | `HttpStandardResilienceOptions` of the API client (e.g. `Retry:MaxRetryAttempts` = 2); unset keys keep the library defaults |
 | `Crm:BaseUrl` | Sync.Worker | |
 | `MatchingPlatform:BaseUrl` | Matching.Worker | |
 | `Llm:Provider` | Matching.Worker | `Gemini` or `Fake` |

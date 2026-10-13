@@ -35,9 +35,11 @@ src/
     TalentSync.Recruitment.Domain           our read-only model of recruitment: Candidate, JobApplication,
                                             ApplicationStatus, FetchResult<T> (Found | Deleted | Rejected),
                                             port IRecruitmentSource. References nothing
-    TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource, internal JSON:API DTOs, 429 handling,
+    TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource (port adapter) over TeamtailorApiClient
+                                            (HTTP, status mapping) and TeamtailorMapper, internal JSON:API DTOs, 429 handling,
                                             stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,
-                                            signature v2, webhook parsing, public AddTeamtailor(). → Recruitment.Domain
+                                            signature v2, webhook parsing, public AddTeamtailorWebhooks() (Ingress)
+                                            and AddTeamtailorApi() (workers). → Recruitment.Domain
     TalentSync.Infrastructure.Messaging     EventProcessorClient hosting, consumer handler skeleton (retry loop,
                                             failure classification), HandlerResult, Inbox and ParkingLot entities
                                             with schema-parameterised EF config. → Contracts
@@ -102,8 +104,9 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
   `Matching.Application` translates between them.
 - `Infrastructure.*` projects reference the layer whose ports they implement.
 - Only hosts (composition roots) reference `Infrastructure.Teamtailor`. Its public surface is
-  `AddTeamtailor(IServiceCollection, IConfiguration)` plus two interfaces that Ingress needs, registered by
-  `AddTeamtailor`: a webhook signature verifier and a webhook parser, and the result type the parser returns
+  `AddTeamtailorWebhooks(IServiceCollection, IConfiguration)` for Ingress, `AddTeamtailorApi(IServiceCollection,
+  IConfiguration)` for the workers (registers `IRecruitmentSource`), plus two interfaces that Ingress needs, registered by
+  `AddTeamtailorWebhooks`: a webhook signature verifier and a webhook parser, and the result type the parser returns
   (proposed names: `IWebhookSignatureVerifier`, `IWebhookParser`, `WebhookNotification`).
   Implementations and JSON:API DTOs are `internal`. This is the only place that defines the public surface.
 - Each worker's `DbContext` lives in its own `*.Infrastructure`, so the other worker cannot see its schema.
@@ -127,7 +130,9 @@ One convention in every project, host or library, so the registrations are alway
 
 - A project that registers services has exactly one `DependencyInjection.cs` with `static class DependencyInjection`
   (`public` in libraries, `internal` in hosts) and one entry point `Add<Name>(this IServiceCollection, IConfiguration)`,
-  e.g. `AddTeamtailor`, `AddIngress`. No `*ServiceCollectionExtensions` classes.
+  e.g. `AddMessaging`, `AddIngress`. No `*ServiceCollectionExtensions` classes.
+  One exception: `Infrastructure.Teamtailor` has `AddTeamtailorWebhooks` (Ingress) and `AddTeamtailorApi` (workers),
+  in the same class, because each host needs only one half and each half validates its own configuration on start.
 - `Program.cs` holds no registrations: it creates the builder, calls the host's own `Add<Host>()`, maps endpoints, runs.
 - A host's `Add<Host>()` calls the `Add<Name>()` of the libraries it references; it never registers their
   `internal` types itself.
