@@ -10,6 +10,7 @@ paths:
 | Project | Kind | Covers |
 |---|---|---|
 | `TalentSync.Matching.Domain.Tests` | Unit, no I/O | Suggestion validation, `ConsultantProfile` behaviour |
+| `TalentSync.Sync.Application.Tests`, `TalentSync.Matching.Application.Tests` | Unit, no I/O | Use cases: each fetch result and port result → use case result. Ports replaced by small hand-written stubs |
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
 | `TalentSync.Sync.Infrastructure.Tests` | Unit, no network | CRM client: status mapping (404 on delete = done, 4xx → Rejected), HTTP pipeline. Internals via `InternalsVisibleTo` |
