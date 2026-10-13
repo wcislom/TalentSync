@@ -5,6 +5,7 @@ namespace TalentSync.IntegrationTests.Infrastructure;
 /// <summary>Drives FakeTeamtailor's recruiter and test endpoints. Each state change sends its webhook to Ingress.</summary>
 public sealed class FakeTeamtailorTestClient(HttpClient http)
 {
+    public const string DuplicateWebhook = "duplicate-webhook";
     public const string DropWebhook = "drop-webhook";
 
     private const string JobId = "job-1";

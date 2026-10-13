@@ -23,6 +23,32 @@ public sealed class SyncScenarios(SystemFixture fixture)
     }
 
     [Fact]
+    public async Task S2_DuplicateWebhookProducesOneCrmCall()
+    {
+        const string candidateId = "c-s2";
+        const int deliveries = 3;
+        await fixture.FakeTeamtailor.SetAnomalyAsync(FakeTeamtailorTestClient.DuplicateWebhook, candidateId, count: deliveries);
+
+        await fixture.FakeTeamtailor.ApplyAsync(candidateId, "Dawid", "Kaminski", "dawid.kaminski@example.com");
+        var eventId = await GetEventIdAsync(candidateId, EventTypes.CandidateCreate);
+
+        // Not part of the Then: the inbox row appears with the first copy, while the other two may still wait in the
+        // partition. Counting then would pass even without deduplication, so wait until the worker has checkpointed
+        // the last copy: one partition key, one partition, processed in order.
+        var published = await Eventually.GetAsync(
+            async () => await fixture.Hub.ReadByEventIdAsync(eventId) is { Count: deliveries } events ? events : null,
+            $"{deliveries} copies of {eventId} in the hub");
+        var last = published.MaxBy(e => e.SequenceNumber)!;
+        await Eventually.GetAsync(
+            async () => await fixture.SyncCheckpoints.GetSequenceNumberAsync(last.PartitionId) >= last.SequenceNumber ? "checkpointed" : null,
+            $"sync-worker checkpoint past the last copy of {eventId}");
+
+        var calls = await fixture.FakeCrm.GetCallsAsync(candidateId);
+        Assert.Equal(1, calls.CountOf("PUT", $"/contacts/{candidateId}"));
+        Assert.Equal(1, await fixture.QuerySyncDbAsync(db => db.Inbox.CountAsync(e => e.EventId == eventId)));
+    }
+
+    [Fact]
     public async Task S3_DeletedCandidateMarksTheCrmContactAsDeleted()
     {
         const string candidateId = "c-s3";

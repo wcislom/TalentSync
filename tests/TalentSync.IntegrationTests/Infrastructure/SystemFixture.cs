@@ -2,6 +2,7 @@ extern alias FakeCrm;
 extern alias FakeTeamtailor;
 extern alias SyncWorker;
 
+using Azure.Storage.Blobs;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Networks;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TalentSync.Ingress.Api.Persistence;
 using TalentSync.Sync.Infrastructure.Persistence;
@@ -69,6 +71,9 @@ public sealed class SystemFixture : IAsyncLifetime
 
     public FakeCrmTestClient FakeCrm { get; private set; } = null!;
 
+    /// <summary>How far Sync.Worker has processed each partition.</summary>
+    public CheckpointReader SyncCheckpoints { get; private set; } = null!;
+
     public async ValueTask InitializeAsync()
     {
         await _network.CreateAsync();
@@ -127,6 +132,11 @@ public sealed class SystemFixture : IAsyncLifetime
 
         // A worker has no request to trigger its start: touching the server starts the host and its event processor.
         _ = _syncWorker.Server;
+
+        // The container and consumer group the worker itself uses, not a copy of their names.
+        SyncCheckpoints = new CheckpointReader(
+            _syncWorker.Services.GetRequiredService<BlobContainerClient>(),
+            _syncWorker.Services.GetRequiredService<IConfiguration>()["EventHubs:ConsumerGroup"]!);
 
         Hub = new HubReader(eventHubsConnectionString, HubName);
     }

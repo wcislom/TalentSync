@@ -3,8 +3,8 @@ using TalentSync.Contracts;
 
 namespace TalentSync.IntegrationTests.Infrastructure;
 
-/// <summary>An event read back from the hub: the envelope and the partition key it was published with.</summary>
-public sealed record HubEvent(EventEnvelope Envelope, string? PartitionKey);
+/// <summary>An event read back from the hub: the envelope, the partition key it was published with, and where it landed.</summary>
+public sealed record HubEvent(EventEnvelope Envelope, string? PartitionKey, string PartitionId, long SequenceNumber);
 
 /// <summary>
 /// Reads the hub from the beginning through the <c>$Default</c> consumer group, which no worker uses.
@@ -32,7 +32,7 @@ public sealed class HubReader(string connectionString, string hubName)
                 if (EventEnvelopeJson.TryDeserialize(partitionEvent.Data.EventBody.ToMemory().Span, out var envelope)
                     && envelope.EventId == eventId)
                 {
-                    found.Add(new HubEvent(envelope, partitionEvent.Data.PartitionKey));
+                    found.Add(new HubEvent(envelope, partitionEvent.Data.PartitionKey, partitionId, partitionEvent.Data.SequenceNumber));
                 }
             }
         }
