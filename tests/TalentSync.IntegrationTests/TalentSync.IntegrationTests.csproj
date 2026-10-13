@@ -24,6 +24,8 @@
     <ProjectReference Include="..\..\src\Sync\TalentSync.Sync.Worker\TalentSync.Sync.Worker.csproj" Aliases="SyncWorker" />
     <ProjectReference Include="..\..\simulators\FakeTeamtailor\FakeTeamtailor.csproj" Aliases="FakeTeamtailor" />
     <ProjectReference Include="..\..\simulators\FakeCrm\FakeCrm.csproj" Aliases="FakeCrm" />
+    <ProjectReference Include="..\..\src\Matching\TalentSync.Matching.Worker\TalentSync.Matching.Worker.csproj" Aliases="MatchingWorker" />
+    <ProjectReference Include="..\..\simulators\FakeMatchingPlatform\FakeMatchingPlatform.csproj" Aliases="FakeMatchingPlatform" />
   </ItemGroup>
 
 </Project>

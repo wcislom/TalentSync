@@ -116,7 +116,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:SignatureKey` | Ingress.Api | must equal `FakeTeamtailor:SignatureKey` |
 | `Teamtailor:QualifiedStageName` | workers | `Qualified` locally. Only Matching.Worker maps stages, but `AddTeamtailorApi` validates it on start in both |
-| `Teamtailor:Resilience:*` | workers | `HttpStandardResilienceOptions` of the API client (e.g. `Retry:MaxRetryAttempts` = 2); unset keys keep the library defaults |
+| `Teamtailor:Resilience:*` | workers | `HttpStandardResilienceOptions` of the API client (e.g. `Retry:MaxRetryAttempts` = 2); unset keys keep the library defaults, but the section itself must exist in every `*:Resilience` row or the host fails to build |
 | `Crm:BaseUrl` | Sync.Worker | |
 | `Crm:Resilience:*` | Sync.Worker | `HttpStandardResilienceOptions` of the CRM client (e.g. `Retry:MaxRetryAttempts` = 2) |
 | `MatchingPlatform:BaseUrl` | Matching.Worker | |

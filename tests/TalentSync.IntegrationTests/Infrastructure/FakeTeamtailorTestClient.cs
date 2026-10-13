@@ -12,7 +12,11 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
 
     private const string JobId = "job-1";
 
-    public async Task ApplyAsync(string candidateId, string firstName, string lastName, string email)
+    /// <summary>
+    /// Applies to a job in stage New. A new candidate id creates the candidate; an existing one adds an application.
+    /// </summary>
+    /// <returns>The id of the new job application.</returns>
+    public async Task<string> ApplyAsync(string candidateId, string firstName, string lastName, string email)
     {
         using var response = await http.PostAsJsonAsync($"/recruiter/jobs/{JobId}/apply", new
         {
@@ -23,6 +27,15 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
             phone = "+48 600 000 000",
             resumeText = "Backend developer, 6 years of .NET.",
         }, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        var applied = await response.Content.ReadFromJsonAsync<Applied>(TestContext.Current.CancellationToken);
+        return applied!.JobApplicationId;
+    }
+
+    public async Task ChangeStageAsync(string jobApplicationId, string stage)
+    {
+        using var response = await http.PatchAsJsonAsync(
+            $"/recruiter/job-applications/{jobApplicationId}/stage", new { stage }, TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
@@ -54,4 +67,6 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
     public async Task<IReadOnlyList<SimulatorCall>> GetCallsAsync(string candidateId) =>
         await http.GetFromJsonAsync<List<SimulatorCall>>($"/calls?candidateId={candidateId}", TestContext.Current.CancellationToken)
         ?? [];
+
+    private sealed record Applied(string CandidateId, string JobApplicationId);
 }
