@@ -70,6 +70,7 @@ tests/
   TalentSync.Matching.Domain.Tests
   TalentSync.Sync.Application.Tests             use case: fetch result and CRM result → use case result
   TalentSync.Matching.Application.Tests         use case: qualified / not qualified / deleted / rejected
+  TalentSync.Matching.Infrastructure.Tests      Matching Platform client: request body, status mapping, resilience
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience

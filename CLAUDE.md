@@ -120,6 +120,7 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Crm:BaseUrl` | Sync.Worker | |
 | `Crm:Resilience:*` | Sync.Worker | `HttpStandardResilienceOptions` of the CRM client (e.g. `Retry:MaxRetryAttempts` = 2) |
 | `MatchingPlatform:BaseUrl` | Matching.Worker | |
+| `MatchingPlatform:Resilience:*` | Matching.Worker | `HttpStandardResilienceOptions` of the Matching Platform client (e.g. `Retry:MaxRetryAttempts` = 2) |
 | `Llm:Provider` | Matching.Worker | `Gemini` or `Fake` |
 | `Llm:Gemini:ApiKey` | Matching.Worker | user-secrets only, never in the repo |
 | `Llm:Fake:Mode` | Matching.Worker | `Valid`, `InvalidJson`, `OutOfRange`, `Hang` |
