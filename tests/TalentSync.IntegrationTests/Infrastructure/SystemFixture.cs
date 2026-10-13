@@ -124,6 +124,9 @@ public sealed class SystemFixture : IAsyncLifetime
             .UseSetting("Crm:BaseUrl", $"http://{CrmHost}")
             // Outages in scenarios last seconds; the production cap of 30 s would only make them slower.
             .UseSetting("Consumer:MaxBackoff", "00:00:05")
+            // With 5 attempts, a 503 misclassified as unclassified would outlast S4's 30 s outage and still succeed;
+            // with 2 it is parked during the outage, so S4 proves that transient failures wait (invariant 8).
+            .UseSetting("Consumer:MaxUnclassifiedAttempts", "2")
             .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
             {
                 [TeamtailorHost] = _fakeTeamtailor.Server,

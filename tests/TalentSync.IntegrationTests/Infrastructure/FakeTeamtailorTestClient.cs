@@ -5,6 +5,8 @@ namespace TalentSync.IntegrationTests.Infrastructure;
 /// <summary>Drives FakeTeamtailor's recruiter and test endpoints. Each state change sends its webhook to Ingress.</summary>
 public sealed class FakeTeamtailorTestClient(HttpClient http)
 {
+    public const string RateLimit = "rate-limit";
+    public const string BadRequest = "bad-request";
     public const string DuplicateWebhook = "duplicate-webhook";
     public const string DropWebhook = "drop-webhook";
 
@@ -21,6 +23,12 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
             phone = "+48 600 000 000",
             resumeText = "Backend developer, 6 years of .NET.",
         }, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateEmailAsync(string candidateId, string email)
+    {
+        using var response = await http.PatchAsJsonAsync($"/recruiter/candidates/{candidateId}", new { email }, TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
     }
 
