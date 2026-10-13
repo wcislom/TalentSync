@@ -55,8 +55,9 @@ src/
   Matching/
     TalentSync.Matching.Domain              ConsultantProfile, Seniority, Skill, EnrichmentStatus,
                                             suggestion validation. References nothing
-    TalentSync.Matching.Application         use case HandleApplicationQualified, ports IEnrichmentService,
-                                            IEnrichmentResultStore, IMatchingPlatform. → Matching.Domain, Recruitment.Domain
+    TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform
+                                            (IEnrichmentService, IEnrichmentResultStore come with LLM enrichment).
+                                            → Matching.Domain, Recruitment.Domain
     TalentSync.Matching.Infrastructure      CV masking, IChatClient adapter, EnrichmentResults, MatchingPlatformClient,
                                             MatchingDbContext. → Matching.Application, Infrastructure.Messaging
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
