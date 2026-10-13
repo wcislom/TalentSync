@@ -58,6 +58,23 @@ public sealed class MatchingPlatformClientTests : IDisposable
     }
 
     [Fact]
+    public async Task Upsert_EnrichedProfile_SendsTheEnrichment()
+    {
+        _platform.Enqueue(HttpStatusCode.OK);
+        var profile = new ConsultantProfile(new CandidateId("c-2"));
+        profile.Enrich(new Enrichment([new Skill("C#"), new Skill("Azure")], Seniority.Senior, new Confidence(0.8)));
+
+        await _client.UpsertProfileAsync(profile, TestContext.Current.CancellationToken);
+
+        using var body = JsonDocument.Parse(Assert.Single(_platform.Requests).Body!);
+        var root = body.RootElement;
+        Assert.Equal(["C#", "Azure"], root.GetProperty("skills").EnumerateArray().Select(skill => skill.GetString()));
+        Assert.Equal("Senior", root.GetProperty("seniority").GetString());
+        Assert.Equal(0.8, root.GetProperty("confidence").GetDouble());
+        Assert.Equal("Enriched", root.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task Upsert_ClientError_IsRejectedWithStatusAndEndpointOnly()
     {
         _platform.Enqueue(HttpStatusCode.BadRequest);

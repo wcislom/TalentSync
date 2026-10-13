@@ -54,7 +54,7 @@ src/
                                             (liveness for an orchestrator, no dependency checks)
   Matching/
     TalentSync.Matching.Domain              ConsultantProfile, CandidateId, Skill, Confidence, Seniority,
-                                            EnrichmentStatus, EnrichmentSuggestion. References nothing
+                                            Enrichment, EnrichmentStatus. References nothing
     TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform
                                             (IEnrichmentService, IEnrichmentResultStore come with LLM enrichment).
                                             → Matching.Domain, Recruitment.Domain

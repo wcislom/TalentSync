@@ -2,40 +2,36 @@ namespace TalentSync.Matching.Domain.Tests;
 
 public sealed class ConsultantProfileTests
 {
+    private static readonly Enrichment Enrichment = new([new Skill("C#")], Seniority.Lead, new Confidence(0.9));
+
     [Fact]
     public void New_IsNotEnrichedAndKeyedByCandidateId()
     {
         var profile = new ConsultantProfile(new CandidateId("c-1"));
 
         Assert.Equal(new CandidateId("c-1"), profile.CandidateId);
+        Assert.Null(profile.Enrichment);
         Assert.Equal(EnrichmentStatus.NotEnriched, profile.EnrichmentStatus);
-        Assert.Empty(profile.Skills);
-        Assert.Null(profile.Seniority);
-        Assert.Null(profile.Confidence);
     }
 
     [Fact]
-    public void Enrich_TakesSkillsSeniorityAndConfidenceFromTheSuggestion()
+    public void Enrich_PutsTheEnrichmentOnTheProfile()
     {
         var profile = new ConsultantProfile(new CandidateId("c-1"));
 
-        profile.Enrich(Suggestion(["C#"], "Lead", 0.9));
+        profile.Enrich(Enrichment);
 
+        Assert.Same(Enrichment, profile.Enrichment);
         Assert.Equal(EnrichmentStatus.Enriched, profile.EnrichmentStatus);
-        Assert.Equal([new Skill("C#")], profile.Skills);
-        Assert.Equal(Seniority.Lead, profile.Seniority);
-        Assert.Equal(new Confidence(0.9), profile.Confidence);
     }
 
     [Fact]
     public void Enrich_AlreadyEnriched_Throws()
     {
         var profile = new ConsultantProfile(new CandidateId("c-1"));
-        profile.Enrich(Suggestion(["C#"], "Lead", 0.9));
+        profile.Enrich(Enrichment);
 
-        Assert.Throws<InvalidOperationException>(() => profile.Enrich(Suggestion(["Go"], "Mid", 0.5)));
+        Assert.Throws<InvalidOperationException>(
+            () => profile.Enrich(new Enrichment([new Skill("Go")], Seniority.Mid, new Confidence(0.5))));
     }
-
-    private static EnrichmentSuggestion Suggestion(string[] skills, string seniority, double confidence) =>
-        Assert.IsType<EnrichmentSuggestionValidation.ValidResult>(EnrichmentSuggestion.Validate(skills, seniority, confidence)).Suggestion;
 }

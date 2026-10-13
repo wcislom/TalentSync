@@ -22,31 +22,25 @@ public sealed class ConsultantProfile
 
     public CandidateId CandidateId { get; }
 
-    public IReadOnlyList<Skill> Skills { get; private set; } = [];
+    /// <summary>Null until <see cref="Enrich"/> is called.</summary>
+    public Enrichment? Enrichment { get; private set; }
 
-    public Seniority? Seniority { get; private set; }
+    /// <summary>Follows from <see cref="Enrichment"/>, so "enriched without skills or seniority" cannot exist.</summary>
+    public EnrichmentStatus EnrichmentStatus => Enrichment is null ? EnrichmentStatus.NotEnriched : EnrichmentStatus.Enriched;
 
-    /// <summary>Confidence of the suggestion. Null without one.</summary>
-    public Confidence? Confidence { get; private set; }
-
-    public EnrichmentStatus EnrichmentStatus { get; private set; } = EnrichmentStatus.NotEnriched;
-
-    /// <summary>Puts a validated LLM suggestion on the profile. A suggestion, never a match decision (D5).</summary>
+    /// <summary>Puts the LLM's suggestion on the profile. A suggestion, never a match decision (D5).</summary>
     /// <remarks>
-    /// Allowed once. A profile is built afresh for each qualification and carries the single suggestion stored for
+    /// Allowed once. A profile is built afresh for each qualification and carries the single enrichment stored for
     /// the current CV (ADR 007); a second call would mean two answers for one CV.
     /// </remarks>
-    public void Enrich(EnrichmentSuggestion suggestion)
+    public void Enrich(Enrichment enrichment)
     {
-        ArgumentNullException.ThrowIfNull(suggestion);
-        if (EnrichmentStatus == EnrichmentStatus.Enriched)
+        ArgumentNullException.ThrowIfNull(enrichment);
+        if (Enrichment is not null)
         {
             throw new InvalidOperationException("The profile is already enriched.");
         }
 
-        Skills = suggestion.Skills;
-        Seniority = suggestion.Seniority;
-        Confidence = suggestion.Confidence;
-        EnrichmentStatus = EnrichmentStatus.Enriched;
+        Enrichment = enrichment;
     }
 }
