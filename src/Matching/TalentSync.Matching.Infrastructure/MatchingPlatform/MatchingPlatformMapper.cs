@@ -9,6 +9,6 @@ internal static class MatchingPlatformMapper
         new(
             profile.Skills.Select(skill => skill.Name).ToList(),
             profile.Seniority?.ToString(),
-            profile.Confidence,
+            profile.Confidence?.Value,
             profile.EnrichmentStatus.ToString());
 }
