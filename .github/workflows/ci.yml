@@ -16,7 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  # Runs the tests too; their results are reported by the separate "Tests" check.
+  build:
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
