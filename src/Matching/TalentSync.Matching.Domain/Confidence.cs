@@ -9,8 +9,7 @@ public sealed record Confidence
 
     public Confidence(double value)
     {
-        // Written so that NaN is out of range too.
-        if (value is not (>= Min and <= Max))
+        if (!IsInRange(value))
         {
             throw new ArgumentOutOfRangeException(nameof(value), value, $"Confidence must be in [{Min}, {Max}].");
         }
@@ -19,4 +18,7 @@ public sealed record Confidence
     }
 
     public double Value { get; }
+
+    // Written so that NaN is out of range too.
+    public static bool IsInRange(double value) => value is >= Min and <= Max;
 }

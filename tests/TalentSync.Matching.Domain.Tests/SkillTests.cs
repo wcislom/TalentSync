@@ -16,4 +16,15 @@ public sealed class SkillTests
     [InlineData("")]
     [InlineData(" ")]
     public void BlankName_Throws(string name) => Assert.Throws<ArgumentException>(() => new Skill(name));
+
+    [Fact]
+    public void NameOfMaxLength_IsAllowed() => Assert.Equal(Skill.MaxLength, new Skill(new string('a', Skill.MaxLength)).Name.Length);
+
+    [Fact]
+    public void NameLongerThanMaxLength_Throws() =>
+        Assert.Throws<ArgumentException>(() => new Skill(new string('a', Skill.MaxLength + 1)));
+
+    [Fact]
+    public void Length_IsCheckedAfterTrimming() =>
+        Assert.Equal(Skill.MaxLength, new Skill($"  {new string('a', Skill.MaxLength)}  ").Name.Length);
 }
