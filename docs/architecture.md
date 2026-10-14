@@ -80,6 +80,7 @@ deploy/                                     docker-compose.yml (infra + simulato
                                             eventhubs/Config.json
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md)
+.github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
