@@ -1,5 +1,7 @@
 # TalentSync
 
+[![CI](https://github.com/wcislom/TalentSync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wcislom/TalentSync/actions/workflows/ci.yml)
+
 An event-driven integration that syncs candidate data from an ATS (Teamtailor) to a CRM and to a consultant
 matching platform, with LLM enrichment of consultant profiles.
 
