@@ -22,7 +22,7 @@ public sealed class CreateConsultantProfileUseCase(IRecruitmentSource recruitmen
         {
             case FetchResult<JobApplication>.Found { Value.Status: ApplicationStatus.Qualified } found:
                 // The candidate id comes from the source, not from the event: the API state is the truth.
-                var profile = new ConsultantProfile(new CandidateId(found.Value.CandidateId));
+                var profile = ConsultantProfile.NotEnriched(new CandidateId(found.Value.CandidateId));
                 return await matchingPlatform.UpsertProfileAsync(profile, cancellationToken) switch
                 {
                     MatchingPlatformResult.DoneResult => CreateConsultantProfileResult.Upserted,

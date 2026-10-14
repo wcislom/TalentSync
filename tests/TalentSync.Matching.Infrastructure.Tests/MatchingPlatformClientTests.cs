@@ -10,7 +10,7 @@ namespace TalentSync.Matching.Infrastructure.Tests;
 /// <summary>The Matching Platform client with its real HTTP pipeline from <c>AddMatchingInfrastructure</c>, over a stub handler.</summary>
 public sealed class MatchingPlatformClientTests : IDisposable
 {
-    private static readonly ConsultantProfile Profile = new(new CandidateId("c-1"));
+    private static readonly ConsultantProfile Profile = ConsultantProfile.NotEnriched(new CandidateId("c-1"));
 
     private readonly StubHandler _platform = new();
     private readonly ServiceProvider _services;
@@ -61,8 +61,9 @@ public sealed class MatchingPlatformClientTests : IDisposable
     public async Task Upsert_EnrichedProfile_SendsTheEnrichment()
     {
         _platform.Enqueue(HttpStatusCode.OK);
-        var profile = new ConsultantProfile(new CandidateId("c-2"));
-        profile.Enrich(new Enrichment([new Skill("C#"), new Skill("Azure")], Seniority.Senior, new Confidence(0.8)));
+        var profile = ConsultantProfile.Enriched(
+            new CandidateId("c-2"),
+            new Enrichment([new Skill("C#"), new Skill("Azure")], Seniority.Senior, new Confidence(0.8)));
 
         await _client.UpsertProfileAsync(profile, TestContext.Current.CancellationToken);
 
