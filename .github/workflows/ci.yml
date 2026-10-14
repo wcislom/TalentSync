@@ -9,51 +9,76 @@ on:
 
 permissions:
   contents: read
-  checks: write # dorny/test-reporter publishes the "Tests" check
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Runs the tests too; their results are reported by the separate "Tests" check.
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v6
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      - run: dotnet restore
+      - name: Restore
+        run: dotnet restore
 
-      - run: dotnet build --no-restore -c Release
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+  # Builds again instead of passing bin/ between jobs: a restore and build take under a minute, artifacts of
+  # every project's output would be slower and fragile.
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      checks: write # dorny/test-reporter publishes the "Test results" check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
 
       # Integration tests start SQL Server, Azurite and the Event Hubs emulator through Testcontainers,
       # using the Docker engine preinstalled on the runner.
-      - run: >
-          dotnet test --no-build -c Release
+      - name: Run tests with coverage
+        id: tests
+        run: >
+          dotnet test -c Release
           --results-directory ${{ github.workspace }}/TestResults
           --report-xunit-trx --report-xunit-html
           --coverage --coverage-output-format cobertura
 
-      - name: Test report
-        if: ${{ !cancelled() }}
+      # Reports run when the tests ran, passed or failed, and are skipped when the step never started.
+      - name: Publish test results
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         uses: dorny/test-reporter@v3
         with:
-          name: Tests
+          name: Test results
           path: TestResults/*.trx
           reporter: dotnet-trx
           # v3 defaults to the job summary only; false creates the check run with annotations.
           use-actions-summary: 'false'
 
       # Simulators (Fake*) are not part of the product, so +TalentSync.* leaves them out.
-      - name: Coverage report
-        if: ${{ !cancelled() }}
+      - name: Generate coverage report
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         uses: danielpalme/ReportGenerator-GitHub-Action@5
         with:
           reports: TestResults/*.cobertura.xml
@@ -61,12 +86,13 @@ jobs:
           reporttypes: HtmlInline;MarkdownSummaryGithub
           assemblyfilters: +TalentSync.*
 
-      - name: Coverage summary
-        if: ${{ !cancelled() }}
+      - name: Add coverage to job summary
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         run: cat CoverageReport/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v7
-        if: ${{ !cancelled() }}
+      - name: Upload reports
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |
