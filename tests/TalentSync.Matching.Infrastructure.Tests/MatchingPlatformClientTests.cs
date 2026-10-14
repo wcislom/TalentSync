@@ -50,11 +50,11 @@ public sealed class MatchingPlatformClientTests : IDisposable
         Assert.Equal("PUT http://matching.test/profiles/c-1", request.Line);
         using var body = JsonDocument.Parse(request.Body!);
         var root = body.RootElement;
-        Assert.Equal(["skills", "seniority", "confidence", "status"], root.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(["skills", "seniority", "confidence", "enrichmentStatus"], root.EnumerateObject().Select(p => p.Name));
         Assert.Equal(0, root.GetProperty("skills").GetArrayLength());
         Assert.Equal(JsonValueKind.Null, root.GetProperty("seniority").ValueKind);
         Assert.Equal(JsonValueKind.Null, root.GetProperty("confidence").ValueKind);
-        Assert.Equal("NotEnriched", root.GetProperty("status").GetString());
+        Assert.Equal("NotEnriched", root.GetProperty("enrichmentStatus").GetString());
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class MatchingPlatformClientTests : IDisposable
         Assert.Equal(["C#", "Azure"], root.GetProperty("skills").EnumerateArray().Select(skill => skill.GetString()));
         Assert.Equal("Senior", root.GetProperty("seniority").GetString());
         Assert.Equal(0.8, root.GetProperty("confidence").GetDouble());
-        Assert.Equal("Enriched", root.GetProperty("status").GetString());
+        Assert.Equal("Enriched", root.GetProperty("enrichmentStatus").GetString());
     }
 
     [Fact]

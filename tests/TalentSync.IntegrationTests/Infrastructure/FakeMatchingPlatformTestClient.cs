@@ -5,7 +5,7 @@ namespace TalentSync.IntegrationTests.Infrastructure;
 
 /// <summary>A profile as FakeMatchingPlatform's <c>GET /profiles</c> returns it.</summary>
 public sealed record MatchingProfile(
-    string CandidateId, IReadOnlyList<string> Skills, string? Seniority, double? Confidence, string Status, DateTimeOffset UpdatedAt);
+    string CandidateId, IReadOnlyList<string> Skills, string? Seniority, double? Confidence, string EnrichmentStatus, DateTimeOffset UpdatedAt);
 
 /// <summary>Reads FakeMatchingPlatform's end state and call counts.</summary>
 public sealed class FakeMatchingPlatformTestClient(HttpClient http)

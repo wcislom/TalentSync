@@ -71,7 +71,7 @@ Two separate surfaces, plus the test endpoints above:
 
 ## FakeMatchingPlatform
 
-- `PUT /profiles/{candidateId}` upsert (skills, seniority, confidence, status `Enriched` / `NotEnriched`).
+- `PUT /profiles/{candidateId}` upsert (skills, seniority, confidence, `enrichmentStatus` `Enriched` / `NotEnriched`).
   201 on create, 200 on update, last write wins. 400 without `status`, with an unknown `status` or `seniority`,
   with `Enriched` but no `seniority` or `confidence`, or with `confidence` outside 0–1.
 - `GET /profiles`, `GET /profiles/{candidateId}` (404 if none): the end result for tests and the demo.- No `DELETE`: archiving profiles is out of MVP. Starts empty (scenario M2 needs a candidate without a profile).

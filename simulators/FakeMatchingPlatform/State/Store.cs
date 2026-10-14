@@ -21,7 +21,7 @@ public sealed record Profile(
     IReadOnlyList<string> Skills,
     Seniority? Seniority,
     double? Confidence,
-    EnrichmentStatus Status,
+    EnrichmentStatus EnrichmentStatus,
     DateTimeOffset UpdatedAt);
 
 /// <summary>
