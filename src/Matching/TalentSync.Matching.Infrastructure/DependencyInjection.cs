@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using TalentSync.Matching.Application.Ports;
+using TalentSync.Matching.Infrastructure.Llm;
+using TalentSync.Matching.Infrastructure.Llm.Fake;
 using TalentSync.Matching.Infrastructure.MatchingPlatform;
 using TalentSync.Matching.Infrastructure.Persistence;
 
@@ -14,9 +17,9 @@ public static class DependencyInjection
 {
     /// <summary>
     /// <see cref="IMatchingPlatform"/> over the Matching Platform's REST API, <see cref="MatchingDbContext"/> and
-    /// <see cref="IEnrichmentResultStore"/> over it.
+    /// <see cref="IEnrichmentResultStore"/> over it, and <see cref="IEnrichmentService"/> over the LLM.
     /// Reads <c>MatchingPlatform:BaseUrl</c>, the standard resilience handler's options from
-    /// <c>MatchingPlatform:Resilience</c>, and <c>ConnectionStrings:Sql</c>.
+    /// <c>MatchingPlatform:Resilience</c>, <c>ConnectionStrings:Sql</c>, and the <c>Llm</c> section.
     /// </summary>
     public static IServiceCollection AddMatchingInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
@@ -40,6 +43,17 @@ public static class DependencyInjection
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IEnrichmentResultStore, EnrichmentResultStore>();
+
+        services.AddOptions<LlmOptions>()
+            .Bind(configuration.GetSection(LlmOptions.SectionName))
+            .Validate(o => o.IsValid(), $"'{LlmOptions.SectionName}' needs Provider '{LlmOptions.FakeProvider}' and a positive Timeout.")
+            .ValidateOnStart();
+        services.AddSingleton<FakeChatClient>();
+        services.AddSingleton<IChatClient>(provider =>
+            provider.GetRequiredService<IOptions<LlmOptions>>().Value.Provider == LlmOptions.FakeProvider
+                ? provider.GetRequiredService<FakeChatClient>()
+                : throw new InvalidOperationException($"Unknown '{LlmOptions.SectionName}:Provider'."));
+        services.AddSingleton<IEnrichmentService, ChatEnrichmentService>();
 
         return services;
     }
