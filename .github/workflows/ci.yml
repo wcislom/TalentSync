@@ -46,6 +46,8 @@ jobs:
           name: Tests
           path: TestResults/*.trx
           reporter: dotnet-trx
+          # v3 defaults to the job summary only; false creates the check run with annotations.
+          use-actions-summary: 'false'
 
       # Simulators (Fake*) are not part of the product, so +TalentSync.* leaves them out.
       - name: Coverage report
