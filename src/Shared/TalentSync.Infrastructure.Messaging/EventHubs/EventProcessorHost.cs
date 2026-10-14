@@ -30,13 +30,14 @@ internal sealed class EventProcessorHost(
         logger.LogInformation("Consuming {EventHubName} as consumer group {ConsumerGroup}", processor.EventHubName, processor.ConsumerGroup);
     }
 
+    // The handlers stay attached. StopAsync can run twice at once (the host does not guard against a second
+    // StopAsync; WebApplicationFactory triggers one next to app.Run()), and the SDK's handler removal checks
+    // outside its lock, so a concurrent removal throws. StopProcessingAsync itself is safe to call twice.
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         // Cancels the token of every running handler: the loop returns without a checkpoint, and the event is
         // processed again by the next owner of the partition.
         await processor.StopProcessingAsync(cancellationToken);
-        processor.ProcessEventAsync -= OnProcessEventAsync;
-        processor.ProcessErrorAsync -= OnProcessErrorAsync;
     }
 
     private async Task OnProcessEventAsync(ProcessEventArgs args)
