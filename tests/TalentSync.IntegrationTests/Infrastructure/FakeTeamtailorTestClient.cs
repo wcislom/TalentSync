@@ -12,11 +12,15 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
 
     private const string JobId = "job-1";
 
+    public const string DefaultResumeText = "Backend developer, 6 years of .NET.";
+
     /// <summary>
-    /// Applies to a job in stage New. A new candidate id creates the candidate; an existing one adds an application.
+    /// Applies to a job in stage New. A new candidate id creates the candidate; an existing one adds an application
+    /// and keeps the candidate's CV, whatever <paramref name="resumeText"/> says.
     /// </summary>
     /// <returns>The id of the new job application.</returns>
-    public async Task<string> ApplyAsync(string candidateId, string firstName, string lastName, string email)
+    public async Task<string> ApplyAsync(
+        string candidateId, string firstName, string lastName, string email, string resumeText = DefaultResumeText)
     {
         using var response = await http.PostAsJsonAsync($"/recruiter/jobs/{JobId}/apply", new
         {
@@ -25,7 +29,7 @@ public sealed class FakeTeamtailorTestClient(HttpClient http)
             lastName,
             email,
             phone = "+48 600 000 000",
-            resumeText = "Backend developer, 6 years of .NET.",
+            resumeText,
         }, TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
         var applied = await response.Content.ReadFromJsonAsync<Applied>(TestContext.Current.CancellationToken);

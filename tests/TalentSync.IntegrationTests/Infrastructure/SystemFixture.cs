@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TalentSync.Ingress.Api.Persistence;
+using TalentSync.Matching.Infrastructure.Llm.Fake;
 using TalentSync.Matching.Infrastructure.Persistence;
 using TalentSync.Sync.Infrastructure.Persistence;
 using Testcontainers.Azurite;
@@ -138,6 +139,10 @@ public sealed class SystemFixture : IAsyncLifetime
         {
             ConfigureWorker(host, sqlConnectionString, eventHubsConnectionString);
             host.UseSetting("MatchingPlatform:BaseUrl", $"http://{MatchingPlatformHost}")
+                .UseSetting("Llm:Provider", "Fake")
+                .UseSetting("Llm:Fake:Mode", "Valid")
+                // M3 waits for this timeout once; the production 15 s would only make it slower.
+                .UseSetting("Llm:Timeout", "00:00:02")
                 .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
                 {
                     [TeamtailorHost] = _fakeTeamtailor.Server,
@@ -166,6 +171,17 @@ public sealed class SystemFixture : IAsyncLifetime
 
     public Task<TResult> QueryMatchingDbAsync<TResult>(Func<MatchingDbContext, Task<TResult>> query) =>
         QueryWorkerDbAsync(_matchingWorker!.Services, query);
+
+    /// <summary>
+    /// A tag for the CV of a scenario's candidate, so <see cref="CountModelCalls"/> can attribute calls to it.
+    /// The model never receives our candidate id: the tag is only in CV text a test wrote.
+    /// </summary>
+    public static string CvTag(string candidateId) => $"(ref {candidateId})";
+
+    /// <summary>How many times Matching.Worker's <see cref="FakeChatClient"/> was called with the candidate's tagged CV.</summary>
+    public int CountModelCalls(string candidateId) =>
+        _matchingWorker!.Services.GetRequiredService<FakeChatClient>().ReceivedCvTexts
+            .Count(cv => cv.Contains(CvTag(candidateId), StringComparison.Ordinal));
 
     /// <summary>
     /// Unpublished outbox rows of the candidate that the relay could claim right now. A row the relay holds during a
