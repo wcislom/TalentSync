@@ -1,7 +1,13 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+  <ItemGroup Label="Transitive pins">
+    <!-- Microsoft.Data.SqlClient (via EF Core SqlServer) still references 9.0.11: CVE-2026-70162, CVE-2026-84008.
+         Remove once SqlClient references a patched version. -->
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
+  </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Azure.Messaging.EventHubs" Version="5.12.2" />
     <PackageVersion Include="Azure.Messaging.EventHubs.Processor" Version="5.12.2" />
