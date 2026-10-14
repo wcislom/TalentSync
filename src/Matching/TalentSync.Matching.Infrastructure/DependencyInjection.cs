@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using TalentSync.Matching.Application.Ports;
 using TalentSync.Matching.Infrastructure.MatchingPlatform;
@@ -12,7 +13,8 @@ namespace TalentSync.Matching.Infrastructure;
 public static class DependencyInjection
 {
     /// <summary>
-    /// <see cref="IMatchingPlatform"/> over the Matching Platform's REST API, and <see cref="MatchingDbContext"/>.
+    /// <see cref="IMatchingPlatform"/> over the Matching Platform's REST API, <see cref="MatchingDbContext"/> and
+    /// <see cref="IEnrichmentResultStore"/> over it.
     /// Reads <c>MatchingPlatform:BaseUrl</c>, the standard resilience handler's options from
     /// <c>MatchingPlatform:Resilience</c>, and <c>ConnectionStrings:Sql</c>.
     /// </summary>
@@ -35,6 +37,9 @@ public static class DependencyInjection
             configuration.GetConnectionString("Sql")
                 ?? throw new InvalidOperationException("Missing configuration 'ConnectionStrings:Sql'."),
             sql => sql.MigrationsHistoryTable("__EFMigrationsHistory", MatchingDbContext.Schema)));
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IEnrichmentResultStore, EnrichmentResultStore>();
 
         return services;
     }

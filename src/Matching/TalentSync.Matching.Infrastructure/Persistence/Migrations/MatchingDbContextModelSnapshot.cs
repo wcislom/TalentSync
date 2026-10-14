@@ -99,6 +99,47 @@ namespace TalentSync.Matching.Infrastructure.Persistence.Migrations
 
                     b.ToTable("ParkingLot", "matching");
                 });
+
+            modelBuilder.Entity("TalentSync.Matching.Infrastructure.EnrichmentResults.EnrichmentResult", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CandidateId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CvHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.Property<string>("ModelId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId", "CvHash")
+                        .IsUnique()
+                        .HasDatabaseName("UX_EnrichmentResults_CandidateId_CvHash");
+
+                    b.ToTable("EnrichmentResults", "matching");
+                });
 #pragma warning restore 612, 618
         }
     }
