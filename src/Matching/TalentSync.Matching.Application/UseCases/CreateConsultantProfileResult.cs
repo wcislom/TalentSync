@@ -19,7 +19,10 @@ public abstract record CreateConsultantProfileResult
     /// <summary>The application is qualified and the profile is in the Matching Platform.</summary>
     public sealed record UpsertedResult : CreateConsultantProfileResult;
 
-    /// <summary>The application is not qualified, or no longer exists: no profile is created or changed (D2, D4).</summary>
+    /// <summary>
+    /// The application is not qualified, or the application or its candidate no longer exists: no profile is created
+    /// or changed (D2, D4).
+    /// </summary>
     public sealed record SkippedResult : CreateConsultantProfileResult;
 
     /// <summary>
