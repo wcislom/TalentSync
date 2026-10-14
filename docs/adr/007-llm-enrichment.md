@@ -51,7 +51,10 @@ Only the CV text is sent, never the candidate id or other fields. The prompt and
 
 **Validation.** Schema first (the request asks for a JSON schema response format, and the reply is parsed against
 it), then the domain rules in `TalentSync.Matching.Domain`. Any broken rule invalidates the whole suggestion; it
-is never partially accepted.
+is never partially accepted. The domain reports a broken rule as a value, not an exception:
+`Enrichment.TryCreate` returns `Valid(enrichment)` or `Invalid(reason)`, and the reason is an enum, so model output
+cannot reach a log (invariant 14). Invalid output is an expected outcome, and a value is one the compiler makes the
+use case handle. The `Enrichment` constructor still throws on a broken rule, but only as a guard against our own bugs.
 
 **Resilience.** A timeout and a circuit breaker (`Polly.Core`, built with our `TimeProvider`, tunables from
 configuration), **no retry**. Every failure (timeout, open circuit, 429, invalid output) ends in `NotEnriched`
@@ -90,6 +93,12 @@ to a candidate (scenario M5).
   depend on an LLM library, and prompt, masking and parsing would leak into the use case.
 - **Retrying the model.** Rejected: cost and rate limits, and a failure ends in `NotEnriched` anyway.
 - **Asking the model again on every retry.** Rejected: see ADR 005 and invariant 5.
+- **A domain exception for invalid output.** Rejected: invalid output is a normal outcome, not an exceptional one,
+  and an exception is not part of the signature. A missed `catch` would let it reach the consumer, which retries an
+  unclassified exception 5 times and parks the event instead of creating a `NotEnriched` profile, breaking D5.
+  Catching it there would need an exception type shared with `Infrastructure.Messaging`, which the dependency rules
+  forbid. A domain exception fits a command that breaks a business rule of an aggregate with state transitions;
+  `ConsultantProfile` has none, because it is built whole for each qualification.
 - **Masking in the use case.** Rejected: masking in the adapter guarantees that no path reaches the model unmasked.
 - **A global switch for the fake's mode, changed by tests at run time.** Rejected: all scenarios share one host,
   so an event of an earlier scenario could be processed in the next scenario's mode.

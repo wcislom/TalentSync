@@ -3,20 +3,27 @@ namespace TalentSync.Matching.Domain.Tests;
 public sealed class ConsultantProfileTests
 {
     [Fact]
-    public void CreateFromQualifiedCandidate_WithoutSuggestion_IsNotEnrichedAndKeyedByCandidateId()
+    public void NotEnriched_HasNoEnrichmentAndIsKeyedByCandidateId()
     {
-        var profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+        var profile = ConsultantProfile.NotEnriched(new CandidateId("c-1"));
 
-        Assert.Equal("c-1", profile.CandidateId);
+        Assert.Equal(new CandidateId("c-1"), profile.CandidateId);
+        Assert.Null(profile.Enrichment);
         Assert.Equal(EnrichmentStatus.NotEnriched, profile.EnrichmentStatus);
-        Assert.Empty(profile.Skills);
-        Assert.Null(profile.Seniority);
-        Assert.Null(profile.Confidence);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void CreateFromQualifiedCandidate_WithoutCandidateId_Throws(string candidateId) =>
-        Assert.Throws<ArgumentException>(() => ConsultantProfile.CreateFromQualifiedCandidate(candidateId));
+    [Fact]
+    public void Enriched_CarriesTheEnrichment()
+    {
+        var enrichment = new Enrichment([new Skill("C#")], Seniority.Lead, new Confidence(0.9));
+
+        var profile = ConsultantProfile.Enriched(new CandidateId("c-1"), enrichment);
+
+        Assert.Same(enrichment, profile.Enrichment);
+        Assert.Equal(EnrichmentStatus.Enriched, profile.EnrichmentStatus);
+    }
+
+    [Fact]
+    public void Enriched_WithoutEnrichment_Throws() =>
+        Assert.Throws<ArgumentNullException>(() => ConsultantProfile.Enriched(new CandidateId("c-1"), null!));
 }

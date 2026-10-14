@@ -7,8 +7,8 @@ internal static class MatchingPlatformMapper
 {
     public static ProfileRequestDto ToProfileRequest(ConsultantProfile profile) =>
         new(
-            profile.Skills.Select(skill => skill.Name).ToList(),
-            profile.Seniority?.ToString(),
-            profile.Confidence,
+            profile.Enrichment?.Skills.Select(skill => skill.Name).ToList() ?? [],
+            profile.Enrichment?.Seniority.ToString(),
+            profile.Enrichment?.Confidence.Value,
             profile.EnrichmentStatus.ToString());
 }

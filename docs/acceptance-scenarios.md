@@ -114,7 +114,7 @@ Scenario: M3 LLM timeout yields a NotEnriched profile
   Given candidate "c-m3" has an application in stage Interview
   And the LLM mode is Hang
   When the application is moved to Qualified
-  Then FakeMatchingPlatform has a profile for "c-m3" with status NotEnriched
+  Then FakeMatchingPlatform has a profile for "c-m3" with enrichment status NotEnriched
   And matching.EnrichmentResults has no row for "c-m3"
 
 # Illustrates: D5, invariant 16
@@ -122,7 +122,7 @@ Scenario Outline: M4 Invalid LLM output yields a NotEnriched profile
   Given candidate "<candidate>" has an application in stage Interview
   And the LLM mode is <mode>
   When the application is moved to Qualified
-  Then FakeMatchingPlatform has a profile for "<candidate>" with status NotEnriched
+  Then FakeMatchingPlatform has a profile for "<candidate>" with enrichment status NotEnriched
   And matching.EnrichmentResults has no row for "<candidate>"
 
   Examples:

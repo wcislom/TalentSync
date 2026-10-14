@@ -18,7 +18,7 @@ internal sealed class MatchingPlatformClient(HttpClient http) : IMatchingPlatfor
     public async Task<MatchingPlatformResult> UpsertProfileAsync(ConsultantProfile profile, CancellationToken cancellationToken)
     {
         using var response = await http.PutAsJsonAsync(
-            $"{ProfilesEndpoint}/{Uri.EscapeDataString(profile.CandidateId)}",
+            $"{ProfilesEndpoint}/{Uri.EscapeDataString(profile.CandidateId.Value)}",
             MatchingPlatformMapper.ToProfileRequest(profile),
             cancellationToken);
 

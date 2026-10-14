@@ -59,7 +59,8 @@ One candidate has many job applications. Sync is one-way: Teamtailor → TalentS
   already deleted.
 - **D2** When a job application reaches the stage configured as qualified, a `ConsultantProfile` is created or updated.
   The ACL maps the customer-defined stage name to `ApplicationStatus` (config `Teamtailor:QualifiedStageName`);
-  the use case checks the status and calls `ConsultantProfile.CreateFromQualifiedCandidate`.
+  the use case checks the status and creates the `ConsultantProfile`. The Matching domain cannot check
+  qualification itself: the status belongs to Recruitment, which it does not know.
 - **D3** One profile per candidate, keyed by Teamtailor `candidateId`. A second qualified application updates the same
   profile. Email and phone are not identity keys (they change, and they are PII).
 - **D4** Moving an application back from qualified does not change the profile. The Matching Platform owns it.

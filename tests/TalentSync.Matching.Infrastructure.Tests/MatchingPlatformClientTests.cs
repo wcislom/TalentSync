@@ -10,7 +10,7 @@ namespace TalentSync.Matching.Infrastructure.Tests;
 /// <summary>The Matching Platform client with its real HTTP pipeline from <c>AddMatchingInfrastructure</c>, over a stub handler.</summary>
 public sealed class MatchingPlatformClientTests : IDisposable
 {
-    private static readonly ConsultantProfile Profile = ConsultantProfile.CreateFromQualifiedCandidate("c-1");
+    private static readonly ConsultantProfile Profile = ConsultantProfile.NotEnriched(new CandidateId("c-1"));
 
     private readonly StubHandler _platform = new();
     private readonly ServiceProvider _services;
@@ -50,11 +50,29 @@ public sealed class MatchingPlatformClientTests : IDisposable
         Assert.Equal("PUT http://matching.test/profiles/c-1", request.Line);
         using var body = JsonDocument.Parse(request.Body!);
         var root = body.RootElement;
-        Assert.Equal(["skills", "seniority", "confidence", "status"], root.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(["skills", "seniority", "confidence", "enrichmentStatus"], root.EnumerateObject().Select(p => p.Name));
         Assert.Equal(0, root.GetProperty("skills").GetArrayLength());
         Assert.Equal(JsonValueKind.Null, root.GetProperty("seniority").ValueKind);
         Assert.Equal(JsonValueKind.Null, root.GetProperty("confidence").ValueKind);
-        Assert.Equal("NotEnriched", root.GetProperty("status").GetString());
+        Assert.Equal("NotEnriched", root.GetProperty("enrichmentStatus").GetString());
+    }
+
+    [Fact]
+    public async Task Upsert_EnrichedProfile_SendsTheEnrichment()
+    {
+        _platform.Enqueue(HttpStatusCode.OK);
+        var profile = ConsultantProfile.Enriched(
+            new CandidateId("c-2"),
+            new Enrichment([new Skill("C#"), new Skill("Azure")], Seniority.Senior, new Confidence(0.8)));
+
+        await _client.UpsertProfileAsync(profile, TestContext.Current.CancellationToken);
+
+        using var body = JsonDocument.Parse(Assert.Single(_platform.Requests).Body!);
+        var root = body.RootElement;
+        Assert.Equal(["C#", "Azure"], root.GetProperty("skills").EnumerateArray().Select(skill => skill.GetString()));
+        Assert.Equal("Senior", root.GetProperty("seniority").GetString());
+        Assert.Equal(0.8, root.GetProperty("confidence").GetDouble());
+        Assert.Equal("Enriched", root.GetProperty("enrichmentStatus").GetString());
     }
 
     [Fact]
