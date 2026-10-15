@@ -38,8 +38,9 @@ handler loop, and the retry finds the stored result in step 2 instead of calling
 
 - `seniority` ∈ {`Junior`, `Mid`, `Senior`, `Lead`}. Anything else → invalid.
 - `confidence` ∈ [0, 1].
-- Skills: non-empty names, trimmed, at most 50 characters each, de-duplicated case-insensitively, then at least 1
-  and at most 30. A suggestion without skills is invalid: a profile marked `Enriched` must carry skills.
+- Skills: non-empty names, trimmed, at most 50 characters each, de-duplicated case-insensitively, then at least 1.
+  No upper limit on the count: a rich CV must not end in `NotEnriched`. A suggestion without skills is invalid:
+  a profile marked `Enriched` must carry skills.
 - These rules live in `TalentSync.Matching.Domain`, not in the LLM adapter.
 - The adapter validates model output only through `Enrichment.TryCreate`, which returns `Valid` or `Invalid(reason)`.
   Never the `Enrichment` constructor: its exceptions would escape the use case, be retried as unclassified and
