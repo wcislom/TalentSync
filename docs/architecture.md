@@ -84,6 +84,7 @@ eval/                                       offline evaluation of the enrichment
   TalentSync.Matching.Evaluation            console runner over ChatEnrichmentService. → Matching.Infrastructure
   cases/                                    golden set: one JSON per fictional CV
   reports/                                  committed reports; local/ is gitignored
+  run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
 deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
                                             eventhubs/Config.json, run-local.sh (containers + the three hosts)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
