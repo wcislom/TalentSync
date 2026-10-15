@@ -10,7 +10,7 @@ paths:
 | Project | Kind | Covers |
 |---|---|---|
 | `TalentSync.Matching.Domain.Tests` | Unit, no I/O | Suggestion validation, `ConsultantProfile` behaviour |
-| `TalentSync.Matching.Infrastructure.Tests` | Unit, no network | Matching Platform client: request body, status mapping (4xx → Rejected), HTTP pipeline |
+| `TalentSync.Matching.Infrastructure.Tests` | Unit, no network | Matching Platform client: request body, status mapping (4xx → Rejected), HTTP pipeline. CV masking. Enrichment adapter over `FakeChatClient`: outcome per mode, timeout, open circuit, shutdown |
 | `TalentSync.Sync.Application.Tests`, `TalentSync.Matching.Application.Tests` | Unit, no I/O | Use cases: each fetch result and port result → use case result. Ports replaced by small hand-written stubs |
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
@@ -54,7 +54,12 @@ paths:
   `HostRouter`, installed as the primary handler of every `HttpClient` (`ingress.test`, `teamtailor.test`,
   `crm.test`), so the clients' resilience pipelines run unchanged. All scenarios share one `SystemFixture`
   (`SystemCollection`).
-- How `FakeChatClient` call counts fit in is decided with the first Matching scenario.
+- `FakeChatClient` calls: the fixture reads the `FakeChatClient` singleton from Matching.Worker's services
+  (`InternalsVisibleTo TalentSync.IntegrationTests`) and counts the calls whose CV text contains the candidate's tag
+  (`SystemFixture.CvTag`, e.g. `(ref c-m5)`). The test writes the tag into the CV; the model never receives our
+  candidate id. The LLM mode is a `[llm:<Mode>]` marker in the same CV, never a switch on the shared host.
+  The fixture sets `Llm:Timeout` to 2 s for M3. The circuit breaker is shared by all scenarios; only M3 fails a call,
+  which stays below the configured failure ratio.
 
 ## Packages
 

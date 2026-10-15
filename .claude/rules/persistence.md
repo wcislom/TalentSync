@@ -28,7 +28,8 @@ Same table shape, separate tables per worker (invariant 4).
 ## Folder layout
 
 Entities are models used by the rest of the code, so they live in a folder named after the concept
-(`Outbox/`, `Inbox/`, `ParkingLot/`, `Enrichment/`). `Persistence/` holds only EF: the `DbContext`, one
+(`Outbox/`, `Inbox/`, `ParkingLot/`, `EnrichmentResults/`; not `Enrichment/`, whose namespace would hide the
+domain type `Enrichment` inside `TalentSync.Matching.Infrastructure`). `Persistence/` holds only EF: the `DbContext`, one
 `IEntityTypeConfiguration<T>` per entity (Fluent API, never mapping inside `OnModelCreating`), `Migrations/`, and
 classes that read and write through EF (e.g. `ConsumerStore`).
 Configurations are applied explicitly with `ApplyConfiguration(...)`; the shared `Inbox` and `ParkingLot`

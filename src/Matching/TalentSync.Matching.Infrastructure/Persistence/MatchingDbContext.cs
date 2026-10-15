@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TalentSync.Infrastructure.Messaging.Inbox;
 using TalentSync.Infrastructure.Messaging.ParkingLot;
 using TalentSync.Infrastructure.Messaging.Persistence;
+using TalentSync.Matching.Infrastructure.EnrichmentResults;
 
 namespace TalentSync.Matching.Infrastructure.Persistence;
 
@@ -17,10 +18,13 @@ public sealed class MatchingDbContext(DbContextOptions<MatchingDbContext> option
 
     public DbSet<ParkedEvent> ParkingLot => Set<ParkedEvent>();
 
+    public DbSet<EnrichmentResult> EnrichmentResults => Set<EnrichmentResult>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfiguration(new InboxEntryConfiguration(Schema));
         modelBuilder.ApplyConfiguration(new ParkedEventConfiguration(Schema));
+        modelBuilder.ApplyConfiguration(new EnrichmentResultConfiguration());
     }
 }

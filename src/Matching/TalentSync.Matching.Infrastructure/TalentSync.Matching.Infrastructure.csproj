@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
   </ItemGroup>
   <ItemGroup>
@@ -8,5 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="TalentSync.Matching.Infrastructure.Tests" />
+    <!-- Acceptance scenarios read FakeChatClient's calls from the worker host (testing rule). -->
+    <InternalsVisibleTo Include="TalentSync.IntegrationTests" />
   </ItemGroup>
 </Project>
