@@ -16,13 +16,15 @@ internal static class EnrichmentPrompt
     private const int VersionLength = 16;
 
     // The limit comes from the domain, so the prompt cannot drift from the validation that rejects the answer.
+    // Line breaks in a raw string literal are the source file's, so a Windows checkout with autocrlf would send CRLF
+    // and get another Version than a Linux build: normalised, the prompt and its version do not depend on the checkout.
     public static readonly string Instructions = $"""
         You read the CV of an IT consultant and suggest their technical skills and seniority.
         Each skill is a short name of at most {Skill.MaxLength} characters.
         Seniority is one of: Junior, Mid, Senior, Lead.
         Confidence is how sure you are of the whole assessment, from 0 to 1.
         Use only what the CV says. Answer with JSON only.
-        """;
+        """.ReplaceLineEndings("\n");
 
     public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

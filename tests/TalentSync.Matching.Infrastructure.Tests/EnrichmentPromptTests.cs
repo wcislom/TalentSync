@@ -12,6 +12,10 @@ public sealed class EnrichmentPromptTests
     }
 
     [Fact]
+    public void Instructions_UseLfLineEndings_WhateverTheCheckout() =>
+        Assert.DoesNotContain('\r', EnrichmentPrompt.Instructions);
+
+    [Fact]
     public void Version_IsTheSameForTheSamePrompt()
     {
         Assert.Equal(
