@@ -18,6 +18,10 @@ public sealed record CaseResult(EvaluationCase Case, IReadOnlyList<EnrichmentOut
 /// </summary>
 public static partial class MarkdownReport
 {
+    public const string PromptVersionKey = "PromptVersion";
+    public const string GoldenSetHashKey = "GoldenSetHash";
+    public const string ModelIdKey = "ModelId";
+
     public static string FileName(ReportHeader header) =>
         $"{header.GeneratedAt.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}-{header.PromptVersion}-{UnsafeFileNameChars().Replace(header.ModelId, "-")}.md";
 
@@ -25,9 +29,9 @@ public static partial class MarkdownReport
     {
         var report = new StringBuilder();
         report.AppendLine("# Enrichment prompt evaluation").AppendLine()
-            .AppendLine(CultureInfo.InvariantCulture, $"- PromptVersion: {header.PromptVersion}")
-            .AppendLine(CultureInfo.InvariantCulture, $"- GoldenSetHash: {header.GoldenSetHash}")
-            .AppendLine(CultureInfo.InvariantCulture, $"- ModelId: {header.ModelId}")
+            .AppendLine(CultureInfo.InvariantCulture, $"- {PromptVersionKey}: {header.PromptVersion}")
+            .AppendLine(CultureInfo.InvariantCulture, $"- {GoldenSetHashKey}: {header.GoldenSetHash}")
+            .AppendLine(CultureInfo.InvariantCulture, $"- {ModelIdKey}: {header.ModelId}")
             .AppendLine(CultureInfo.InvariantCulture, $"- Provider: {header.Provider}")
             .AppendLine(CultureInfo.InvariantCulture, $"- RunsPerCase: {header.RunsPerCase}")
             .AppendLine(CultureInfo.InvariantCulture, $"- GeneratedAtUtc: {header.GeneratedAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}")
@@ -43,6 +47,21 @@ public static partial class MarkdownReport
         AppendPerCase(report, cases);
         AppendRaw(report, header, cases);
         return report.ToString();
+    }
+
+    /// <summary>The <c>- Name: value</c> lines before the first section; what the CI guard reads.</summary>
+    public static IReadOnlyDictionary<string, string> ReadHeader(string report)
+    {
+        var header = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var line in report.ReplaceLineEndings("\n").Split('\n').TakeWhile(l => !l.StartsWith("## ", StringComparison.Ordinal)))
+        {
+            if (HeaderLine().Match(line) is { Success: true } match)
+            {
+                header.TryAdd(match.Groups[1].Value, match.Groups[2].Value.Trim());
+            }
+        }
+
+        return header;
     }
 
     private static void AppendAggregate(StringBuilder report, AggregateMetrics aggregate)
@@ -125,6 +144,9 @@ public static partial class MarkdownReport
     // Each skill in its own code span: a skill name may contain a comma, so a plain list could not be split back.
     private static string Skills(IEnumerable<string> names) =>
         string.Join(" ", names.Select(n => $"`{n.Replace("|", "\\|", StringComparison.Ordinal)}`"));
+
+    [GeneratedRegex(@"^- (\w+): (.+)$")]
+    private static partial Regex HeaderLine();
 
     [GeneratedRegex("[^A-Za-z0-9.-]")]
     private static partial Regex UnsafeFileNameChars();

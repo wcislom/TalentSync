@@ -2,6 +2,8 @@
 paths:
   - "src/Matching/**"
   - "tests/TalentSync.Matching.Domain.Tests/**"
+  - "eval/**"
+  - "tests/TalentSync.Matching.Evaluation.Tests/**"
 ---
 
 # LLM enrichment
@@ -66,3 +68,12 @@ handler loop, and the retry finds the stored result in step 2 instead of calling
 - Used by scenarios M1–M5 and by the "LLM timeout" demo.
 - 429 from the model is a normal failure and ends in `NotEnriched`.
 - Never log the prompt or the CV text.
+
+## Prompt evaluation (ADR 009)
+
+A change to the instructions or the response schema (`EnrichmentPrompt`, i.e. a new `PromptVersion`) or to
+`eval/cases/` needs a new report from a real model in `eval/reports/` in the same PR: run `eval/run-eval.sh` with
+`PROVIDER="Anthropic"` and `OUT="eval/reports"`. The guard test in `TalentSync.Matching.Evaluation.Tests` fails
+without it. The evaluation calls a billed model, so only the user runs it with a real one. Claude runs it only as
+`dotnet run --project eval/TalentSync.Matching.Evaluation -- --provider Fake`, never through `eval/run-eval.sh`,
+whose `PROVIDER` may be set to `Anthropic`.

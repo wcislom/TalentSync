@@ -35,4 +35,20 @@ public sealed class MarkdownReportTests
         Assert.Contains("| 1 | Enriched | Mid | 0.65 | `C#` `A\\|B` |", report, StringComparison.Ordinal);
         Assert.Contains("| 2 | Timeout | | | |", report, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ReadHeader_ReturnsWhatRenderWrote_AndIgnoresListsInSections()
+    {
+        var evaluationCase = new EvaluationCase("c", "p", "cv", new ExpectedEnrichment([["C#"]], [], ["Go"], Seniority.Senior, []));
+        EnrichmentOutcome[] runs = [new EnrichmentOutcome.Enriched(new Enrichment([new Skill("Go")], Seniority.Senior, new Confidence(0.5)), "m")];
+        var metrics = MetricCalculator.ForCase(evaluationCase, runs);
+        var report = MarkdownReport.Render(Header, MetricCalculator.Aggregate([metrics], new MetricThresholds()), [new CaseResult(evaluationCase, runs, metrics)]);
+
+        var header = MarkdownReport.ReadHeader(report.ReplaceLineEndings("\r\n"));
+
+        Assert.Equal("0123456789abcdef", header[MarkdownReport.PromptVersionKey]);
+        Assert.Equal("fedcba9876543210", header[MarkdownReport.GoldenSetHashKey]);
+        Assert.Equal("claude-haiku-5-5", header[MarkdownReport.ModelIdKey]);
+        Assert.DoesNotContain("c", header.Keys);
+    }
 }

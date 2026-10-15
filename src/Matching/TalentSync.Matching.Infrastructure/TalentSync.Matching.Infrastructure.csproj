@@ -14,5 +14,7 @@
     <InternalsVisibleTo Include="TalentSync.IntegrationTests" />
     <!-- The prompt evaluation builds ChatEnrichmentService without the worker's SQL and HTTP dependencies (ADR 009). -->
     <InternalsVisibleTo Include="TalentSync.Matching.Evaluation" />
+    <!-- The CI guard compares the committed evaluation report with EnrichmentPrompt.Version (ADR 009). -->
+    <InternalsVisibleTo Include="TalentSync.Matching.Evaluation.Tests" />
   </ItemGroup>
 </Project>
