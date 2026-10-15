@@ -7,13 +7,13 @@ set -euo pipefail
 
 # Fake = zero cost, smoke test of the runner. Anthropic = real model, billed; key from Matching.Worker's
 # user-secrets (Llm:Anthropic:ApiKey). The runner has no default provider and stops without one.
-PROVIDER="Anthropic"
+PROVIDER="Fake"
 
 # Calls per case. Below 2 stability is n/a and the report fails.
 RUNS=5
 
 # eval/reports/local = exploratory, gitignored. eval/reports = baseline report to commit.
-OUT="eval/reports"
+OUT="eval/reports/local"
 
 # Empty = Llm:Anthropic:Model from eval/TalentSync.Matching.Evaluation/appsettings.json.
 MODEL=""
