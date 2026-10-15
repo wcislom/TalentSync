@@ -73,7 +73,8 @@ internal sealed class EventProcessingLoop(
                 using var activity = StartAttempt(received, envelope, failedAttempts + 1);
                 try
                 {
-                    activity?.SetTag(OutcomeTag, await HandleOnceAsync(received, envelope, checkpoint, token));
+                    var outcome = await HandleOnceAsync(received, envelope, checkpoint, token);
+                    activity?.SetTag(OutcomeTag, outcome);
                 }
                 catch (Exception exception) when (!IsShutdown(exception, token))
                 {
