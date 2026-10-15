@@ -1,0 +1,22 @@
+{
+  "id": "senior-dotnet",
+  "purpose": "A typical senior .NET backend CV: the core stack must be found, with no plausible but absent technologies.",
+  "cv": "Liwia Szczepanel\nSenior Backend Developer\nliwia.szczepanel@example.test, +292 512 345 678\n\nSummary\nBackend developer with 9 years of commercial experience in C# and .NET. I design and build REST APIs and event-driven services, and I care about testability and clean architecture.\n\nExperience\n2021–2026 Senior Backend Developer, Larkspur Freight\n- Migrated a monolith from .NET Framework 4.8 to .NET 8 and split it into services communicating through Azure Service Bus.\n- Built ASP.NET Core Web APIs with Entity Framework Core on SQL Server; tuned slow queries and indexes.\n- Introduced integration tests with xUnit and Docker-based test databases.\n- Mentored three developers and ran code reviews for the backend team.\n\n2017–2021 .NET Developer, Tidewell Insurance\n- Developed policy management modules in C# and ASP.NET MVC with SQL Server stored procedures.\n- Maintained build and release pipelines in Azure DevOps.\n\nSkills\nC#, .NET 8, ASP.NET Core, Entity Framework Core, SQL Server, Azure Service Bus, Azure DevOps, Docker, xUnit, Git\n\nEducation\nMSc in Computer Science, 2017\n",
+  "expected": {
+    "required": [
+      ["C#"],
+      [".NET", ".NET 8", ".NET Core", "dotnet"],
+      ["ASP.NET Core", "ASP.NET Core Web API", "ASP.NET"],
+      ["Entity Framework Core", "EF Core", "Entity Framework"],
+      ["SQL Server", "Microsoft SQL Server", "MS SQL Server", "MSSQL"]
+    ],
+    "acceptable": [
+      ".NET Framework", "ASP.NET MVC", "Azure Service Bus", "Azure", "Azure DevOps", "Docker", "xUnit", "Git",
+      "T-SQL", "REST", "REST API", "REST APIs", "RESTful APIs", "Web API", "Microservices", "Event-driven architecture",
+      "Clean Architecture", "Integration testing", "CI/CD", "Code review", "Mentoring", "Stored procedures", "Query optimization"
+    ],
+    "forbidden": ["Kubernetes", "Python", "Java", "React", "Angular", "AWS", "RabbitMQ", "Kafka"],
+    "seniority": "Senior",
+    "seniorityAlsoAccepted": []
+  }
+}

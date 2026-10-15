@@ -78,7 +78,13 @@ tests/
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
+  TalentSync.Matching.Evaluation.Tests          prompt evaluation: metrics, golden set hash, case files, report
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
+eval/                                       offline evaluation of the enrichment prompt (ADR 009), never run in CI
+  TalentSync.Matching.Evaluation            console runner over ChatEnrichmentService. → Matching.Infrastructure
+  cases/                                    golden set: one JSON per fictional CV
+  reports/                                  committed reports; local/ is gitignored
+  run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
 deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
                                             eventhubs/Config.json, run-local.sh (containers + the three hosts)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,

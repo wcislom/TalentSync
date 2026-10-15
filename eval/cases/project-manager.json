@@ -1,0 +1,19 @@
+{
+  "id": "project-manager",
+  "purpose": "A project manager with few technical skills: the model must not credit them with the stack of the teams they managed.",
+  "cv": "Ottilia Wrembek\nIT Project Manager\nottilia.wrembek@example.test, +292 501 222 333\n\nSummary\nProject manager with 10 years in software delivery. I plan scope, budget and releases, and keep stakeholders aligned. I do not write code.\n\nExperience\n2019–2026 Project Manager, Velmora Software\n- Managed delivery of a customer portal; the development teams built it in .NET and Angular.\n- Ran Scrum ceremonies for two teams of eight people and tracked work in Jira.\n- Owned a budget of 2 million EUR and reported progress to the steering committee.\n\n2016–2019 Junior Project Manager, Tidewell Insurance\n- Coordinated testing and release planning for a policy administration system.\n- Prepared documentation in Confluence.\n\nCertificates\nPRINCE2 Practitioner, Professional Scrum Master I\n\nTools\nJira, Confluence, MS Project, Excel\n",
+  "expected": {
+    "required": [
+      ["Scrum"],
+      ["Jira"]
+    ],
+    "acceptable": [
+      "Agile", "Project management", "IT project management", "PRINCE2", "Confluence", "MS Project", "Microsoft Project",
+      "Excel", "Microsoft Excel", "Stakeholder management", "Budgeting", "Budget management", "Release planning",
+      "Risk management", "Professional Scrum Master", "PSM I"
+    ],
+    "forbidden": [".NET", "C#", "Angular", "TypeScript", "JavaScript", "Java", "SQL", "Python"],
+    "seniority": "Senior",
+    "seniorityAlsoAccepted": ["Lead"]
+  }
+}

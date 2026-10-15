@@ -1,0 +1,21 @@
+{
+  "id": "polish-cv",
+  "purpose": "A CV written in Polish: skills and seniority must be found as well as in an English CV.",
+  "cv": "Halszka Ziemborek\nStarsza programistka Java\nhalszka.ziemborek@example.test, +292 690 444 555\n\nO mnie\nProgramistka backendowa z 7-letnim doświadczeniem komercyjnym. Projektuję i rozwijam systemy transakcyjne w Javie.\n\nDoświadczenie\n2020–2026 Starsza programistka Java, Corvane Retail\n- Rozwój mikroserwisów w Javie 17 i Spring Boot, komunikacja przez Apache Kafka.\n- Warstwa dostępu do danych w Hibernate na bazie Oracle; optymalizacja zapytań SQL.\n- Wdrożenia w kontenerach Docker, pipeline'y w Jenkins.\n- Prowadzenie code review i wdrażanie nowych osób w zespole.\n\n2019–2020 Programistka Java, Velmora Software\n- Utrzymanie aplikacji w Spring MVC, testy jednostkowe w JUnit.\n\nUmiejętności\nJava, Spring Boot, Spring MVC, Hibernate, Oracle, SQL, Apache Kafka, Docker, Jenkins, JUnit, Git\n\nWykształcenie\nMagister informatyki, 2019\n",
+  "expected": {
+    "required": [
+      ["Java", "Java 17"],
+      ["Spring Boot", "Spring"],
+      ["Hibernate"],
+      ["Oracle", "Oracle Database", "Oracle DB"],
+      ["Kafka", "Apache Kafka"]
+    ],
+    "acceptable": [
+      "Spring MVC", "SQL", "Docker", "Jenkins", "JUnit", "Git", "Microservices", "Mikroserwisy", "Code review",
+      "SQL optimization", "Query optimization", "CI/CD"
+    ],
+    "forbidden": ["Python", "C#", ".NET", "Kubernetes", "PostgreSQL", "AWS"],
+    "seniority": "Senior",
+    "seniorityAlsoAccepted": []
+  }
+}

@@ -56,7 +56,7 @@ One JSON file per case in `eval/cases/`. CVs are fictional and anonymised: no re
     "acceptable": ["ASP.NET Core", "Docker"],
     "forbidden":  ["Kubernetes", "Python"],
     "seniority": "Senior",
-    "seniorityTolerance": 0
+    "seniorityAlsoAccepted": []
   }
 }
 ```
@@ -65,7 +65,9 @@ One JSON file per case in `eval/cases/`. CVs are fictional and anonymised: no re
   among the returned skills.
 - `acceptable`: correct if returned, not required.
 - `forbidden`: plausible for the CV but not in it. Returning one is a hallucination.
-- `seniorityTolerance`: 0 = only the exact level counts; 1 = a neighbouring level counts too.
+- `seniorityAlsoAccepted`: other levels that are a defensible answer for this CV (e.g. `["Junior"]` for a CV on the
+  Junior/Mid boundary). Any level not listed is wrong. A list, not a symmetric tolerance, so a CV can accept
+  the neighbour on one side without accepting the one on the other.
 - Skill comparison is trimmed and case-insensitive, the same as `Skill` equality. There is no global alias map:
   accepted spellings live in the case that needs them, so a reviewer sees every equivalence the metric relies on.
 
@@ -80,7 +82,7 @@ All but valid rate are over enriched runs only.
 | Recall | matched `required` entries / `required` entries | ≥ 0.80 |
 | Precision | returned skills in (`required` ∪ `acceptable`) / returned skills | ≥ 0.70 |
 | Hallucination rate | runs with a `forbidden` skill / runs | ≤ 0.10 |
-| Seniority | exact / within tolerance / worse (`Junior < Mid < Senior < Lead`) | within ≥ 0.80 |
+| Seniority accepted | (exact + also accepted) / runs; exact, also accepted and wrong are reported separately | ≥ 0.80 |
 | Stability | mean pairwise Jaccard of skill sets across runs | ≥ 0.60 |
 | Confidence vs correctness | mean confidence, seniority exact vs not | reported only |
 

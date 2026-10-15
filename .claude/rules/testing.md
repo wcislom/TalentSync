@@ -15,6 +15,7 @@ paths:
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
 | `TalentSync.Sync.Infrastructure.Tests` | Unit, no network | CRM client: status mapping (404 on delete = done, 4xx → Rejected), HTTP pipeline. Internals via `InternalsVisibleTo` |
+| `TalentSync.Matching.Evaluation.Tests` | Unit, no network | Prompt evaluation (ADR 009): metric calculations, golden set hash, case file validation, report format, the CI guard for the evaluation report. Never calls a model |
 | `TalentSync.IntegrationTests` | Acceptance | Scenarios from `docs/acceptance-scenarios.md` |
 
 ## Acceptance tests
@@ -60,6 +61,12 @@ paths:
   candidate id. The LLM mode is a `[llm:<Mode>]` marker in the same CV, never a switch on the shared host.
   The fixture sets `Llm:Timeout` to 2 s for M3. The circuit breaker is shared by all scenarios; only M3 fails a call,
   which stays below the configured failure ratio.
+
+## Prompt evaluation guard
+
+`EvaluationReportGuardTests` fails when `eval/reports/` has no report for the current `PromptVersion` and golden set
+from a real model (ADR 009). A prompt or golden-set change needs a new report in the same PR; never make the test
+pass by editing a report header or the test. The evaluation itself never runs in tests or CI.
 
 ## Packages
 
