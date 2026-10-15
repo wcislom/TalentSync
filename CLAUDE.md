@@ -93,7 +93,8 @@ are outside this rule.
   classified: `.claude/rules/resilience.md`.
   **Retries, back-off, timeouts and circuit breakers come from Polly, never hand-written loops or delay math.**
   HTTP clients use `Microsoft.Extensions.Http.Resilience`; other loops (handler loop, outbox relay) use a
-  `Polly.Core` `ResiliencePipeline` built with our `TimeProvider`. Our code keeps only what Polly does not know:
+  `Polly.Core` `ResiliencePipeline` built with our `TimeProvider`. One exception: the LLM provider SDK retries its
+  own transient errors, inside our Polly timeout (ADR 007). Our code keeps only what Polly does not know:
   failure classification, parking, logging with event ids.
 - LLM: `Microsoft.Extensions.AI` `IChatClient`. Claude through the official `Anthropic` SDK (`Llm:Provider = Anthropic`),
   `FakeChatClient` by default locally, in tests and in anomaly scenarios.

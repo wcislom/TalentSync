@@ -50,7 +50,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(LlmOptions.SectionName))
             .Validate(o => o.IsValid(),
                 $"'{LlmOptions.SectionName}' needs a positive Timeout and Provider '{LlmOptions.FakeProvider}', or " +
-                $"'{LlmOptions.AnthropicProvider}' with ApiKey, Model and a positive MaxOutputTokens.")
+                $"'{LlmOptions.AnthropicProvider}' with ApiKey, Model, a positive MaxOutputTokens and a non-negative MaxRetries.")
             .ValidateOnStart();
         services.AddSingleton<FakeChatClient>();
         services.AddSingleton<IChatClient>(provider =>
@@ -69,8 +69,8 @@ public static class DependencyInjection
     }
 
     private static IChatClient CreateAnthropicChatClient(AnthropicLlmOptions options) =>
-        // The SDK retries 408/429/5xx twice by default. ADR 007: no retry for the LLM, a failure ends in NotEnriched
-        // and the circuit breaker in ChatEnrichmentService must see it. The timeout comes from the same pipeline.
-        new AnthropicClient { ApiKey = options.ApiKey, MaxRetries = 0 }
+        // Short retries are the SDK's (ADR 007): it knows its transient errors and retry-after, the adapter does not.
+        // Its own 10-minute timeout never fires: the Polly timeout in ChatEnrichmentService cancels the whole call first.
+        new AnthropicClient { ApiKey = options.ApiKey, MaxRetries = options.MaxRetries }
             .AsIChatClient(options.Model, options.MaxOutputTokens);
 }

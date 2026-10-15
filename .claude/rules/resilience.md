@@ -44,8 +44,9 @@ Normative: the split of responsibilities and the classification. Descriptive: re
   `Api/TeamtailorRateLimit.cs`: an outer Polly retry for 429 (one attempt,
   delay from `X-Rate-Limit-Reset`, no retry without the header), then the standard handler bound from
   `Teamtailor:Resilience`.
-- **LLM (`IChatClient`)**: timeout and circuit breaker, **no retry** (cost, free-tier limits). Any failure ends in
-  `NotEnriched` inside the use case (D5); it never reaches the handler's classification.
+- **LLM (`IChatClient`)**: timeout and circuit breaker around the whole call; short retries of transient errors
+  are the provider SDK's (`Llm:Anthropic:MaxRetries`) and run inside that timeout (ADR 007). No retry of our own.
+  Any failure ends in `NotEnriched` inside the use case (D5); it never reaches the handler's classification.
 
 ## Permanent failures are values, transient failures are exceptions
 

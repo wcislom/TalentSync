@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Amended 2026-10-15: provider chosen (Claude), short retries of transient errors left to the provider SDK.
 
 ## Context
 
@@ -13,15 +13,16 @@ decision, and its failure must never block the profile (D5).
 The model is unlike every other dependency:
 
 - **Non-deterministic.** The same CV can produce a different answer on every call.
-- **Slow, paid or rate-limited.** A call takes seconds; a free tier answers 429 often.
+- **Slow, paid and rate-limited.** A call takes seconds; under load the provider answers 429 or 5xx.
 - **Untrusted output.** It can return invalid JSON, values outside the allowed ranges or nothing at all.
 - **It receives PII.** A CV contains the candidate's email address and phone number (invariants 14–15).
 
 Event Hubs processes the events of one partition one at a time (ADR 002, ADR 006), so whatever a handler waits for,
 every later event of that partition waits too.
 
-The provider is not settled yet. Gemini has a free tier; Claude has none but an official .NET SDK. The decision
-below must not depend on that choice.
+The provider is Claude, through Anthropic's official .NET SDK, which implements `IChatClient`. Gemini was
+considered for its free tier. The decision below does not depend on the provider, except for where short retries
+live (Resilience).
 
 ## Decision
 
@@ -56,10 +57,15 @@ is never partially accepted. The domain reports a broken rule as a value, not an
 cannot reach a log (invariant 14). Invalid output is an expected outcome, and a value is one the compiler makes the
 use case handle. The `Enrichment` constructor still throws on a broken rule, but only as a guard against our own bugs.
 
-**Resilience.** A timeout and a circuit breaker (`Polly.Core`, built with our `TimeProvider`, tunables from
-configuration), **no retry**. Every failure (timeout, open circuit, 429, invalid output) ends in `NotEnriched`
-inside the use case and never reaches the consumer's failure classification. A failure of the profile upsert does,
-and its retry finds the stored suggestion in step 4.
+**Resilience.** A timeout and a circuit breaker around the whole call (`Polly.Core`, built with our `TimeProvider`,
+tunables from configuration). Short retries of transient errors (429, 5xx, connection failure) are left to the
+provider SDK (`Llm:Anthropic:MaxRetries`): only the SDK knows its own exception types and the `retry-after` header,
+so the adapter stays provider-agnostic. The retries run inside our timeout, so one call, retries included, never
+takes longer than `Llm:Timeout`; the circuit breaker counts the call once, after the SDK has given up. Invalid
+output is never retried: the request succeeded, and asking again would only buy a different answer.
+Every failure that remains (timeout, open circuit, an error after the SDK's retries, invalid output) ends in
+`NotEnriched` inside the use case and never reaches the consumer's failure classification. A failure of the profile
+upsert does, and its retry finds the stored suggestion in step 4.
 
 **Enrichment runs inline in the handler.** It is synchronous for the event and asynchronous for the webhook:
 Ingress answered 200 long before.
@@ -74,14 +80,16 @@ to a candidate (scenario M5).
 - **A slow model delays the whole partition**, by at most the timeout per event. During an outage the circuit
   opens and later events get `NotEnriched` at once instead of each waiting for the timeout.
 - **Profiles created while the model is down stay `NotEnriched`** until the next qualification. There is no
-  re-enrichment in the MVP.
+  re-enrichment in the MVP. This is why a transient error is retried before it becomes `NotEnriched`.
+- **One retry layer is hidden in a library.** The SDK's retries and back-off are not visible in our logs and are not
+  covered by our tests, which run on `FakeChatClient`. A `retry-after` longer than the time left ends in our timeout,
+  so the log shows a timeout, not a 429.
 - **A changed CV is a new model call**, including a change only to an email address or phone number, because the
   hash covers the unmasked text (ADR 005).
 - **The mode marker is a test mechanism in product code.** It is read only by `FakeChatClient`, so it has no effect
   with a real provider.
-- **On Gemini's free tier, Google may use the data sent to the API.** Acceptable here: the CVs are fictional
-  simulator data and are masked before the call. A real deployment would need a paid tier or another provider.
-- Dependencies on `Microsoft.Extensions.AI` and one provider package.
+- **There is no free tier**: every real call is billed. Tests and the default local configuration use the fake.
+- Dependencies on `Microsoft.Extensions.AI` and one provider package (`Anthropic`).
 
 ## Alternatives considered
 
@@ -91,7 +99,10 @@ to a candidate (scenario M5).
   emulator configuration, and a new race in which a late enrichment overwrites a newer profile.
 - **Calling a provider SDK from the use case, or using `IChatClient` as the port.** Rejected: Application would
   depend on an LLM library, and prompt, masking and parsing would leak into the use case.
-- **Retrying the model.** Rejected: cost and rate limits, and a failure ends in `NotEnriched` anyway.
+- **No retry at all** (the first version of this ADR, written for a free tier with low rate limits). Rejected once
+  the provider is paid: one transient 429 or 5xx would leave the profile `NotEnriched` until the next qualification.
+- **Retrying in our own Polly pipeline.** Rejected: the provider-agnostic adapter would have to recognise each
+  provider's exception types and read its `retry-after` header.
 - **Asking the model again on every retry.** Rejected: see ADR 005 and invariant 5.
 - **A domain exception for invalid output.** Rejected: invalid output is a normal outcome, not an exceptional one,
   and an exception is not part of the signature. A missed `catch` would let it reach the consumer, which retries an

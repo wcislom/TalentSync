@@ -195,5 +195,5 @@ Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summar
 | [004](adr/004-transactional-outbox.md) | Transactional outbox in Ingress: persist before 200, a single relay publishes; cost: 503 when SQL is down loses the event |
 | [005](adr/005-idempotency.md) | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
 | [006](adr/006-partition-key-candidate-id.md) | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
-| [007](adr/007-llm-enrichment.md) | LLM enrichment: own port over `IChatClient`, PII masking, validation, fallback to `NotEnriched`, enrichment inline in the handler |
+| [007](adr/007-llm-enrichment.md) | LLM enrichment: own port over `IChatClient` (Claude via the Anthropic SDK), PII masking, validation, short retries in the provider SDK inside our timeout, fallback to `NotEnriched`, enrichment inline in the handler |
 | [008](adr/008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction: one way from Teamtailor, ownership per field, full replace of the fields we own (last write wins) |

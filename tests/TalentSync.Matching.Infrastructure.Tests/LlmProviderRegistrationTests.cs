@@ -31,6 +31,7 @@ public sealed class LlmProviderRegistrationTests : IDisposable
             ["Llm:Anthropic:ApiKey"] = "test-key",
             ["Llm:Anthropic:Model"] = "claude-haiku-5-5",
             ["Llm:Anthropic:MaxOutputTokens"] = "8000",
+            ["Llm:Anthropic:MaxRetries"] = "2",
         });
 
         var metadata = provider.GetRequiredService<IChatClient>().GetService<ChatClientMetadata>();
@@ -38,11 +39,13 @@ public sealed class LlmProviderRegistrationTests : IDisposable
     }
 
     [Theory]
-    [InlineData("Anthropic", null, "claude-haiku-5-5", "8000")]
-    [InlineData("Anthropic", "test-key", null, "8000")]
-    [InlineData("Anthropic", "test-key", "claude-haiku-5-5", "0")]
-    [InlineData("Gemini", "test-key", "claude-haiku-5-5", "8000")]
-    public void InvalidConfiguration_FailsValidation(string providerName, string? apiKey, string? model, string maxOutputTokens)
+    [InlineData("Anthropic", null, "claude-haiku-5-5", "8000", "2")]
+    [InlineData("Anthropic", "test-key", null, "8000", "2")]
+    [InlineData("Anthropic", "test-key", "claude-haiku-5-5", "0", "2")]
+    [InlineData("Anthropic", "test-key", "claude-haiku-5-5", "8000", "-1")]
+    [InlineData("Gemini", "test-key", "claude-haiku-5-5", "8000", "2")]
+    public void InvalidConfiguration_FailsValidation(
+        string providerName, string? apiKey, string? model, string maxOutputTokens, string maxRetries)
     {
         var provider = Build(new()
         {
@@ -50,6 +53,7 @@ public sealed class LlmProviderRegistrationTests : IDisposable
             ["Llm:Anthropic:ApiKey"] = apiKey,
             ["Llm:Anthropic:Model"] = model,
             ["Llm:Anthropic:MaxOutputTokens"] = maxOutputTokens,
+            ["Llm:Anthropic:MaxRetries"] = maxRetries,
         });
 
         Assert.Throws<OptionsValidationException>(() => provider.GetRequiredService<IOptions<LlmOptions>>().Value);
