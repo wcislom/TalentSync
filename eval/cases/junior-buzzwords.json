@@ -1,0 +1,20 @@
+{
+  "id": "junior-buzzwords",
+  "purpose": "One year of experience behind a long list of technologies: seniority must follow the experience, not the length of the list.",
+  "cv": "Bruno Halvik\nSoftware Developer\nbruno.halvik@example.test, +292 600 111 222\n\nAbout me\nPassionate full-stack developer, fast learner, always up to date with the newest technologies.\n\nExperience\n2025–2026 Junior Java Developer, Corvane Retail (first job after graduation)\n- Implemented REST endpoints in Java with Spring Boot for the order service.\n- Wrote unit tests and fixed bugs reported by QA.\n- Worked with a PostgreSQL database under the supervision of a senior developer.\n\nTechnologies\nJava, Spring Boot, Kotlin, Python, Django, JavaScript, TypeScript, React, Angular, Vue.js, Node.js, Docker, Kubernetes, AWS, Azure, Google Cloud, Terraform, Kafka, MongoDB, PostgreSQL, Redis, GraphQL, TensorFlow, Git, Linux\n\nEducation\nBSc in Computer Science, 2025\n",
+  "expected": {
+    "required": [
+      ["Java"],
+      ["Spring Boot", "Spring"],
+      ["PostgreSQL", "Postgres"]
+    ],
+    "acceptable": [
+      "REST", "REST API", "REST APIs", "RESTful APIs", "Unit testing", "Kotlin", "Python", "Django", "JavaScript", "TypeScript",
+      "React", "Angular", "Vue.js", "Vue", "Node.js", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "GCP",
+      "Terraform", "Kafka", "Apache Kafka", "MongoDB", "Redis", "GraphQL", "TensorFlow", "Git", "Linux"
+    ],
+    "forbidden": ["C#", ".NET", "Rust", "Scala", "Spark"],
+    "seniority": "Junior",
+    "seniorityAlsoAccepted": []
+  }
+}

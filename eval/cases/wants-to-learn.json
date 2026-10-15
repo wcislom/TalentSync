@@ -1,0 +1,18 @@
+{
+  "id": "wants-to-learn",
+  "purpose": "A technology mentioned only as something the candidate wants to learn (Go) must not be suggested as a skill.",
+  "cv": "Feliks Orlander\nFrontend Developer\nfeliks.orlander@example.test, +292 730 555 666\n\nExperience\n2023–2026 Frontend Developer, Tidewell Insurance\n- Built customer-facing forms and dashboards in React with TypeScript.\n- Managed application state with Redux and wrote component tests with Jest and React Testing Library.\n- Added small backend-for-frontend endpoints in Node.js with Express.\n\nSkills\nTypeScript, JavaScript, React, Redux, HTML, CSS, Jest, React Testing Library, Node.js, Express, Git\n\nPlans\nI want to learn Go next year, to move towards backend development.\n\nEducation\nBSc in Computer Science, 2023\n",
+  "expected": {
+    "required": [
+      ["TypeScript"],
+      ["React", "React.js", "ReactJS"]
+    ],
+    "acceptable": [
+      "JavaScript", "Redux", "HTML", "HTML5", "CSS", "CSS3", "Jest", "React Testing Library", "Node.js", "Express",
+      "Express.js", "Git", "Frontend development", "Unit testing"
+    ],
+    "forbidden": ["Go", "Golang", "Angular", "Vue.js", "Python", "Java"],
+    "seniority": "Mid",
+    "seniorityAlsoAccepted": ["Junior"]
+  }
+}
