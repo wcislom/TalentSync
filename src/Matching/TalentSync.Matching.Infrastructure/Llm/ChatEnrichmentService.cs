@@ -20,24 +20,12 @@ namespace TalentSync.Matching.Infrastructure.Llm;
 /// </remarks>
 internal sealed class ChatEnrichmentService : IEnrichmentService
 {
-    // The limit comes from the domain, so the prompt cannot drift from the validation that rejects the answer.
-    private static readonly string Instructions = $"""
-        You read the CV of an IT consultant and suggest their technical skills and seniority.
-        Each skill is a short name of at most {Skill.MaxLength} characters.
-        Seniority is one of: Junior, Mid, Senior, Lead.
-        Confidence is how sure you are of the whole assessment, from 0 to 1.
-        Use only what the CV says. Answer with JSON only.
-        """;
-
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     private static readonly ChatOptions ChatOptions = new()
     {
         // No Temperature or other sampling options: some providers (current Claude models) answer 400 to a non-default
         // value, and every call would end in NotEnriched. The variance between calls is handled by stored results
         // (invariant 5).
-        ResponseFormat = ChatResponseFormat.ForJsonSchema<EnrichmentResponseDto>(
-            JsonOptions, "consultant_enrichment", "Suggested skills and seniority of a consultant."),
+        ResponseFormat = EnrichmentPrompt.ResponseFormat,
     };
 
     private readonly IChatClient _chatClient;
@@ -68,6 +56,8 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
             .Build();
     }
 
+    public string PromptVersion => EnrichmentPrompt.Version;
+
     public async Task<EnrichmentOutcome> EnrichAsync(string cvText, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(cvText);
@@ -75,7 +65,7 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
         // Only the masked CV text, never the candidate id or other fields (invariant 15).
         List<ChatMessage> messages =
         [
-            new(ChatRole.System, Instructions),
+            new(ChatRole.System, EnrichmentPrompt.Instructions),
             new(ChatRole.User, CvMasker.Mask(cvText)),
         ];
 
@@ -112,7 +102,7 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
         EnrichmentResponseDto? answer;
         try
         {
-            answer = JsonSerializer.Deserialize<EnrichmentResponseDto>(response.Text, JsonOptions);
+            answer = JsonSerializer.Deserialize<EnrichmentResponseDto>(response.Text, EnrichmentPrompt.JsonOptions);
         }
         catch (JsonException)
         {

@@ -75,10 +75,11 @@ public sealed class CreateConsultantProfileUseCase(
         }
 
         var cvHash = CvHash.Of(cvText);
+        var promptVersion = enrichmentService.PromptVersion;
 
         // A crash or a Matching Platform failure after the save below is retried by the handler loop, and the retry
         // finds the suggestion here instead of asking the model again for a possibly different one (invariant 5).
-        var stored = await enrichmentResults.FindAsync(candidateId, cvHash, cancellationToken);
+        var stored = await enrichmentResults.FindAsync(candidateId, cvHash, promptVersion, cancellationToken);
         if (stored is not null)
         {
             return stored;
@@ -89,7 +90,8 @@ public sealed class CreateConsultantProfileUseCase(
             // Saved before the upsert; the save returns what is stored, which differs from ours when another processor
             // enriched the same CV first.
             EnrichmentOutcome.Enriched enriched =>
-                await enrichmentResults.SaveAsync(candidateId, cvHash, enriched.Enrichment, enriched.ModelId, cancellationToken),
+                await enrichmentResults.SaveAsync(
+                    candidateId, cvHash, promptVersion, enriched.Enrichment, enriched.ModelId, cancellationToken),
             EnrichmentOutcome.Failed => null,
             _ => throw new InvalidOperationException("Unknown enrichment outcome."),
         };

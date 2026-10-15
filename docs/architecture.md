@@ -58,7 +58,8 @@ src/
     TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform,
                                             IEnrichmentService, IEnrichmentResultStore, CvHash.
                                             → Matching.Domain, Recruitment.Domain
-    TalentSync.Matching.Infrastructure      Llm/ (CvMasker, ChatEnrichmentService over IChatClient, Fake/FakeChatClient),
+    TalentSync.Matching.Infrastructure      Llm/ (CvMasker, EnrichmentPrompt, ChatEnrichmentService over IChatClient,
+                                            Fake/FakeChatClient),
                                             EnrichmentResults/, MatchingPlatformClient, MatchingDbContext with
                                             EnrichmentResultStore. → Matching.Application, Infrastructure.Messaging
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
@@ -155,7 +156,7 @@ One convention in every project, host or library, so the registrations are alway
 3. Matching.Worker receives it on the candidate's partition and checks `matching.Inbox`: seen → checkpoint, skip.
 4. Through `IRecruitmentSource`: GET the application with its stage. Not qualified → inbox row, checkpoint.
 5. GET the candidate with the CV text.
-6. Look up `matching.EnrichmentResults` by `(candidateId, cvHash)`. Not found → the adapter masks the CV and calls
+6. Look up `matching.EnrichmentResults` by `(candidateId, cvHash, promptVersion)`. Not found → the adapter masks the CV and calls
    the LLM; a valid result is stored before step 7. Failure → `NotEnriched`, nothing stored.
 7. `PUT /profiles/{candidateId}` in FakeMatchingPlatform.
 8. Insert the inbox row, checkpoint.

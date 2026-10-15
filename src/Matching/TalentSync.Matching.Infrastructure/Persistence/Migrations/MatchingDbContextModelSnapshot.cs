@@ -128,15 +128,21 @@ namespace TalentSync.Matching.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<string>("Result")
                         .IsRequired()
                         .HasColumnType("json");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CandidateId", "CvHash")
+                    b.HasIndex("CandidateId", "CvHash", "PromptVersion")
                         .IsUnique()
-                        .HasDatabaseName("UX_EnrichmentResults_CandidateId_CvHash");
+                        .HasDatabaseName("UX_EnrichmentResults_CandidateId_CvHash_PromptVersion");
 
                     b.ToTable("EnrichmentResults", "matching");
                 });

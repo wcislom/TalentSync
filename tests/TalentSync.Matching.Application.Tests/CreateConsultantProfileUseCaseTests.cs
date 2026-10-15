@@ -48,6 +48,8 @@ public sealed class CreateConsultantProfileUseCaseTests
         Assert.Equal(["find", "enrich", "save", "upsert"], _steps);
         var saved = Assert.Single(_store.Saved);
         Assert.Equal(CvHash.Of(Cv), saved.CvHash);
+        Assert.Equal("prompt-1", saved.PromptVersion);
+        Assert.Equal("prompt-1", Assert.Single(_store.Found).PromptVersion);
         Assert.Equal("model-1", saved.ModelId);
         var profile = Assert.Single(_platform.Upserted);
         Assert.Equal(EnrichmentStatus.Enriched, profile.EnrichmentStatus);
@@ -202,6 +204,8 @@ public sealed class CreateConsultantProfileUseCaseTests
 
     private sealed class StubEnrichmentService(List<string> steps) : IEnrichmentService
     {
+        public string PromptVersion => "prompt-1";
+
         public EnrichmentOutcome Outcome { get; set; } = new EnrichmentOutcome.Enriched(Suggestion, "model-1");
 
         public Task<EnrichmentOutcome> EnrichAsync(string cvText, CancellationToken cancellationToken)
@@ -218,19 +222,24 @@ public sealed class CreateConsultantProfileUseCaseTests
         /// <summary>Set to simulate a duplicate key: another processor stored this one first.</summary>
         public Enrichment? StoredOnSave { get; set; }
 
-        public List<(CandidateId CandidateId, CvHash CvHash, string ModelId)> Saved { get; } = [];
+        public List<(CandidateId CandidateId, CvHash CvHash, string PromptVersion)> Found { get; } = [];
 
-        public Task<Enrichment?> FindAsync(CandidateId candidateId, CvHash cvHash, CancellationToken cancellationToken)
+        public List<(CandidateId CandidateId, CvHash CvHash, string PromptVersion, string ModelId)> Saved { get; } = [];
+
+        public Task<Enrichment?> FindAsync(
+            CandidateId candidateId, CvHash cvHash, string promptVersion, CancellationToken cancellationToken)
         {
             steps.Add("find");
+            Found.Add((candidateId, cvHash, promptVersion));
             return Task.FromResult(Stored);
         }
 
         public Task<Enrichment> SaveAsync(
-            CandidateId candidateId, CvHash cvHash, Enrichment enrichment, string modelId, CancellationToken cancellationToken)
+            CandidateId candidateId, CvHash cvHash, string promptVersion, Enrichment enrichment, string modelId,
+            CancellationToken cancellationToken)
         {
             steps.Add("save");
-            Saved.Add((candidateId, cvHash, modelId));
+            Saved.Add((candidateId, cvHash, promptVersion, modelId));
             return Task.FromResult(StoredOnSave ?? enrichment);
         }
     }
