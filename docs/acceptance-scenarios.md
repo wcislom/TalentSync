@@ -193,3 +193,16 @@ Scenario: I4 Stale timestamp is rejected
   Then Ingress responds 401
   And ingress.Outbox has no row for that EventId
 ```
+
+## Observability
+
+The test records spans in process with an `ActivityListener`; no exporter, no dashboard.
+
+```gherkin
+# Illustrates: ADR 010 (one trace per webhook, propagated across the outbox and Event Hubs)
+Scenario: O1 One webhook produces one trace through Ingress, the relay and both workers
+  When candidate "c-o1" applies in FakeTeamtailor
+  Then the webhook span of its candidate.create event is the root of a trace
+  And the publish span of that event is a child of the webhook span
+  And every process span of that event in "sync-worker" and in "matching-worker" is a child of the publish span
+```

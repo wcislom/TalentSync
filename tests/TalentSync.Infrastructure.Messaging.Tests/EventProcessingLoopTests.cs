@@ -231,7 +231,7 @@ public class EventProcessingLoopTests
         timeProvider ?? TimeProvider.System,
         NullLogger<EventProcessingLoop>.Instance);
 
-    private static ReceivedEvent Received(byte[] body) => new("0", 42, body);
+    private static ReceivedEvent Received(byte[] body) => new("0", 42, body, "test-consumer-group", TraceParent: null);
 
     private static byte[] Serialize(EventEnvelope envelope) => Encoding.UTF8.GetBytes(EventEnvelopeJson.Serialize(envelope));
 

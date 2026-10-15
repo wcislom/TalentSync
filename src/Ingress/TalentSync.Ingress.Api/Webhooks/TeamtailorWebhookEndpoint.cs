@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using TalentSync.Contracts;
 using TalentSync.Infrastructure.Teamtailor.Webhooks;
@@ -71,6 +72,20 @@ internal static class TeamtailorWebhookEndpoint
         var eventId = Convert.ToHexStringLower(SHA256.HashData(rawBody));
         var receivedAt = timeProvider.GetUtcNow();
 
+        // Each webhook starts its own trace (ADR 010): the sender's trace context is untrusted, and one sender trace
+        // can carry several webhooks. The link leads back to the HTTP request span. Clearing Activity.Current does not
+        // leak to the caller: it is restored when this async method returns.
+        var request = Activity.Current;
+        Activity.Current = null;
+        using var activity = IngressTelemetry.Source.StartActivity(
+            $"webhook {notification.EventName}",
+            ActivityKind.Internal,
+            parentContext: default,
+            links: request is null ? null : [new ActivityLink(request.Context)]);
+        activity?.SetTag("talentsync.event_id", eventId);
+        activity?.SetTag("talentsync.event_type", notification.EventName);
+        activity?.SetTag("talentsync.candidate_id", notification.CandidateId);
+
         var envelope = new EventEnvelope
         {
             EventId = eventId,
@@ -90,6 +105,7 @@ internal static class TeamtailorWebhookEndpoint
             Type = notification.EventName,
             Envelope = EventEnvelopeJson.Serialize(envelope),
             CreatedAt = receivedAt.UtcDateTime,
+            TraceParent = IngressTelemetry.TraceParentOf(activity),
         });
 
         try
@@ -102,6 +118,8 @@ internal static class TeamtailorWebhookEndpoint
         {
             // Known limitation (ADR 004): Teamtailor may not retry a 503, so this event is lost.
             // The exception carries no PII: the row holds ids only and sensitive data logging is off.
+            activity?.AddException(exception);
+            activity?.SetStatus(ActivityStatusCode.Error);
             logger.LogError(exception, "Could not store webhook {EventId} ({EventName}) in the outbox", eventId, notification.EventName);
             return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
         }

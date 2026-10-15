@@ -19,7 +19,9 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
 - **One project, `TalentSync.Infrastructure.Observability`** (`AddObservability`), referenced only by the hosts.
   It holds one concern, so it is not a Common project (ADR 001). Our spans and metrics use the BCL `ActivitySource`
   and `Meter` where the work happens; the SDK subscribes to `TalentSync.*`. No telemetry in `*.Domain` or `*.Application`.
-- **Explicit propagation, one trace per webhook.** Ingress stores the trace context in `ingress.Outbox.TraceParent`.
+- **Explicit propagation, one trace per webhook.** The webhook span is the root of a new trace, linked to the HTTP
+  request span: the sender's trace context is untrusted, and one sender trace can carry several webhooks.
+  Ingress stores the webhook span's context in `ingress.Outbox.TraceParent`.
   The relay's publish span is a child of it and writes `traceparent` to `EventData.Properties`, never to the envelope.
   The consumer span is its child. A missing or invalid value starts a new trace and never fails the event.
 - **One consumer span per attempt**, tagged with the outcome (`handled`, `skipped_duplicate`, `parked`, ...).
@@ -41,5 +43,6 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
 - **The Event Hubs SDK's own propagation.** Rejected: experimental switch, hidden in a library.
 - **Trace context in `EventEnvelope`.** Rejected: the envelope is a business contract, not transport metadata.
 - **A span link instead of a parent at the outbox.** Rejected: the dashboard would split one webhook into separate traces.
+- **Continuing the sender's trace.** Rejected: an external caller would choose our trace id and its sampling.
 - **Setup duplicated in each host.** Rejected: three copies would drift.
 - **Seq or Grafana.** Seq covers logs only; Grafana is heavier. Production only needs another OTLP endpoint.

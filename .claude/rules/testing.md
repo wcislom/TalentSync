@@ -62,6 +62,11 @@ paths:
   The fixture sets `Llm:Timeout` to 2 s for M3. The circuit breaker is shared by all scenarios; only M3 fails a call,
   which stays below the configured failure ratio.
 
+## Traces
+
+Scenario O1 records spans with `SpanRecorder` (`Infrastructure/`), an `ActivityListener` on `TalentSync.*`: all hosts
+run in the test process, so no exporter is needed. Spans are matched by the `talentsync.event_id` tag.
+
 ## Prompt evaluation guard
 
 `EvaluationReportGuardTests` fails when `eval/reports/` has no report for the current `PromptVersion` and golden set
