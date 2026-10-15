@@ -198,3 +198,4 @@ Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summar
 | [006](adr/006-partition-key-candidate-id.md) | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
 | [007](adr/007-llm-enrichment.md) | LLM enrichment: own port over `IChatClient` (Claude via the Anthropic SDK), PII masking, validation, short retries in the provider SDK inside our timeout, fallback to `NotEnriched`, enrichment inline in the handler |
 | [008](adr/008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction: one way from Teamtailor, ownership per field, full replace of the fields we own (last write wins) |
+| [009](adr/009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt: golden set of fictional CVs, metrics in code, report per `(PromptVersion, GoldenSetHash)`, run manually never in CI; a CI test only checks that a report exists for the current pair |
