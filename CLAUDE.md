@@ -95,7 +95,8 @@ are outside this rule.
   HTTP clients use `Microsoft.Extensions.Http.Resilience`; other loops (handler loop, outbox relay) use a
   `Polly.Core` `ResiliencePipeline` built with our `TimeProvider`. Our code keeps only what Polly does not know:
   failure classification, parking, logging with event ids.
-- LLM: `Microsoft.Extensions.AI` `IChatClient`. Gemini by default, `FakeChatClient` in tests and anomaly scenarios.
+- LLM: `Microsoft.Extensions.AI` `IChatClient`. Claude through the official `Anthropic` SDK (`Llm:Provider = Anthropic`),
+  `FakeChatClient` by default locally, in tests and in anomaly scenarios.
 - Tests: xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`; VSTest syntax such as
   `--filter "FullyQualifiedName~..."` does not work). Integration tests run the hosts and simulators in process with
   Testcontainers infrastructure, see `.claude/rules/testing.md`.
@@ -129,4 +130,5 @@ architecture tests.
 - EF migration, example for Sync (descriptive: verify once the first `DbContext` exists; needs the `dotnet-ef`
   tool and `Microsoft.EntityFrameworkCore.Design`, ask before adding them):
   `dotnet ef migrations add <Name> --project src/Sync/TalentSync.Sync.Infrastructure --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext`
-- Gemini key (I set it myself): `dotnet user-secrets set "Llm:Gemini:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker`
+- Anthropic key (I set it myself): `dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker`,
+  then `dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker`

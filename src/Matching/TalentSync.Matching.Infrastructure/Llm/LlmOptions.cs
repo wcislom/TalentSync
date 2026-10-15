@@ -1,4 +1,5 @@
 using Polly.CircuitBreaker;
+using TalentSync.Matching.Infrastructure.Llm.Anthropic;
 using TalentSync.Matching.Infrastructure.Llm.Fake;
 
 namespace TalentSync.Matching.Infrastructure.Llm;
@@ -9,7 +10,8 @@ internal sealed class LlmOptions
 
     public const string FakeProvider = "Fake";
 
-    /// <summary>Only <see cref="FakeProvider"/> exists until a real provider is wired.</summary>
+    public const string AnthropicProvider = "Anthropic";
+
     public string? Provider { get; set; }
 
     /// <summary>
@@ -23,5 +25,13 @@ internal sealed class LlmOptions
 
     public FakeLlmOptions Fake { get; set; } = new();
 
-    public bool IsValid() => Provider == FakeProvider && Timeout > TimeSpan.Zero;
+    /// <summary>Validated only when selected, so the fake runs without a key.</summary>
+    public AnthropicLlmOptions Anthropic { get; set; } = new();
+
+    public bool IsValid() => Timeout > TimeSpan.Zero && Provider switch
+    {
+        FakeProvider => true,
+        AnthropicProvider => Anthropic.IsValid(),
+        _ => false,
+    };
 }

@@ -48,10 +48,12 @@ dotnet build
 dotnet test
 ```
 
-Set `Llm:Provider` to `Fake` to run without an LLM key. For Gemini, keep the key in user secrets:
+`Llm:Provider` is `Fake` by default, so the system runs without an LLM key. For Claude, keep the key in user secrets
+and switch the provider (every real call is billed):
 
 ```bash
-dotnet user-secrets set "Llm:Gemini:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker
+dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker
+dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
 ```
 
 ## Simplifications

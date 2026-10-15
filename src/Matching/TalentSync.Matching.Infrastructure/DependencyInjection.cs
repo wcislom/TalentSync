@@ -1,3 +1,4 @@
+using Anthropic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using TalentSync.Matching.Application.Ports;
 using TalentSync.Matching.Infrastructure.Llm;
+using TalentSync.Matching.Infrastructure.Llm.Anthropic;
 using TalentSync.Matching.Infrastructure.Llm.Fake;
 using TalentSync.Matching.Infrastructure.MatchingPlatform;
 using TalentSync.Matching.Infrastructure.Persistence;
@@ -46,15 +48,29 @@ public static class DependencyInjection
 
         services.AddOptions<LlmOptions>()
             .Bind(configuration.GetSection(LlmOptions.SectionName))
-            .Validate(o => o.IsValid(), $"'{LlmOptions.SectionName}' needs Provider '{LlmOptions.FakeProvider}' and a positive Timeout.")
+            .Validate(o => o.IsValid(),
+                $"'{LlmOptions.SectionName}' needs a positive Timeout and Provider '{LlmOptions.FakeProvider}', or " +
+                $"'{LlmOptions.AnthropicProvider}' with ApiKey, Model and a positive MaxOutputTokens.")
             .ValidateOnStart();
         services.AddSingleton<FakeChatClient>();
         services.AddSingleton<IChatClient>(provider =>
-            provider.GetRequiredService<IOptions<LlmOptions>>().Value.Provider == LlmOptions.FakeProvider
-                ? provider.GetRequiredService<FakeChatClient>()
-                : throw new InvalidOperationException($"Unknown '{LlmOptions.SectionName}:Provider'."));
+        {
+            var options = provider.GetRequiredService<IOptions<LlmOptions>>().Value;
+            return options.Provider switch
+            {
+                LlmOptions.FakeProvider => provider.GetRequiredService<FakeChatClient>(),
+                LlmOptions.AnthropicProvider => CreateAnthropicChatClient(options.Anthropic),
+                _ => throw new InvalidOperationException($"Unknown '{LlmOptions.SectionName}:Provider'."),
+            };
+        });
         services.AddSingleton<IEnrichmentService, ChatEnrichmentService>();
 
         return services;
     }
+
+    private static IChatClient CreateAnthropicChatClient(AnthropicLlmOptions options) =>
+        // The SDK retries 408/429/5xx twice by default. ADR 007: no retry for the LLM, a failure ends in NotEnriched
+        // and the circuit breaker in ChatEnrichmentService must see it. The timeout comes from the same pipeline.
+        new AnthropicClient { ApiKey = options.ApiKey, MaxRetries = 0 }
+            .AsIChatClient(options.Model, options.MaxOutputTokens);
 }
