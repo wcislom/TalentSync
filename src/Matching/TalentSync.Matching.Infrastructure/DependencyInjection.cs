@@ -68,7 +68,8 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IChatClient CreateAnthropicChatClient(AnthropicLlmOptions options) =>
+    // Internal so the prompt evaluation (ADR 009) builds the client exactly as the worker does.
+    internal static IChatClient CreateAnthropicChatClient(AnthropicLlmOptions options) =>
         new AnthropicClient { ApiKey = options.ApiKey, MaxRetries = options.MaxRetries }
             .AsIChatClient(options.Model, options.MaxOutputTokens);
 }

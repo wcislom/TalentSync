@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Matching.Worker's id, so the Llm:Anthropic:ApiKey set for the worker is found here too (ADR 009). -->
+    <UserSecretsId>dotnet-TalentSync.Matching.Worker-fcb410b1-4e65-4ee9-8da5-1924ac0c35e5</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Matching\TalentSync.Matching.Infrastructure\TalentSync.Matching.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

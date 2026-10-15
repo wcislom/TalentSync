@@ -15,6 +15,7 @@ paths:
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
 | `TalentSync.Sync.Infrastructure.Tests` | Unit, no network | CRM client: status mapping (404 on delete = done, 4xx → Rejected), HTTP pipeline. Internals via `InternalsVisibleTo` |
+| `TalentSync.Matching.Evaluation.Tests` | Unit, no network | Prompt evaluation (ADR 009): metric calculations, golden set hash, case file validation, report format. Never calls a model |
 | `TalentSync.IntegrationTests` | Acceptance | Scenarios from `docs/acceptance-scenarios.md` |
 
 ## Acceptance tests

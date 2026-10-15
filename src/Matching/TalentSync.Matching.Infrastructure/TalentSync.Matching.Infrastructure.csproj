@@ -12,5 +12,7 @@
     <InternalsVisibleTo Include="TalentSync.Matching.Infrastructure.Tests" />
     <!-- Acceptance scenarios read FakeChatClient's calls from the worker host (testing rule). -->
     <InternalsVisibleTo Include="TalentSync.IntegrationTests" />
+    <!-- The prompt evaluation builds ChatEnrichmentService without the worker's SQL and HTTP dependencies (ADR 009). -->
+    <InternalsVisibleTo Include="TalentSync.Matching.Evaluation" />
   </ItemGroup>
 </Project>

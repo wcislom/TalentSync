@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/eval/">
+    <Project Path="eval/TalentSync.Matching.Evaluation/TalentSync.Matching.Evaluation.csproj" />
+  </Folder>
   <Folder Name="/simulators/">
     <Project Path="simulators/FakeCrm/FakeCrm.csproj" />
     <Project Path="simulators/FakeMatchingPlatform/FakeMatchingPlatform.csproj" />
@@ -31,6 +34,7 @@
     <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
     <Project Path="tests/TalentSync.Matching.Application.Tests/TalentSync.Matching.Application.Tests.csproj" />
     <Project Path="tests/TalentSync.Matching.Domain.Tests/TalentSync.Matching.Domain.Tests.csproj" />
+    <Project Path="tests/TalentSync.Matching.Evaluation.Tests/TalentSync.Matching.Evaluation.Tests.csproj" />
     <Project Path="tests/TalentSync.Matching.Infrastructure.Tests/TalentSync.Matching.Infrastructure.Tests.csproj" />
     <Project Path="tests/TalentSync.Sync.Application.Tests/TalentSync.Sync.Application.Tests.csproj" />
     <Project Path="tests/TalentSync.Sync.Infrastructure.Tests/TalentSync.Sync.Infrastructure.Tests.csproj" />

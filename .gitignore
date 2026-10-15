@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Exploratory prompt evaluation runs (ADR 009); only reports for prompts on main are committed
+eval/reports/local/
