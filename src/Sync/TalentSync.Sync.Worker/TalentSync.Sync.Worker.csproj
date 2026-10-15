@@ -13,6 +13,7 @@
     <ProjectReference Include="..\TalentSync.Sync.Infrastructure\TalentSync.Sync.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Teamtailor\TalentSync.Infrastructure.Teamtailor.csproj" />
     <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Messaging\TalentSync.Infrastructure.Messaging.csproj" />
+    <ProjectReference Include="..\..\Shared\TalentSync.Infrastructure.Observability\TalentSync.Infrastructure.Observability.csproj" />
     <ProjectReference Include="..\..\Shared\TalentSync.Contracts\TalentSync.Contracts.csproj" />
   </ItemGroup>
 

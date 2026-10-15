@@ -1,4 +1,5 @@
 using TalentSync.Infrastructure.Messaging;
+using TalentSync.Infrastructure.Observability;
 using TalentSync.Infrastructure.Teamtailor;
 using TalentSync.Matching.Application.UseCases;
 using TalentSync.Matching.Infrastructure;
@@ -17,6 +18,7 @@ internal static class DependencyInjection
         services.AddScoped<CreateConsultantProfileUseCase>();
         services.AddMessaging<MatchingDbContext, JobApplicationEventHandler>(configuration);
         services.AddHealthChecks();
+        services.AddObservability(configuration);
 
         return services;
     }

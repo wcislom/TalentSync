@@ -20,6 +20,7 @@
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/TalentSync.Contracts/TalentSync.Contracts.csproj" />
     <Project Path="src/Shared/TalentSync.Infrastructure.Messaging/TalentSync.Infrastructure.Messaging.csproj" />
+    <Project Path="src/Shared/TalentSync.Infrastructure.Observability/TalentSync.Infrastructure.Observability.csproj" />
     <Project Path="src/Shared/TalentSync.Infrastructure.Teamtailor/TalentSync.Infrastructure.Teamtailor.csproj" />
     <Project Path="src/Shared/TalentSync.Recruitment.Domain/TalentSync.Recruitment.Domain.csproj" />
   </Folder>

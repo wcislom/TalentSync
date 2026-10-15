@@ -40,6 +40,9 @@ src/
                                             stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,
                                             signature v2, webhook parsing, public AddTeamtailorWebhooks() (Ingress)
                                             and AddTeamtailorApi() (workers). → Recruitment.Domain
+    TalentSync.Infrastructure.Observability AddObservability(): OpenTelemetry traces, metrics and logs over OTLP,
+                                            subscribes to every TalentSync.* ActivitySource and Meter (ADR 010).
+                                            Only hosts reference it. References nothing in src/
     TalentSync.Infrastructure.Messaging     EventProcessorClient hosting, consumer handler skeleton (retry loop,
                                             failure classification), HandlerResult, Inbox and ParkingLot entities
                                             with schema-parameterised EF config. → Contracts
@@ -85,7 +88,7 @@ eval/                                       offline evaluation of the enrichment
   cases/                                    golden set: one JSON per fictional CV
   reports/                                  committed reports; local/ is gitignored
   run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
-deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
+deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
                                             eventhubs/Config.json, run-local.sh (containers + the three hosts)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand)
@@ -105,7 +108,7 @@ Code is split by context first, then by layer, with a project wherever the compi
 | Layer | Shared | Ingress | Sync | Matching |
 |---|---|---|---|---|
 | Presentation + composition root | | `Ingress.Api` | `Sync.Worker` | `Matching.Worker` |
-| Infrastructure | `Infrastructure.Teamtailor`, `Infrastructure.Messaging` | (inside `Ingress.Api`) | `Sync.Infrastructure` | `Matching.Infrastructure` |
+| Infrastructure | `Infrastructure.Teamtailor`, `Infrastructure.Messaging`, `Infrastructure.Observability` | (inside `Ingress.Api`) | `Sync.Infrastructure` | `Matching.Infrastructure` |
 | Application | | | `Sync.Application` | `Matching.Application` |
 | Domain | `Recruitment.Domain` | | | `Matching.Domain` |
 | Contract between processes | `Contracts` | | | |

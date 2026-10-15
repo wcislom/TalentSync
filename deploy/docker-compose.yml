@@ -1,5 +1,5 @@
 # Local infrastructure: SQL Server, Event Hubs emulator and Azurite (emulator metadata, later worker checkpoints),
-# plus the three simulators. The TalentSync hosts run on the host with `dotnet run`.
+# the three simulators and the Aspire Dashboard. The TalentSync hosts run on the host with `dotnet run`.
 # Secrets come from deploy/.env (gitignored, copy deploy/.env.example).
 name: talentsync
 
@@ -85,6 +85,17 @@ services:
     pull_policy: build
     ports:
       - "5075:8080"
+
+  # Traces, metrics and logs of the three hosts (ADR 010), UI on http://localhost:18888. They export over OTLP/gRPC to
+  # 4317 (OTEL_EXPORTER_OTLP_ENDPOINT in their launchSettings.json). Data is in memory and is lost on restart.
+  # Anonymous access: local only, never expose this port.
+  aspire-dashboard:
+    image: mcr.microsoft.com/aspire/dashboard:13.6.1
+    environment:
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "18888:18888"
+      - "4317:18889"
 
 volumes:
   sql-data:

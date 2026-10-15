@@ -1,4 +1,5 @@
 using TalentSync.Infrastructure.Messaging;
+using TalentSync.Infrastructure.Observability;
 using TalentSync.Infrastructure.Teamtailor;
 using TalentSync.Sync.Application.UseCases;
 using TalentSync.Sync.Infrastructure;
@@ -17,6 +18,7 @@ internal static class DependencyInjection
         services.AddScoped<SyncCandidateToCrmUseCase>();
         services.AddMessaging<SyncDbContext, CandidateEventHandler>(configuration);
         services.AddHealthChecks();
+        services.AddObservability(configuration);
 
         return services;
     }

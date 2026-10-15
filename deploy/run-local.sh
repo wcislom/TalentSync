@@ -30,13 +30,13 @@ if command -v wt.exe >/dev/null 2>&1; then
       cmd /k dotnet run --no-build --launch-profile http --project "${projects[$i]}"
     echo "Started ${titles[$i]}"
   done
-  echo "Click through the flow with docs/e2e.http."
+  echo "Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888"
 else
   trap 'kill $(jobs -p) 2>/dev/null' INT TERM EXIT
   for i in "${!titles[@]}"; do
     dotnet run --no-build --launch-profile http --project "${projects[$i]}" 2>&1 | sed -u "s/^/[${titles[$i]}] /" &
     echo "Started ${titles[$i]}"
   done
-  echo "Click through the flow with docs/e2e.http. Ctrl+C stops all three hosts."
+  echo "Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888. Ctrl+C stops all three hosts."
   wait
 fi

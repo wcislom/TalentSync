@@ -2,6 +2,7 @@ using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using TalentSync.Infrastructure.Observability;
 using TalentSync.Infrastructure.Teamtailor;
 using TalentSync.Ingress.Api.Outbox;
 using TalentSync.Ingress.Api.Persistence;
@@ -47,6 +48,7 @@ internal static class DependencyInjection
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddTeamtailorWebhooks(configuration);
+        services.AddObservability(configuration);
 
         return services;
     }
