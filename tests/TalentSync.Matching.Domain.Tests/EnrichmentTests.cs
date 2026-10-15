@@ -15,18 +15,6 @@ public sealed class EnrichmentTests
         Assert.Throws<ArgumentException>(() => new Enrichment([], Seniority.Junior, new Confidence(0.1)));
 
     [Fact]
-    public void MoreThanMaxSkills_Throws() =>
-        Assert.Throws<ArgumentException>(() => new Enrichment(Skills(Enrichment.MaxSkills + 1), Seniority.Mid, new Confidence(0.5)));
-
-    [Fact]
-    public void DuplicatesBringingTheCountDownToMax_AreAllowed()
-    {
-        var skills = Skills(Enrichment.MaxSkills).Append(new Skill("SKILL-0"));
-
-        Assert.Equal(Enrichment.MaxSkills, new Enrichment(skills, Seniority.Mid, new Confidence(0.5)).Skills.Count);
-    }
-
-    [Fact]
     public void UndefinedSeniority_Throws() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => new Enrichment([new Skill("C#")], (Seniority)42, new Confidence(0.5)));
 
@@ -64,12 +52,12 @@ public sealed class EnrichmentTests
     }
 
     [Fact]
-    public void TryCreate_TooManySkills_IsInvalid() =>
-        AssertInvalid(EnrichmentRejection.TooManySkills, Enrichment.TryCreate(Names(Enrichment.MaxSkills + 1), "Mid", 0.5));
+    public void TryCreate_ManySkills_AreAllKept()
+    {
+        var valid = Assert.IsType<EnrichmentValidation.Valid>(Enrichment.TryCreate(Names(100), "Lead", 0.9));
 
-    [Fact]
-    public void TryCreate_DuplicatesBringingTheCountDownToMax_AreValid() =>
-        Assert.IsType<EnrichmentValidation.Valid>(Enrichment.TryCreate(Names(Enrichment.MaxSkills).Append("SKILL-0"), "Mid", 0.5));
+        Assert.Equal(100, valid.Enrichment.Skills.Count);
+    }
 
     [Theory]
     [InlineData(null)]
@@ -93,6 +81,4 @@ public sealed class EnrichmentTests
         Assert.Equal(expected, Assert.IsType<EnrichmentValidation.Invalid>(actual).Reason);
 
     private static IEnumerable<string> Names(int count) => Enumerable.Range(0, count).Select(i => $"skill-{i}");
-
-    private static IEnumerable<Skill> Skills(int count) => Names(count).Select(name => new Skill(name));
 }

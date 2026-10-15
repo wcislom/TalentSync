@@ -12,8 +12,6 @@ namespace TalentSync.Matching.Domain;
 /// </remarks>
 public sealed record Enrichment
 {
-    public const int MaxSkills = 30;
-
     public Enrichment(IEnumerable<Skill> skills, Seniority seniority, Confidence confidence)
     {
         ArgumentNullException.ThrowIfNull(skills);
@@ -29,17 +27,12 @@ public sealed record Enrichment
             throw new ArgumentException("No skills.", nameof(skills));
         }
 
-        if (distinct.Length > MaxSkills)
-        {
-            throw new ArgumentException($"More than {MaxSkills} skills.", nameof(skills));
-        }
-
         Skills = Array.AsReadOnly(distinct);
         Seniority = seniority;
         Confidence = confidence;
     }
 
-    /// <summary>Without duplicates (see <see cref="Skill"/> equality), at least one, at most <see cref="MaxSkills"/>.</summary>
+    /// <summary>Without duplicates (see <see cref="Skill"/> equality), at least one.</summary>
     public IReadOnlyList<Skill> Skills { get; }
 
     public Seniority Seniority { get; }
@@ -65,15 +58,9 @@ public sealed record Enrichment
             skills.Add(new Skill(name));
         }
 
-        var distinctCount = skills.Distinct().Count();
-        if (distinctCount == 0)
+        if (skills.Count == 0)
         {
             return new EnrichmentValidation.Invalid(EnrichmentRejection.NoSkills);
-        }
-
-        if (distinctCount > MaxSkills)
-        {
-            return new EnrichmentValidation.Invalid(EnrichmentRejection.TooManySkills);
         }
 
         if (!TryParseSeniority(seniority, out var parsedSeniority))
