@@ -13,3 +13,4 @@ plus Alternatives considered.
 | [006](006-partition-key-candidate-id.md) | Partition key = candidateId | Accepted |
 | [007](007-llm-enrichment.md) | LLM enrichment | Accepted |
 | [008](008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction | Accepted |
+| [009](009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt | Accepted |
