@@ -1,0 +1,116 @@
+# End-to-end demo, clicked through by hand (VS Code REST Client or Visual Studio).
+#
+# Before: docker compose -f deploy/docker-compose.yml up -d, then run Ingress.Api, Sync.Worker and Matching.Worker
+# from the IDE or with `dotnet run`. Llm:Provider = Anthropic calls the real model (billed); Fake works too.
+#
+# Candidate ids must be new on every run: bump @run, or restart the simulators (their state is in memory).
+
+@run = 1
+@fake-teamtailor = http://localhost:5111
+@fake-crm = http://localhost:5123
+@fake-matching-platform = http://localhost:5075
+
+#######################################################################################################################
+# 1. Success: candidate → CRM contact; qualified → enriched consultant profile
+#######################################################################################################################
+
+# candidate.create + job_application.create. Sync.Worker creates the CRM contact.
+# @name apply1
+POST {{fake-teamtailor}}/recruiter/jobs/job-1/apply
+Content-Type: application/json
+
+{
+  "candidateId": "c-ok-{{run}}",
+  "firstName": "Adam",
+  "lastName": "Testowy",
+  "email": "adam.testowy@example.com",
+  "phone": "+48 500 200 300",
+  "resumeText": "ADAM TESTOWY\nSenior Backend Engineer / Tech Lead\nWarsaw, Poland | adam.testowy@example.com | +48 500 200 300\n\nSUMMARY\nBackend engineer with 10 years of experience in .NET, the last 4 as a tech lead. Focused on distributed systems, integrations and cloud architecture on Azure. Comfortable owning a system from design to production support.\n\nEXPERIENCE\n2021-now: Tech Lead, Acme Freight (logistics platform)\n- Led a team of 6 developers building an event-driven order platform on Azure Event Hubs and Service Bus.\n- Designed the transactional outbox and idempotent consumers; cut duplicate shipments to zero.\n- Migrated 12 services from VMs to Azure Kubernetes Service with Helm and GitHub Actions.\n- Introduced OpenTelemetry tracing and Grafana dashboards; on-call rotation owner.\n\n2017-2021: Senior .NET Developer, Blue Harbor Fintech\n- Built payment APIs in ASP.NET Core and C#, 2,000 requests per second at peak.\n- Designed SQL Server schemas and tuned queries; introduced EF Core and Dapper.\n- Added Polly-based resilience and circuit breakers to third-party integrations.\n- Mentored 3 junior developers.\n\n2015-2017: .NET Developer, Example Software House\n- Web applications in ASP.NET MVC, Entity Framework and Angular.\n- Wrote unit and integration tests with xUnit.\n\nSKILLS\nC#, .NET 8-10, ASP.NET Core, Entity Framework Core, SQL Server, PostgreSQL, Redis, Azure (Event Hubs, Service Bus, Functions, AKS, Key Vault), Docker, Kubernetes, Terraform, GitHub Actions, OpenTelemetry, Domain-Driven Design, Clean Architecture, REST, gRPC, some Python and TypeScript.\n\nEDUCATION\nMSc Computer Science, Example University of Technology, 2015.\n\nCERTIFICATIONS\nAzure Solutions Architect Expert (AZ-305), Azure Developer Associate (AZ-204).\n\nLANGUAGES\nPolish (native), English (C1), German (A2)."
+}
+
+###
+
+# Expect: contact Active
+GET {{fake-crm}}/contacts
+
+###
+
+# job_application.update. Matching.Worker: qualified → fetch candidate + CV → LLM → profile
+PATCH {{fake-teamtailor}}/recruiter/job-applications/{{apply1.response.body.$.jobApplicationId}}/stage
+Content-Type: application/json
+
+{ "stage": "Qualified" }
+
+###
+
+# Expect after a few seconds: enrichmentStatus Enriched, skills and seniority from the CV
+GET {{fake-matching-platform}}/profiles/c-ok-{{run}}
+
+#######################################################################################################################
+# 2. CRM down: 503 for 30 s. Sync.Worker retries in the handler loop (no checkpoint, no parking), the contact
+#    appears once the CRM is back. Matching does not depend on the CRM.
+#######################################################################################################################
+
+POST {{fake-crm}}/anomalies
+Content-Type: application/json
+
+{ "mode": "503", "seconds": 30, "candidateId": "c-crm-{{run}}" }
+
+###
+
+POST {{fake-teamtailor}}/recruiter/jobs/job-1/apply
+Content-Type: application/json
+
+{
+  "candidateId": "c-crm-{{run}}",
+  "firstName": "Bob",
+  "lastName": "Outage",
+  "email": "bob.outage@example.com",
+  "resumeText": "Mid-level frontend developer, 4 years with TypeScript and React."
+}
+
+###
+
+# Expect within the 30 s: 503 responses and no contact for c-crm-{{run}}.
+# Expect after them: one 201, the contact Active (GET /contacts below).
+GET {{fake-crm}}/calls?candidateId=c-crm-{{run}}
+
+###
+
+GET {{fake-crm}}/contacts
+
+#######################################################################################################################
+# 3. No CV: the profile is still created, as NotEnriched, and the model is never called (D5)
+#######################################################################################################################
+
+# @name apply3
+POST {{fake-teamtailor}}/recruiter/jobs/job-1/apply
+Content-Type: application/json
+
+{
+  "candidateId": "c-nocv-{{run}}",
+  "firstName": "Cyd",
+  "lastName": "Blank",
+  "email": "cyd.blank@example.com",
+  "resumeText": "Placeholder, removed below."
+}
+
+###
+
+# The simulator requires a CV on apply, so it is removed afterwards (candidate.update, ignored by Matching, D6)
+PATCH {{fake-teamtailor}}/recruiter/candidates/c-nocv-{{run}}
+Content-Type: application/json
+
+{ "resumeText": "" }
+
+###
+
+PATCH {{fake-teamtailor}}/recruiter/job-applications/{{apply3.response.body.$.jobApplicationId}}/stage
+Content-Type: application/json
+
+{ "stage": "Qualified" }
+
+###
+
+# Expect: enrichmentStatus NotEnriched, no skills, no seniority
+GET {{fake-matching-platform}}/profiles/c-nocv-{{run}}
