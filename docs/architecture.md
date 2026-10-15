@@ -79,9 +79,9 @@ tests/
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
 deploy/                                     docker-compose.yml (infra + simulators), simulator.Dockerfile,
-                                            eventhubs/Config.json
+                                            eventhubs/Config.json, run-local.sh (containers + the three hosts)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
-                                            adr/ (index: adr/README.md)
+                                            adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand)
 .github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/settings.json                       permissions and hooks enforced by the harness

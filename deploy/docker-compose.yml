@@ -30,7 +30,8 @@ services:
   # Hub, partitions and consumer groups come from eventhubs/Config.json and must match the hosts' appsettings.
   # Events and entities do not survive a restart of this container (documented emulator limitation).
   # After changing Config.json recreate both containers: entity metadata lives in Azurite, so a restart keeps the old
-  # entities. `docker compose -f deploy/docker-compose.yml up -d --force-recreate azurite eventhubs`
+  # entities. Azurite's data is in an anonymous volume, which only -V (--renew-anon-volumes) replaces:
+  # `docker compose -f deploy/docker-compose.yml up -d --force-recreate -V azurite eventhubs`
   # The namespace name in Config.json is a preset of the emulator and cannot be renamed.
   # No healthcheck: the image documents no health endpoint.
   eventhubs:
@@ -48,12 +49,15 @@ services:
 
   # Simulators keep the host ports of their launchSettings.json, so the hosts' appsettings work whether a simulator
   # runs here or with `dotnet run` (not both: same port). State is in memory and is lost on restart.
+  # `pull_policy: build`: every `up` rebuilds from the current source, so a plain `up -d` never runs a stale simulator.
+  # Unchanged source is a cache hit and keeps the running container.
   fake-teamtailor:
     build:
       context: ..
       dockerfile: deploy/simulator.Dockerfile
       args:
         SIMULATOR: FakeTeamtailor
+    pull_policy: build
     environment:
       # Ingress.Api runs on the host, not in this network.
       FakeTeamtailor__WebhookUrl: http://host.docker.internal:5065/webhooks/teamtailor
@@ -68,6 +72,7 @@ services:
       dockerfile: deploy/simulator.Dockerfile
       args:
         SIMULATOR: FakeCrm
+    pull_policy: build
     ports:
       - "5123:8080"
 
@@ -77,6 +82,7 @@ services:
       dockerfile: deploy/simulator.Dockerfile
       args:
         SIMULATOR: FakeMatchingPlatform
+    pull_policy: build
     ports:
       - "5075:8080"
 
