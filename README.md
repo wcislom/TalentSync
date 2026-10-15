@@ -56,6 +56,10 @@ dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/Ta
 dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
 ```
 
+To click through the whole flow by hand (success, CRM outage, candidate without a CV), start the containers and the
+three hosts with `deploy/run-local.sh` (Git Bash; on Windows each host opens in its own Windows Terminal tab), then use
+[`docs/e2e.http`](docs/e2e.http).
+
 ## Simplifications
 
 - Teamtailor, the CRM and the Matching Platform are **in-memory simulators** (`simulators/`) that can be broken
