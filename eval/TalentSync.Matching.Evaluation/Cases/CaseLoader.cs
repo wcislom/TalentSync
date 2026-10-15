@@ -59,15 +59,20 @@ public static class CaseLoader
             throw Invalid($"skill names must be non-blank and at most {Skill.MaxLength} characters.");
         }
 
-        // Exact names only, as the domain parses the model's answer.
-        if (!Enum.TryParse<Seniority>(expected.Seniority, ignoreCase: false, out var seniority) || Enum.GetName(seniority) != expected.Seniority)
+        if (!TryParseSeniority(expected.Seniority, out var seniority))
         {
             throw Invalid($"seniority must be one of {string.Join(", ", Enum.GetNames<Seniority>())}.");
         }
 
-        if (expected.SeniorityTolerance < 0)
+        var alsoAccepted = new List<Seniority>();
+        foreach (var level in expected.SeniorityAlsoAccepted ?? [])
         {
-            throw Invalid("seniorityTolerance must not be negative.");
+            if (!TryParseSeniority(level, out var parsed) || parsed == seniority || alsoAccepted.Contains(parsed))
+            {
+                throw Invalid("seniorityAlsoAccepted must list distinct levels other than seniority.");
+            }
+
+            alsoAccepted.Add(parsed);
         }
 
         return new EvaluationCase(
@@ -79,11 +84,15 @@ public static class CaseLoader
                 (expected.Acceptable ?? []).Select(s => s!).ToList(),
                 (expected.Forbidden ?? []).Select(s => s!).ToList(),
                 seniority,
-                expected.SeniorityTolerance));
+                alsoAccepted));
     }
+
+    // Exact names only, as the domain parses the model's answer.
+    private static bool TryParseSeniority(string? value, out Seniority seniority) =>
+        Enum.TryParse(value, ignoreCase: false, out seniority) && Enum.GetName(seniority) == value;
 
     private sealed record CaseFileDto(string? Id, string? Purpose, string? Cv, ExpectedDto? Expected);
 
     private sealed record ExpectedDto(
-        List<List<string?>?>? Required, List<string?>? Acceptable, List<string?>? Forbidden, string? Seniority, int SeniorityTolerance);
+        List<List<string?>?>? Required, List<string?>? Acceptable, List<string?>? Forbidden, string? Seniority, List<string?>? SeniorityAlsoAccepted);
 }

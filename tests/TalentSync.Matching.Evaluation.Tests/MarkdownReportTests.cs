@@ -18,7 +18,7 @@ public sealed class MarkdownReportTests
     [Fact]
     public void Render_WritesTheHeaderLines_AndEveryRawAnswer()
     {
-        var evaluationCase = new EvaluationCase("c", "p", "cv", new ExpectedEnrichment([["C#"]], [], [], Seniority.Senior, 0));
+        var evaluationCase = new EvaluationCase("c", "p", "cv", new ExpectedEnrichment([["C#"]], [], [], Seniority.Senior, []));
         EnrichmentOutcome[] runs =
         [
             new EnrichmentOutcome.Enriched(new Enrichment([new Skill("C#"), new Skill("A|B")], Seniority.Mid, new Confidence(0.65)), "m"),

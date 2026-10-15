@@ -20,7 +20,7 @@ public sealed class CaseLoaderTests : IDisposable
                 "acceptable": ["Docker"],
                 "forbidden": ["Python"],
                 "seniority": "Senior",
-                "seniorityTolerance": 1
+                "seniorityAlsoAccepted": ["Lead"]
               }
             }
             """);
@@ -30,19 +30,22 @@ public sealed class CaseLoaderTests : IDisposable
         Assert.Equal("senior-dotnet", loaded.Id);
         Assert.Equal([".NET", "dotnet"], loaded.Expected.Required[1]);
         Assert.Equal(Seniority.Senior, loaded.Expected.Seniority);
-        Assert.Equal(1, loaded.Expected.SeniorityTolerance);
+        Assert.Equal([Seniority.Lead], loaded.Expected.SeniorityAlsoAccepted);
     }
 
     [Theory]
-    [InlineData("other-name", "Senior", "[[\"C#\"]]")]
-    [InlineData("case", "senior", "[[\"C#\"]]")]
-    [InlineData("case", "Senior", "[[]]")]
-    [InlineData("case", "Senior", "[[\" \"]]")]
-    public void InvalidFile_IsRejected_WithItsFileName(string id, string seniority, string required)
+    [InlineData("other-name", "Senior", "[[\"C#\"]]", "[]")]
+    [InlineData("case", "senior", "[[\"C#\"]]", "[]")]
+    [InlineData("case", "Senior", "[[]]", "[]")]
+    [InlineData("case", "Senior", "[[\" \"]]", "[]")]
+    [InlineData("case", "Senior", "[[\"C#\"]]", "[\"Senior\"]")]
+    [InlineData("case", "Senior", "[[\"C#\"]]", "[\"Lead\", \"Lead\"]")]
+    [InlineData("case", "Senior", "[[\"C#\"]]", "[\"lead\"]")]
+    public void InvalidFile_IsRejected_WithItsFileName(string id, string seniority, string required, string alsoAccepted)
     {
         Write("case.json", $$"""
             { "id": "{{id}}", "purpose": "p", "cv": "cv",
-              "expected": { "required": {{required}}, "acceptable": [], "forbidden": [], "seniority": "{{seniority}}", "seniorityTolerance": 0 } }
+              "expected": { "required": {{required}}, "acceptable": [], "forbidden": [], "seniority": "{{seniority}}", "seniorityAlsoAccepted": {{alsoAccepted}} } }
             """);
 
         var exception = Assert.Throws<InvalidDataException>(() => CaseLoader.Load(_directory.FullName));

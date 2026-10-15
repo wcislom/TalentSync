@@ -14,11 +14,8 @@ public static class MetricCalculator
     public const string Recall = "Recall";
     public const string Precision = "Precision";
     public const string HallucinationRate = "Hallucination rate";
-    public const string SeniorityWithinTolerance = "Seniority within tolerance";
+    public const string SeniorityAccepted = "Seniority accepted";
     public const string Stability = "Stability";
-
-    // Explicit, not the enum's numeric values: the metric must not change if the domain enum is reordered.
-    private static readonly Seniority[] SeniorityOrder = [Seniority.Junior, Seniority.Mid, Seniority.Senior, Seniority.Lead];
 
     public static CaseMetrics ForCase(EvaluationCase evaluationCase, IReadOnlyList<EnrichmentOutcome> runs)
     {
@@ -31,9 +28,8 @@ public static class MetricCalculator
         var forbidden = expected.Forbidden.Select(s => new Skill(s)).ToHashSet();
 
         var hallucinated = enriched.Select(e => e.Skills.Where(forbidden.Contains).ToList()).ToList();
-        var distances = enriched.Select(e => Math.Abs(Rank(e.Seniority) - Rank(expected.Seniority))).ToList();
-        var exact = distances.Count(d => d == 0);
-        var near = distances.Count(d => d > 0 && d <= expected.SeniorityTolerance);
+        var exact = enriched.Count(e => e.Seniority == expected.Seniority);
+        var alsoAccepted = enriched.Count(e => expected.SeniorityAlsoAccepted.Contains(e.Seniority));
 
         return new CaseMetrics(
             evaluationCase.Id,
@@ -50,12 +46,12 @@ public static class MetricCalculator
             HallucinationRate: Rate(hallucinated.Count(h => h.Count > 0), enriched.Count),
             ForbiddenReturned: hallucinated.SelectMany(h => h).Distinct().Select(s => s.Name).Order(StringComparer.OrdinalIgnoreCase).ToList(),
             SeniorityExact: exact,
-            SeniorityNear: near,
-            SeniorityWorse: enriched.Count - exact - near,
-            SeniorityWithinTolerance: Rate(exact + near, enriched.Count),
+            SeniorityAlsoAccepted: alsoAccepted,
+            SeniorityWrong: enriched.Count - exact - alsoAccepted,
+            SeniorityAccepted: Rate(exact + alsoAccepted, enriched.Count),
             Stability: MeanPairwiseJaccard(enriched.Select(e => e.Skills.ToHashSet()).ToList()),
-            MeanConfidenceWhenExact: Mean(enriched.Where((_, i) => distances[i] == 0).Select(e => e.Confidence.Value)),
-            MeanConfidenceWhenNotExact: Mean(enriched.Where((_, i) => distances[i] != 0).Select(e => e.Confidence.Value)));
+            MeanConfidenceWhenExact: Mean(enriched.Where(e => e.Seniority == expected.Seniority).Select(e => e.Confidence.Value)),
+            MeanConfidenceWhenNotExact: Mean(enriched.Where(e => e.Seniority != expected.Seniority).Select(e => e.Confidence.Value)));
     }
 
     /// <summary>The mean of the per-case values, so every case weighs the same; undefined values are left out.</summary>
@@ -65,15 +61,13 @@ public static class MetricCalculator
             new(Recall, Mean(cases.Select(c => c.Recall)), thresholds.MinRecall, ThresholdKind.AtLeast),
             new(Precision, Mean(cases.Select(c => c.Precision)), thresholds.MinPrecision, ThresholdKind.AtLeast),
             new(HallucinationRate, Mean(cases.Select(c => c.HallucinationRate)), thresholds.MaxHallucinationRate, ThresholdKind.AtMost),
-            new(SeniorityWithinTolerance, Mean(cases.Select(c => c.SeniorityWithinTolerance)), thresholds.MinSeniorityWithinTolerance, ThresholdKind.AtLeast),
+            new(SeniorityAccepted, Mean(cases.Select(c => c.SeniorityAccepted)), thresholds.MinSeniorityAccepted, ThresholdKind.AtLeast),
             new(Stability, Mean(cases.Select(c => c.Stability)), thresholds.MinStability, ThresholdKind.AtLeast),
         ],
         Mean(cases.Select(c => c.MeanConfidenceWhenExact)),
         Mean(cases.Select(c => c.MeanConfidenceWhenNotExact)),
         cases.Sum(c => c.Timeouts),
         cases.Sum(c => c.Unavailable));
-
-    private static int Rank(Seniority seniority) => Array.IndexOf(SeniorityOrder, seniority);
 
     private static double? Rate(int count, int total) => total == 0 ? null : (double)count / total;
 

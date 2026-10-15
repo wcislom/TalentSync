@@ -69,14 +69,14 @@ public static partial class MarkdownReport
     private static void AppendPerCase(StringBuilder report, IReadOnlyList<CaseResult> cases)
     {
         report.AppendLine("## Per case").AppendLine()
-            .AppendLine("| Case | Calls | Enriched | Invalid | Timeout | Unavailable | Valid rate | Recall | Precision | Hallucination | Seniority exact / near / worse | Within tolerance | Stability | Confidence exact | Confidence not exact |")
+            .AppendLine("| Case | Calls | Enriched | Invalid | Timeout | Unavailable | Valid rate | Recall | Precision | Hallucination | Seniority exact / also accepted / wrong | Seniority accepted | Stability | Confidence exact | Confidence not exact |")
             .AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         foreach (var m in cases.Select(c => c.Metrics))
         {
             report.AppendLine(CultureInfo.InvariantCulture,
                 $"| {m.CaseId} | {m.Calls} | {m.Enriched} | {m.InvalidOutput} | {m.Timeouts} | {m.Unavailable} | {Number(m.ValidRate)} | " +
-                $"{Number(m.Recall)} | {Number(m.Precision)} | {Number(m.HallucinationRate)} | {m.SeniorityExact} / {m.SeniorityNear} / {m.SeniorityWorse} | " +
-                $"{Number(m.SeniorityWithinTolerance)} | {Number(m.Stability)} | {Number(m.MeanConfidenceWhenExact)} | {Number(m.MeanConfidenceWhenNotExact)} |");
+                $"{Number(m.Recall)} | {Number(m.Precision)} | {Number(m.HallucinationRate)} | {m.SeniorityExact} / {m.SeniorityAlsoAccepted} / {m.SeniorityWrong} | " +
+                $"{Number(m.SeniorityAccepted)} | {Number(m.Stability)} | {Number(m.MeanConfidenceWhenExact)} | {Number(m.MeanConfidenceWhenNotExact)} |");
         }
 
         report.AppendLine();

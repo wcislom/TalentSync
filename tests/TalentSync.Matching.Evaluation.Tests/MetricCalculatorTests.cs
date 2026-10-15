@@ -18,7 +18,7 @@ public sealed class MetricCalculatorTests
             Acceptable: ["Docker"],
             Forbidden: ["Kubernetes", "Python"],
             Seniority: Seniority.Senior,
-            SeniorityTolerance: 1));
+            SeniorityAlsoAccepted: [Seniority.Lead]));
 
     [Fact]
     public void Recall_CountsAnEntryWhenAnyOfItsSpellingsIsReturned()
@@ -73,7 +73,7 @@ public sealed class MetricCalculatorTests
     }
 
     [Fact]
-    public void Seniority_IsSplitIntoExactNearAndWorse_ByTheOrderOfLevels()
+    public void Seniority_IsSplitIntoExactAlsoAcceptedAndWrong()
     {
         var metrics = MetricCalculator.ForCase(Case,
         [
@@ -83,18 +83,18 @@ public sealed class MetricCalculatorTests
             Enriched(["C#"], Seniority.Junior),
         ]);
 
-        Assert.Equal((1, 2, 1), (metrics.SeniorityExact, metrics.SeniorityNear, metrics.SeniorityWorse));
-        Assert.Equal(0.75, metrics.SeniorityWithinTolerance!.Value, Precision);
+        Assert.Equal((1, 1, 2), (metrics.SeniorityExact, metrics.SeniorityAlsoAccepted, metrics.SeniorityWrong));
+        Assert.Equal(0.5, metrics.SeniorityAccepted!.Value, Precision);
     }
 
     [Fact]
-    public void Seniority_WithZeroTolerance_CountsOnlyTheExactLevel()
+    public void Seniority_WithoutAlsoAcceptedLevels_CountsOnlyTheExactLevel()
     {
-        var strict = Case with { Expected = Case.Expected with { SeniorityTolerance = 0 } };
+        var strict = Case with { Expected = Case.Expected with { SeniorityAlsoAccepted = [] } };
 
         var metrics = MetricCalculator.ForCase(strict, [Enriched(["C#"], Seniority.Senior), Enriched(["C#"], Seniority.Lead)]);
 
-        Assert.Equal(0.5, metrics.SeniorityWithinTolerance!.Value, Precision);
+        Assert.Equal(0.5, metrics.SeniorityAccepted!.Value, Precision);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public sealed class MetricCalculatorTests
         Assert.Null(metrics.Recall);
         Assert.Null(metrics.Precision);
         Assert.Null(metrics.HallucinationRate);
-        Assert.Null(metrics.SeniorityWithinTolerance);
+        Assert.Null(metrics.SeniorityAccepted);
     }
 
     [Fact]

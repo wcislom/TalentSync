@@ -11,7 +11,7 @@ public sealed class MetricThresholds
 
     public double MaxHallucinationRate { get; set; }
 
-    public double MinSeniorityWithinTolerance { get; set; }
+    public double MinSeniorityAccepted { get; set; }
 
     public double MinStability { get; set; }
 }

@@ -1,7 +1,7 @@
 namespace TalentSync.Matching.Evaluation.Metrics;
 
 /// <summary>Metrics of one case. <c>null</c> = undefined for this case (shown as n/a, left out of the aggregate).</summary>
-/// <param name="SeniorityNear">Within tolerance but not exact.</param>
+/// <param name="SeniorityAlsoAccepted">Not the expected level, but one the case also accepts.</param>
 public sealed record CaseMetrics(
     string CaseId,
     int Calls,
@@ -15,9 +15,9 @@ public sealed record CaseMetrics(
     double? HallucinationRate,
     IReadOnlyList<string> ForbiddenReturned,
     int SeniorityExact,
-    int SeniorityNear,
-    int SeniorityWorse,
-    double? SeniorityWithinTolerance,
+    int SeniorityAlsoAccepted,
+    int SeniorityWrong,
+    double? SeniorityAccepted,
     double? Stability,
     double? MeanConfidenceWhenExact,
     double? MeanConfidenceWhenNotExact)
