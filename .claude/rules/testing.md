@@ -27,7 +27,7 @@ paths:
 - Assert at the boundary: simulators' `GET /calls`, `/contacts`, `/profiles`, Ingress responses, and our own tables.
   Never assert on mocks of our own classes in integration tests.
 - Each scenario uses its own candidate ID (e.g. `c-s2`); `/calls` is counted per candidate, so no reset is needed.
-- LLM: `FakeChatClient` only. Tests never call Gemini.
+- LLM: `FakeChatClient` only. Tests never call a real model.
 
 ## Waiting for asynchronous effects
 

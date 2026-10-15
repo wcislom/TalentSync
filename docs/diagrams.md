@@ -24,7 +24,7 @@ flowchart TB
   end
   crm["FakeCrm"]
   mp["FakeMatchingPlatform"]
-  llm["Gemini / FakeChatClient"]
+  llm["LLM / FakeChatClient"]
   blob[("Azurite: checkpoints")]
 
   tt -->|webhook| ep --> outbox --> relay --> eh
@@ -49,7 +49,7 @@ sequenceDiagram
   participant IN as Ingress.Api
   participant EH as Event Hubs
   participant MW as Matching.Worker
-  participant LLM as Gemini
+  participant LLM
   participant MP as FakeMatchingPlatform
   TT->>IN: job_application.update (signed)
   IN->>IN: verify, insert outbox

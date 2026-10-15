@@ -31,8 +31,9 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
 
     private static readonly ChatOptions ChatOptions = new()
     {
-        // Lowers, but does not remove, the variance between calls; stored results (invariant 5) handle the rest.
-        Temperature = 0,
+        // No Temperature or other sampling options: some providers (current Claude models) answer 400 to a non-default
+        // value, and every call would end in NotEnriched. The variance between calls is handled by stored results
+        // (invariant 5).
         ResponseFormat = ChatResponseFormat.ForJsonSchema<EnrichmentResponseDto>(
             JsonOptions, "consultant_enrichment", "Suggested skills and seniority of a consultant."),
     };
