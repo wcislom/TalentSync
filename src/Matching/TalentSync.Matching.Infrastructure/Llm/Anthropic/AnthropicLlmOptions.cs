@@ -13,10 +13,6 @@ internal sealed class AnthropicLlmOptions
     /// </summary>
     public int MaxOutputTokens { get; set; }
 
-    /// <summary>
-    /// The SDK's own retries of 408/409/429/5xx and connection failures, with its back-off and <c>retry-after</c>.
-    /// They run inside <see cref="LlmOptions.Timeout"/>, which bounds the whole call (ADR 007).
-    /// </summary>
     public int MaxRetries { get; set; }
 
     public bool IsValid() =>

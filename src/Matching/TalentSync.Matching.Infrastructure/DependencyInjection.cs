@@ -69,8 +69,6 @@ public static class DependencyInjection
     }
 
     private static IChatClient CreateAnthropicChatClient(AnthropicLlmOptions options) =>
-        // Short retries are the SDK's (ADR 007): it knows its transient errors and retry-after, the adapter does not.
-        // Its own 10-minute timeout never fires: the Polly timeout in ChatEnrichmentService cancels the whole call first.
         new AnthropicClient { ApiKey = options.ApiKey, MaxRetries = options.MaxRetries }
             .AsIChatClient(options.Model, options.MaxOutputTokens);
 }
