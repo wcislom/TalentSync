@@ -35,7 +35,7 @@ Correctness comes from the effects themselves; everything else only saves work.
 - **Checkpoint after handling.** A worker checkpoints only once the event is handled: effect done and inbox row
   written, event parked, or event skipped.
 - **Stored LLM results.** A valid enrichment is stored in `matching.EnrichmentResults` under a unique
-  `(CandidateId, CvHash)` before the profile upsert. A retry finds it and replays the same suggestion instead of
+  `(CandidateId, CvHash, PromptVersion)` before the profile upsert. A retry finds it and replays the same suggestion instead of
   asking the model again. A failed enrichment is not stored.
 - `EventId` is the SHA-256 of the raw webhook body, so a redelivered identical webhook has the same id.
 

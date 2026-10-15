@@ -40,7 +40,7 @@ configurations take the schema as a constructor parameter.
 - Clustered primary key: `Id bigint IDENTITY`. `Guid.CreateVersion7()` is not sequential in SQL Server's
   `uniqueidentifier` sort order, so GUIDs (if any) are non-clustered unique columns.
 - `Inbox`: unique index `(Source, EventId)`. Duplicate insert → SqlException 2627 or 2601 → treat as processed.
-- `EnrichmentResults`: unique index `(CandidateId, CvHash)`.
+- `EnrichmentResults`: unique index `(CandidateId, CvHash, PromptVersion)`. `ModelId` is not part of the key.
 - Never check-then-insert to enforce uniqueness (invariant 12). A lookup before the insert is allowed only as a
   skip-optimisation; the unique index is the guard.
 
@@ -53,7 +53,7 @@ configurations take the schema as a constructor parameter.
   `Error` (type and message, no PII), `ParkedAt`. An envelope that cannot be read has no `Source` or `EventId`:
   it is identified by `PartitionId` + `SequenceNumber`, and `Envelope` holds the raw event body truncated to 4 KB.
   No unique index: a crash between the insert and the checkpoint parks the event twice (accepted in the MVP).
-- `EnrichmentResults`: `Id`, `CandidateId`, `CvHash`, `Result` (json), `ModelId`, `CreatedAt`.
+- `EnrichmentResults`: `Id`, `CandidateId`, `CvHash`, `PromptVersion`, `Result` (json), `ModelId`, `CreatedAt`.
 
 ## Rules
 

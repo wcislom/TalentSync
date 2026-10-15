@@ -59,7 +59,7 @@ sequenceDiagram
   MW->>MW: inbox lookup (skip if seen)
   MW->>TT: GET application + stage (via IRecruitmentSource)
   MW->>TT: GET candidate (CV text)
-  MW->>MW: EnrichmentResults lookup by (candidateId, cvHash)
+  MW->>MW: EnrichmentResults lookup by (candidateId, cvHash, promptVersion)
   MW->>LLM: masked CV (only if no stored result)
   MW->>MW: validate, store result
   MW->>MP: PUT /profiles/{candidateId}

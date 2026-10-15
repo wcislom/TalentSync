@@ -15,7 +15,9 @@ Enrichment is always attempted, but its failure never blocks the profile: the pr
 ## Flow inside the Qualified use case (`TalentSync.Matching.Application`)
 
 1. Compute `CvHash` = SHA-256 of the CV text as fetched (unmasked).
-2. Look up `matching.EnrichmentResults` by `(CandidateId, CvHash)`. Found → reuse it, skip the model.
+2. Look up `matching.EnrichmentResults` by `(CandidateId, CvHash, PromptVersion)`. Found → reuse it, skip the model.
+   `PromptVersion` comes from `IEnrichmentService`: a hash of the instructions and the response schema
+   (`EnrichmentPrompt`), so any change to either gives a new version without a manual bump. `ModelId` is stored for audit only: a new model reuses stored suggestions, a new prompt does not.
 3. Not found → call `IEnrichmentService`. The adapter in `TalentSync.Matching.Infrastructure` masks emails and
    phone numbers, then calls `IChatClient` with a JSON schema response format and a timeout. Masking lives in the
    adapter so that no path reaches the model with unmasked text.

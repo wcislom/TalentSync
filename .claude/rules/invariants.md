@@ -13,8 +13,8 @@ One sentence each; the rule file in brackets holds the details. Acceptance scena
    SQL transaction with the inbox; marking first and crashing before the effect would lose the event. [messaging.md]
 4. **Each worker owns its schema** and never reads or writes another one. A shared inbox would make the second
    worker skip every event as a duplicate. [persistence.md]
-5. **Persist non-deterministic results before acting on them.** LLM output is stored by `(CandidateId, CvHash)`
-   before the profile upsert, so a retry replays it instead of asking the model again. [llm.md]
+5. **Persist non-deterministic results before acting on them.** LLM output is stored by
+   `(CandidateId, CvHash, PromptVersion)` before the profile upsert, so a retry replays it instead of asking the model again. [llm.md]
 
 ## Event Hubs
 

@@ -41,7 +41,9 @@ live (Resilience).
 2. GET the candidate with the CV. `Deleted` → skip; `Rejected` → rejected (parked); an empty CV →
    `NotEnriched` without calling the model.
 3. `CvHash` = SHA-256 of the CV text as fetched (unmasked).
-4. Look up `matching.EnrichmentResults` by `(CandidateId, CvHash)`. Found → reuse it, the model is not called.
+4. Look up `matching.EnrichmentResults` by `(CandidateId, CvHash, PromptVersion)`. Found → reuse it, the model is
+   not called. `PromptVersion` is an opaque string the adapter exposes through the port, so the use case still knows
+   nothing about the prompt itself.
 5. Not found → `IEnrichmentService`. A valid suggestion is stored **before** step 6 (invariant 5, ADR 005).
    A duplicate key on insert (SqlException 2627/2601) means another processor stored one first: read the stored
    row and use it, so the profile always matches what is stored.
@@ -86,6 +88,11 @@ to a candidate (scenario M5).
   so the log shows a timeout, not a 429.
 - **A changed CV is a new model call**, including a change only to an email address or phone number, because the
   hash covers the unmasked text (ADR 005).
+- **A new prompt version is a new model call** for every CV enriched after the deploy; old rows stay as a record of
+  what the old prompt answered. The deploy itself re-enriches nothing, only the next qualification does. The version is
+  a hash of the instructions and the response schema, so it cannot be forgotten; the cost is that a cosmetic edit, or
+  a package upgrade that changes the generated schema, also re-enriches. `ModelId` is not part of
+  the key: switching only the model reuses stored suggestions.
 - **The mode marker is a test mechanism in product code.** It is read only by `FakeChatClient`, so it has no effect
   with a real provider.
 - **There is no free tier**: every real call is billed. Tests and the default local configuration use the fake.
