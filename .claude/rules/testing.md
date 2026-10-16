@@ -12,7 +12,7 @@ paths:
 | `TalentSync.Matching.Domain.Tests` | Unit, no I/O | Suggestion validation, `ConsultantProfile` behaviour |
 | `TalentSync.Matching.Infrastructure.Tests` | Unit, no network | Matching Platform client: request body, status mapping (4xx → Rejected), HTTP pipeline. CV masking. Enrichment adapter over `FakeChatClient`: outcome per mode, timeout, open circuit, shutdown |
 | `TalentSync.Sync.Application.Tests`, `TalentSync.Matching.Application.Tests` | Unit, no I/O | Use cases: each fetch result and port result → use case result. Ports replaced by small hand-written stubs |
-| `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
+| `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
 | `TalentSync.Infrastructure.Observability.Tests` | Unit, no network | `AddObservability` with the SDK enabled on a test server (the request span is a root), `SpanExportPolicy` in front of an in-memory exporter. Internals via `InternalsVisibleTo` |
 | `TalentSync.Sync.Infrastructure.Tests` | Unit, no network | CRM client: status mapping (404 on delete = done, 4xx → Rejected), HTTP pipeline. Internals via `InternalsVisibleTo` |
@@ -79,4 +79,4 @@ pass by editing a report header or the test. The evaluation itself never runs in
 ## Packages
 
 Ask before adding any package, including test helpers such as `Microsoft.Extensions.TimeProvider.Testing`
-(`FakeTimeProvider` for the signature replay window).
+(`FakeTimeProvider`).

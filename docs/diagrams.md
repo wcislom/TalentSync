@@ -9,7 +9,7 @@ Keep these diagrams true when a container or the flow changes.
 flowchart TB
   tt["FakeTeamtailor<br/>webhooks + JSON:API"]
   subgraph ing["Ingress.Api"]
-    ep["POST /webhooks/teamtailor<br/>signature v2"]
+    ep["POST /webhooks/teamtailor"]
     outbox[("ingress.Outbox")]
     relay["Outbox relay"]
   end

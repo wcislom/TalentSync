@@ -112,7 +112,7 @@ Key names, owners and gotchas: `.claude/rules/configuration.md` (loads when `app
 In scope, minimal version of everything:
 docker compose (Event Hubs emulator, Azurite, SQL Server), the three simulators, Ingress with outbox and relay,
 Sync.Worker (inbox, ACL, CRM upsert, resilience, parking lot), Matching.Worker (Qualified rule, LLM enrichment
-with stored results and fallback, profile upsert). Teamtailor signature v2 verification is in scope but done last.
+with stored results and fallback, profile upsert).
 Observability (ADR 010): OpenTelemetry traces, metrics and logs, Aspire Dashboard locally.
 
 Matching.Worker ignores `candidate.*` events in the MVP (rule D6).

@@ -13,7 +13,7 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 
 | Container | Responsibility | Does not | Owns |
 |---|---|---|---|
-| **Ingress.Api** | Verify signature, persist a notification envelope, return 200. Relay publishes outbox → Event Hubs | Call any API, interpret stages, hold domain logic | `ingress.*` |
+| **Ingress.Api** | Persist a notification envelope, return 200. Relay publishes outbox → Event Hubs | Call any API, interpret stages, hold domain logic | `ingress.*` |
 | **Sync.Worker** | `candidate.*` → fetch candidate → upsert or delete CRM contact | Handle application events | `sync.*`, checkpoints of `sync-worker` |
 | **Matching.Worker** | `job_application.*` → qualified? → fetch candidate + CV → enrichment (stored) → upsert profile | Decide matches, block on LLM failure, handle `candidate.*` (D6) | `matching.*`, checkpoints of `matching-worker` |
 | SQL Server | Three schemas, one owner each | Act as a channel between workers | |
@@ -40,7 +40,7 @@ src/
     TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource (port adapter) over TeamtailorApiClient
                                             (HTTP, status mapping) and TeamtailorMapper, internal JSON:API DTOs, 429 handling,
                                             stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,
-                                            signature v2, webhook parsing, public AddTeamtailorWebhooks() (Ingress)
+                                            webhook parsing, public AddTeamtailorWebhooks() (Ingress)
                                             and AddTeamtailorApi() (workers). → Recruitment.Domain
     TalentSync.Infrastructure.Observability AddObservability(): OpenTelemetry traces, metrics and logs over OTLP,
                                             subscribes to every TalentSync.* ActivitySource and Meter, HTTP and SQL
@@ -72,7 +72,7 @@ src/
                                             composition root, group "matching-worker". Web host: only /health/live
                                             (liveness for an orchestrator, no dependency checks)
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
-  FakeTeamtailor                            No references to src/. Signature v2 is implemented independently.
+  FakeTeamtailor                            No references to src/.
   FakeCrm
   FakeMatchingPlatform
 tests/
@@ -81,7 +81,7 @@ tests/
   TalentSync.Matching.Application.Tests         use case: qualified / not qualified / deleted / rejected, stored or new
                                                 enrichment (stored before the upsert), failure → NotEnriched
   TalentSync.Matching.Infrastructure.Tests      Matching Platform client: request body, status mapping, resilience
-  TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
+  TalentSync.Infrastructure.Teamtailor.Tests    webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
   TalentSync.Infrastructure.Observability.Tests request span is a root with the SDK enabled, SpanExportPolicy
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
@@ -130,9 +130,8 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
 - `Infrastructure.*` projects reference the layer whose ports they implement.
 - Only hosts (composition roots) reference `Infrastructure.Teamtailor`. Its public surface is
   `AddTeamtailorWebhooks(IServiceCollection, IConfiguration)` for Ingress, `AddTeamtailorApi(IServiceCollection,
-  IConfiguration)` for the workers (registers `IRecruitmentSource`), plus two interfaces that Ingress needs, registered by
-  `AddTeamtailorWebhooks`: a webhook signature verifier and a webhook parser, and the result type the parser returns
-  (proposed names: `IWebhookSignatureVerifier`, `IWebhookParser`, `WebhookNotification`).
+  IConfiguration)` for the workers (registers `IRecruitmentSource`), plus what Ingress needs, registered by
+  `AddTeamtailorWebhooks`: the webhook parser `IWebhookParser` and the result type it returns.
   Implementations and JSON:API DTOs are `internal`. This is the only place that defines the public surface.
 - Each worker's `DbContext` lives in its own `*.Infrastructure`, so the other worker cannot see its schema.
 - Ingress does not reference `Infrastructure.Messaging`: it only produces.
@@ -147,7 +146,6 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
 | Consumer invariants (inbox, checkpoint, never throw, parking lot) are implemented once | `Infrastructure.Messaging` |
 | The skeleton classifies failures without knowing adapters | Permanent failures are `Rejected` values translated by the host; transient ones are BCL / Polly / Azure exceptions |
 | Application does not depend on Infrastructure | Project references (compiler) |
-| A bug in our signature verifier is not mirrored in the signer | FakeTeamtailor implements signature v2 independently |
 
 ## Service registration (normative)
 
@@ -186,7 +184,6 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
-- Ingress does not verify the Teamtailor webhook signature (v2), so it accepts unsigned webhooks.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
 - Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
   CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.

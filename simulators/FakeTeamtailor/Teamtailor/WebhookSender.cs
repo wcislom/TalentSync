@@ -10,7 +10,6 @@ public sealed record WebhookDelivery(string EventName, int? StatusCode);
 
 /// <summary>
 /// Posts <c>{ "payload": { "event_name", "data" } }</c> to Ingress; <c>data</c> comes from <see cref="TeamtailorJson"/>.
-/// Not signed yet: signature v2 comes last, together with the verifier in Ingress.
 /// </summary>
 public sealed class WebhookSender(HttpClient http, IConfiguration configuration, AnomalyRules anomalies, ILogger<WebhookSender> logger)
 {
