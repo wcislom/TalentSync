@@ -92,7 +92,7 @@ eval/                                       offline evaluation of the enrichment
   reports/                                  committed reports; local/ is gitignored
   run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
 deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
-                                            eventhubs/Config.json, run-local.sh (containers + the three hosts)
+                                            eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
                                             images/ (screenshots for the README)

@@ -94,8 +94,8 @@ Testcontainers and run the hosts and simulators in process.
 dotnet test
 ```
 
-For a manual run, set the SQL password once in `deploy/.env` (copy `deploy/.env.example`), give the three hosts the
-connection string in user secrets and create the schemas:
+For a manual run, set the SQL password once in `deploy/.env` (copy `deploy/.env.example`) and give the three hosts
+the connection string in user secrets:
 
 ```bash
 for p in Ingress/TalentSync.Ingress.Api Sync/TalentSync.Sync.Worker Matching/TalentSync.Matching.Worker; do
@@ -103,12 +103,6 @@ for p in Ingress/TalentSync.Ingress.Api Sync/TalentSync.Sync.Worker Matching/Tal
     "Server=localhost,1433;Database=TalentSync;User Id=sa;Password=<SQL_SA_PASSWORD>;TrustServerCertificate=True" \
     --project src/$p
 done
-
-docker compose -f deploy/docker-compose.yml up -d --wait
-dotnet tool restore
-dotnet ef database update --project src/Ingress/TalentSync.Ingress.Api --context IngressDbContext
-dotnet ef database update --project src/Sync/TalentSync.Sync.Infrastructure --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext
-dotnet ef database update --project src/Matching/TalentSync.Matching.Infrastructure --startup-project src/Matching/TalentSync.Matching.Worker --context MatchingDbContext
 ```
 
 `Llm:Provider` is `Fake` by default, so the system runs without an LLM key. For Claude, keep the key in user secrets
@@ -119,8 +113,9 @@ dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/Ta
 dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
 ```
 
-To click through the whole flow by hand (success, CRM outage, candidate without a CV), start the containers and the
-three hosts with `deploy/run-local.sh` (Git Bash; on Windows each host opens in its own Windows Terminal tab), then use
+To click through the whole flow by hand (success, CRM outage, candidate without a CV), run `deploy/run-local.sh`
+(Git Bash). It starts the containers, builds, applies the EF migrations and starts the three hosts (on Windows each
+in its own Windows Terminal tab). Then use
 [`docs/e2e.http`](docs/e2e.http). Traces, metrics and logs of the three hosts are in the Aspire Dashboard at
 http://localhost:18888 (ADR 010).
 

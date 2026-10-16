@@ -1,7 +1,6 @@
 # End-to-end demo, clicked through by hand (VS Code REST Client or Visual Studio).
 #
-# Before: the one-time setup in README "Running locally" (deploy/.env, connection string, migrations), then
-# deploy/run-local.sh, or docker compose and the three hosts from the IDE. Llm:Provider = Anthropic calls the real
+# Before: the one-time setup in README "Running locally" (deploy/.env, connection string), then deploy/run-local.sh. Llm:Provider = Anthropic calls the real
 # model (billed); Fake works too. Each webhook a request triggers is one trace in the Aspire Dashboard: http://localhost:18888
 #
 # Candidate ids must be new on every run: bump @run, or restart the simulators (their state is in memory).

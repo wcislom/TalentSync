@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Starts everything for a local run: docker compose (infrastructure and simulators), then Ingress.Api, Sync.Worker
-# and Matching.Worker. On Windows each host gets its own Windows Terminal tab (stop it with Ctrl+C there);
+# Starts everything for a local run: docker compose (infrastructure and simulators), build, EF migrations, then
+# Ingress.Api, Sync.Worker and Matching.Worker. On Windows each host gets its own Windows Terminal tab (stop it with Ctrl+C there);
 # elsewhere they run in this terminal and Ctrl+C stops all three.
 # Containers keep running: docker compose -f deploy/docker-compose.yml stop
 set -euo pipefail
@@ -22,6 +22,16 @@ docker compose -f deploy/docker-compose.yml up -d --wait --force-recreate --rene
 # A host that is still running locks its DLLs; the build then fails and names it.
 echo "Building..."
 dotnet build TalentSync.slnx --nologo --verbosity quiet
+
+# Before the hosts start, so neither the relay nor a worker meets a missing table. Applies only pending migrations.
+# The connection string comes from each host's user secrets (README, "Running locally").
+echo "Applying migrations..."
+dotnet tool restore >/dev/null
+dotnet ef database update --no-build --project src/Ingress/TalentSync.Ingress.Api --context IngressDbContext
+dotnet ef database update --no-build --project src/Sync/TalentSync.Sync.Infrastructure \
+  --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext
+dotnet ef database update --no-build --project src/Matching/TalentSync.Matching.Infrastructure \
+  --startup-project src/Matching/TalentSync.Matching.Worker --context MatchingDbContext
 
 if command -v wt.exe >/dev/null 2>&1; then
   for i in "${!titles[@]}"; do
