@@ -38,6 +38,16 @@ More: [architecture](docs/architecture.md), [diagrams](docs/diagrams.md), [domai
 Stack: .NET 10, Azure Event Hubs SDK (no messaging framework), SQL Server 2025 + EF Core,
 `Microsoft.Extensions.Http.Resilience` (Polly v8), `Microsoft.Extensions.AI`, xUnit, Docker Compose.
 
+## Observability
+
+One webhook is one trace across the three hosts, through the outbox and Event Hubs
+([ADR 010](docs/adr/010-observability.md)). Below: a job application reaches the qualified stage. Ingress stores
+the webhook and the relay publishes it. Matching.Worker checks its inbox, fetches the application and the candidate,
+finds no stored enrichment, calls Claude, stores the result, upserts the profile, writes the inbox and checkpoints.
+Sync.Worker ignores `job_application.*` events, so its branch is only a checkpoint.
+
+![Trace of a qualified job application in the Aspire Dashboard](docs/images/trace-application-qualified.jpeg)
+
 ## Running locally
 
 Requires .NET 10 SDK and Docker. Target commands while the setup is being built:
