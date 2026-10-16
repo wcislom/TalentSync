@@ -26,12 +26,15 @@ internal sealed class ConsumerTelemetry
 
     private readonly string _hubName;
     private readonly string _consumerGroup;
+    private readonly string _checkpointContainer;
     private readonly TimeProvider _timeProvider;
     private readonly Counter<long> _attempts;
     private readonly Histogram<double> _eventAge;
 
-    public ConsumerTelemetry(IMeterFactory meterFactory, TimeProvider timeProvider, string hubName, string consumerGroup)
+    public ConsumerTelemetry(
+        IMeterFactory meterFactory, TimeProvider timeProvider, string hubName, string consumerGroup, string checkpointContainer)
     {
+        _checkpointContainer = checkpointContainer;
         _hubName = hubName;
         _consumerGroup = consumerGroup;
         _timeProvider = timeProvider;
@@ -87,6 +90,8 @@ internal sealed class ConsumerTelemetry
             activity?.SetTag("messaging.destination.name", _hubName);
             activity?.SetTag("messaging.destination.partition.id", received.PartitionId);
             activity?.SetTag(ConsumerGroupTag, _consumerGroup);
+            // Where the processor writes it: a Blob container (Azurite locally). The name only, never the connection string.
+            activity?.SetTag("talentsync.checkpoint.container", _checkpointContainer);
             try
             {
                 await checkpoint(cancellationToken);

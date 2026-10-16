@@ -47,7 +47,11 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         // IMeterFactory comes from the host (the generic host registers it).
         services.AddSingleton(provider => new ConsumerTelemetry(
-            provider.GetRequiredService<IMeterFactory>(), provider.GetRequiredService<TimeProvider>(), hubName, consumerGroup));
+            provider.GetRequiredService<IMeterFactory>(),
+            provider.GetRequiredService<TimeProvider>(),
+            hubName,
+            consumerGroup,
+            checkpointContainer.Name));
 
         return services;
     }

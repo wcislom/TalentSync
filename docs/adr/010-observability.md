@@ -51,7 +51,7 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
 - **A client span without a parent is not exported** (`SpanExportPolicy`): the relay polling the outbox, migrations.
   It belongs to no flow, and every poll would be a trace.
 - **The checkpoint is our own span**, `checkpoint ats-events` (a settle operation), a child of the attempt that writes
-  it. The Blob SDK's HTTP requests are filtered out by their user agent: ownership polling and a checkpoint's
+  it, with the Blob container that holds it in `talentsync.checkpoint.container`. The Blob SDK's HTTP requests are filtered out by their user agent: ownership polling and a checkpoint's
   update-or-create round trips, whose first 404 per partition is expected, are the SDK's internals.
 
 ## Consequences

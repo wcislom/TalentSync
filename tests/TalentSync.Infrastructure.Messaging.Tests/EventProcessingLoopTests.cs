@@ -220,6 +220,7 @@ public class EventProcessingLoopTests
         var checkpoint = Assert.Single(spans.Stopped, span => span.DisplayName == "checkpoint test-hub");
         Assert.Equal(process.SpanId, checkpoint.ParentSpanId);
         Assert.Equal(ActivityStatusCode.Unset, checkpoint.Status);
+        Assert.Equal("test-checkpoints", checkpoint.GetTagItem("talentsync.checkpoint.container"));
     }
 
     [Fact]
@@ -260,7 +261,7 @@ public class EventProcessingLoopTests
             MaxBackoff = maxBackoff,
             MaxUnclassifiedAttempts = MaxUnclassifiedAttempts,
         }),
-        new ConsumerTelemetry(new TestMeterFactory(), timeProvider ?? TimeProvider.System, "test-hub", "test-consumer-group"),
+        new ConsumerTelemetry(new TestMeterFactory(), timeProvider ?? TimeProvider.System, "test-hub", "test-consumer-group", "test-checkpoints"),
         timeProvider ?? TimeProvider.System,
         NullLogger<EventProcessingLoop>.Instance);
 
