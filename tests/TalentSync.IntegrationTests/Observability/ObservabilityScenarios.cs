@@ -34,7 +34,11 @@ public sealed class ObservabilityScenarios(SystemFixture fixture)
             $"process spans of {eventId} in both consumer groups");
 
         var webhook = Assert.Single(spans, span => span.Kind == ActivityKind.Internal);
-        Assert.Equal(default, webhook.ParentSpanId);
+        var request = recorder.Find(webhook.ParentSpanId);
+        Assert.NotNull(request);
+        Assert.Equal(ActivityKind.Server, request.Kind);
+        Assert.Equal(webhook.TraceId, request.TraceId);
+        Assert.Equal(default, request.ParentSpanId);
 
         var publish = Assert.Single(spans, span => span.Kind == ActivityKind.Producer);
         Assert.Equal(webhook.TraceId, publish.TraceId);

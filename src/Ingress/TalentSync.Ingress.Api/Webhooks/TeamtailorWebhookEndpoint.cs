@@ -72,16 +72,8 @@ internal static class TeamtailorWebhookEndpoint
         var eventId = Convert.ToHexStringLower(SHA256.HashData(rawBody));
         var receivedAt = timeProvider.GetUtcNow();
 
-        // Each webhook starts its own trace (ADR 010): the sender's trace context is untrusted, and one sender trace
-        // can carry several webhooks. The link leads back to the HTTP request span. Clearing Activity.Current does not
-        // leak to the caller: it is restored when this async method returns.
-        var request = Activity.Current;
-        Activity.Current = null;
-        using var activity = IngressTelemetry.Source.StartActivity(
-            $"webhook {notification.EventName}",
-            ActivityKind.Internal,
-            parentContext: default,
-            links: request is null ? null : [new ActivityLink(request.Context)]);
+        // A child of the webhook request span, which is the root of the trace (ADR 010).
+        using var activity = IngressTelemetry.Source.StartActivity($"webhook {notification.EventName}");
         activity?.SetTag("talentsync.event_id", eventId);
         activity?.SetTag("talentsync.event_type", notification.EventName);
         activity?.SetTag("talentsync.candidate_id", notification.CandidateId);

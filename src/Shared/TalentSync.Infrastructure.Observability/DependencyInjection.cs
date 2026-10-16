@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
 using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -20,11 +22,15 @@ public static class DependencyInjection
     private const string ServiceNameKey = "Observability:ServiceName";
 
     /// <summary>
-    /// Registers nothing unless <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> is set: without an exporter every span would be
+    /// Registers no exporter unless <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> is set: without one every span would be
     /// created and dropped, and tests and CI would try to reach a collector that is not there.
     /// </summary>
     public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration)
     {
+        // Registered with or without an exporter: whose context a request continues is a trust decision, not an export
+        // setting, and tests must see the same traces as a running system. ASP.NET Core resolves it from DI.
+        services.AddSingleton<DistributedContextPropagator>(new EdgeTraceContextPropagator());
+
         var endpoint = configuration[EndpointKey];
         if (string.IsNullOrWhiteSpace(endpoint))
         {
@@ -34,11 +40,17 @@ public static class DependencyInjection
         var serviceName = configuration[ServiceNameKey]
             ?? throw new InvalidOperationException($"Missing configuration '{ServiceNameKey}'.");
 
+        // With the SDK's default (W3C trace context and baggage) the ASP.NET Core instrumentation extracts the incoming
+        // context a second time and replaces the request span with one parented to the sender's trace. With exactly
+        // TraceContextPropagator it trusts the request span, which EdgeTraceContextPropagator has made a root.
+        // Process-wide, like the SDK's default it replaces.
+        Sdk.SetDefaultTextMapPropagator(new TraceContextPropagator());
+
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService(serviceName))
             .WithTracing(tracing => tracing
-                // The default ParentBased sampler obeys the sampled flag of an incoming traceparent, so a webhook
-                // sender with an unsampled trace (the simulator does this) would switch off our whole flow.
+                // Every request is a root (EdgeTraceContextPropagator), so ParentBased would sample everything too;
+                // AlwaysOn says so without depending on that.
                 .SetSampler(new AlwaysOnSampler())
                 .AddSource(SourcePrefix + "*")
                 // Liveness probes and the Blob SDK's checkpoint and ownership polling would bury the flow.

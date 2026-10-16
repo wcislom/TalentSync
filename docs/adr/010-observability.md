@@ -19,8 +19,9 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
 - **One project, `TalentSync.Infrastructure.Observability`** (`AddObservability`), referenced only by the hosts.
   It holds one concern, so it is not a Common project (ADR 001). Our spans and metrics use the BCL `ActivitySource`
   and `Meter` where the work happens; the SDK subscribes to `TalentSync.*`. No telemetry in `*.Domain` or `*.Application`.
-- **Explicit propagation, one trace per webhook.** The webhook span is the root of a new trace, linked to the HTTP
-  request span: the sender's trace context is untrusted, and one sender trace can carry several webhooks.
+- **Explicit propagation, one trace per webhook.** Our hosts are the edge and ignore the trace context of incoming
+  requests: the sender's context is untrusted, and one sender trace can carry several webhooks. So the webhook
+  request span is the root of a new trace, and the webhook span is its child.
   Ingress stores the webhook span's context in `ingress.Outbox.TraceParent`.
   The relay's publish span is a child of it and writes `traceparent` to `EventData.Properties`, never to the envelope.
   The consumer span is its child. A missing or invalid value starts a new trace and never fails the event.
@@ -46,5 +47,7 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
 - **Trace context in `EventEnvelope`.** Rejected: the envelope is a business contract, not transport metadata.
 - **A span link instead of a parent at the outbox.** Rejected: the dashboard would split one webhook into separate traces.
 - **Continuing the sender's trace.** Rejected: an external caller would choose our trace id and its sampling.
+- **A new trace at the webhook span, linked to the request span.** Rejected: dashboards show links only in span
+  details, so the request and the flow it starts would be separate traces.
 - **Setup duplicated in each host.** Rejected: three copies would drift.
 - **Seq or Grafana.** Seq covers logs only; Grafana is heavier. Production only needs another OTLP endpoint.

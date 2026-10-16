@@ -64,8 +64,9 @@ paths:
 
 ## Traces
 
-Scenario O1 records spans with `SpanRecorder` (`Infrastructure/`), an `ActivityListener` on `TalentSync.*`: all hosts
-run in the test process, so no exporter is needed. Spans are matched by the `talentsync.event_id` tag.
+Scenario O1 records spans with `SpanRecorder` (`Infrastructure/`), an `ActivityListener` on `TalentSync.*` and
+`Microsoft.AspNetCore` (request spans): all hosts run in the test process, so no exporter is needed. Our spans are
+matched by the `talentsync.event_id` tag, the request span by the webhook span's parent id.
 
 ## Prompt evaluation guard
 
