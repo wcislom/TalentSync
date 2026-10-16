@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
@@ -41,7 +43,11 @@ public static class DependencyInjection
                 .AddSource(SourcePrefix + "*")
                 // Liveness probes and the Blob SDK's checkpoint and ownership polling would bury the flow.
                 .AddAspNetCoreInstrumentation(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/health"))
-                .AddHttpClientInstrumentation(options => options.FilterHttpRequestMessage = request => !IsAzureSdk(request)))
+                .AddHttpClientInstrumentation(options =>
+                {
+                    options.FilterHttpRequestMessage = request => !IsAzureSdk(request);
+                    options.EnrichWithHttpRequestMessage = HttpPeerName.Enrich;
+                }))
             .WithMetrics(metrics => metrics
                 .AddMeter(SourcePrefix + "*")
                 .AddAspNetCoreInstrumentation()
@@ -53,6 +59,8 @@ public static class DependencyInjection
                 options.IncludeFormattedMessage = true;
             })
             .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(endpoint));
+
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, HttpPeerName.Filter>());
 
         return services;
     }

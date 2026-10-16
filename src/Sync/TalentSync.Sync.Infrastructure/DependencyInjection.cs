@@ -26,7 +26,8 @@ public static class DependencyInjection
         // Short blips only: attempt timeout, a few retries, circuit breaker; long outages are waited out by the
         // handler loop. The standard handler retries PUT and DELETE too. Harmless here: both are keyed by the
         // candidate id, so a retry after a timeout whose request did reach the CRM repeats the same effect (invariant 2).
-        services.AddHttpClient<ICrm, CrmClient>((provider, client) =>
+        // The client name labels its HTTP spans and resilience logs.
+        services.AddHttpClient<ICrm, CrmClient>("crm", (provider, client) =>
                 client.BaseAddress = provider.GetRequiredService<IOptions<CrmOptions>>().Value.BaseUrl)
             .AddStandardResilienceHandler(section.GetSection("Resilience"));
 

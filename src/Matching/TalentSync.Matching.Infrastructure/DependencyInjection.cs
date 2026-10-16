@@ -34,7 +34,8 @@ public static class DependencyInjection
         // Short blips only: attempt timeout, a few retries, circuit breaker; long outages are waited out by the
         // handler loop. Retrying the PUT is harmless: it is keyed by the candidate id, so a retry after a timeout
         // whose request did reach the platform repeats the same effect (invariant 2).
-        services.AddHttpClient<IMatchingPlatform, MatchingPlatformClient>((provider, client) =>
+        // The client name labels its HTTP spans and resilience logs.
+        services.AddHttpClient<IMatchingPlatform, MatchingPlatformClient>("matching-platform", (provider, client) =>
                 client.BaseAddress = provider.GetRequiredService<IOptions<MatchingPlatformOptions>>().Value.BaseUrl)
             .AddStandardResilienceHandler(section.GetSection("Resilience"));
 

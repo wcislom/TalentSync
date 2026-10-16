@@ -46,7 +46,8 @@ public static class DependencyInjection
         // HTTP pipeline, outermost first: one rate-limit retry, then the standard handler (total timeout, retry,
         // circuit breaker, attempt timeout) for short blips. Long outages are waited out by the handler loop, which
         // runs this whole pipeline again on every attempt.
-        var apiClient = services.AddHttpClient<TeamtailorApiClient>((provider, client) =>
+        // The client name labels its HTTP spans and resilience logs.
+        var apiClient = services.AddHttpClient<TeamtailorApiClient>("teamtailor", (provider, client) =>
         {
             var options = provider.GetRequiredService<IOptions<TeamtailorApiOptions>>().Value;
             client.BaseAddress = options.BaseUrl;
