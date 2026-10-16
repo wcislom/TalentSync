@@ -162,8 +162,7 @@ One convention in every project, host or library, so the registrations are alway
 
 ## Key flow: application qualified
 
-1. FakeTeamtailor sends a signed `job_application.update`. Ingress verifies it, inserts into `ingress.Outbox`,
-   returns 200.
+1. FakeTeamtailor sends a `job_application.update`. Ingress inserts it into `ingress.Outbox`, returns 200.
 2. The relay publishes the envelope (ids only) with partition key `candidateId`.
 3. Matching.Worker receives it on the candidate's partition and checks `matching.Inbox`: seen → checkpoint, skip.
 4. Through `IRecruitmentSource`: GET the application with its stage. Not qualified → inbox row, checkpoint.
@@ -184,6 +183,7 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
+- Ingress does not verify the Teamtailor webhook signature (v2) yet, so it accepts unsigned webhooks.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
 - Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
   CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.
