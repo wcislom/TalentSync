@@ -26,6 +26,8 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
   The consumer span is its child. A missing or invalid value starts a new trace and never fails the event.
 - **One consumer span per attempt**, tagged with the outcome (`handled`, `skipped_duplicate`, `parked`, ...).
   A span is exported when it ends, so one span around the retry loop would stay invisible during an outage.
+- **Metrics** answer what a trace cannot: consumer attempts by outcome, event age from webhook to effect, outbox
+  publish delay, LLM calls by outcome and tokens billed. The LLM call is a span; a reused stored suggestion has none.
 - **Logs carry the trace** (OpenTelemetry logging provider) and a scope with `EventId`, `EventType`, `CandidateId`.
 - **Invariant 14 covers telemetry:** ids only; never the CV, the prompt, model output or response bodies.
 

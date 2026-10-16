@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,6 +30,15 @@ internal sealed class EventProcessingLoop(
     private const string OutcomeTag = "talentsync.outcome";
 
     private static readonly ActivitySource ActivitySource = new("TalentSync.Messaging");
+    private static readonly Meter Meter = new("TalentSync.Messaging");
+
+    private static readonly Counter<long> Attempts = Meter.CreateCounter<long>(
+        "talentsync.consumer.attempts", description: "Processing attempts by outcome.");
+
+    // From the webhook reaching Ingress to the effect being done: the outbox, the hub, the partition queue and the
+    // handler together. Notify-then-fetch makes this the delay before the CRM or the profile shows the change.
+    private static readonly Histogram<double> EventAge = Meter.CreateHistogram<double>(
+        "talentsync.consumer.event_age", unit: "s", description: "Time from receiving a webhook to handling its event.");
 
     private readonly ConsumerOptions _options = options.Value;
 
@@ -74,7 +84,7 @@ internal sealed class EventProcessingLoop(
                 try
                 {
                     var outcome = await HandleOnceAsync(received, envelope, checkpoint, token);
-                    activity?.SetTag(OutcomeTag, outcome);
+                    EndAttempt(activity, received, envelope, outcome);
                 }
                 catch (Exception exception) when (!IsShutdown(exception, token))
                 {
@@ -83,7 +93,7 @@ internal sealed class EventProcessingLoop(
                     activity?.SetStatus(ActivityStatusCode.Error);
                     if (FailureClassifier.IsTransient(exception))
                     {
-                        activity?.SetTag(OutcomeTag, Outcomes.TransientFailure);
+                        EndAttempt(activity, received, envelope, Outcomes.TransientFailure);
                         logger.LogWarning(exception, "Transient failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt}",
                             envelope?.EventId, received.PartitionId, received.SequenceNumber, failedAttempts);
                         throw;
@@ -96,11 +106,11 @@ internal sealed class EventProcessingLoop(
                     if (unclassifiedAttempts >= _options.MaxUnclassifiedAttempts
                         && await TryParkAsync(received, envelope, $"retry limit exceeded: {exception.GetType().FullName}", checkpoint, token))
                     {
-                        activity?.SetTag(OutcomeTag, Outcomes.Parked);
+                        EndAttempt(activity, received, envelope, Outcomes.Parked);
                         return;
                     }
 
-                    activity?.SetTag(OutcomeTag, Outcomes.UnclassifiedFailure);
+                    EndAttempt(activity, received, envelope, Outcomes.UnclassifiedFailure);
                     throw;
                 }
             }, cancellationToken);
@@ -128,6 +138,24 @@ internal sealed class EventProcessingLoop(
         activity?.SetTag("talentsync.candidate_id", envelope?.CandidateId);
         activity?.SetTag("talentsync.attempt", attempt);
         return activity;
+    }
+
+    private void EndAttempt(Activity? activity, ReceivedEvent received, EventEnvelope? envelope, string outcome)
+    {
+        activity?.SetTag(OutcomeTag, outcome);
+        Attempts.Add(
+            1,
+            new KeyValuePair<string, object?>("messaging.consumer.group.name", received.ConsumerGroup),
+            new KeyValuePair<string, object?>("talentsync.event_type", envelope?.Type),
+            new KeyValuePair<string, object?>(OutcomeTag, outcome));
+
+        if (outcome == Outcomes.Handled && envelope is not null)
+        {
+            EventAge.Record(
+                (timeProvider.GetUtcNow() - envelope.ReceivedAt).TotalSeconds,
+                new KeyValuePair<string, object?>("messaging.consumer.group.name", received.ConsumerGroup),
+                new KeyValuePair<string, object?>("talentsync.event_type", envelope.Type));
+        }
     }
 
     /// <returns>The outcome of the attempt, one of <see cref="Outcomes"/>.</returns>

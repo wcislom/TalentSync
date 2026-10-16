@@ -98,6 +98,9 @@ internal sealed class OutboxRelay(
 
             row.PublishedAt = timeProvider.GetUtcNow().UtcDateTime;
             published++;
+            IngressTelemetry.PublishDelay.Record(
+                (row.PublishedAt.Value - row.CreatedAt).TotalSeconds,
+                new KeyValuePair<string, object?>("talentsync.event_type", row.Type));
             logger.LogInformation("Published {EventId} ({EventName}) for candidate {CandidateId}", row.EventId, row.Type, row.CandidateId);
         }
 
