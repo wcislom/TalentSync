@@ -41,9 +41,9 @@ public sealed class ObservabilityScenarios(SystemFixture fixture)
         Assert.Equal(webhook.TraceId, request.TraceId);
         Assert.Equal(default, request.ParentSpanId);
 
-        var publish = Assert.Single(spans, span => span.Source.Name == IngressSource && span.Kind == ActivityKind.Producer);
-        Assert.Equal(webhook.TraceId, publish.TraceId);
-        Assert.Equal(webhook.SpanId, publish.ParentSpanId);
+        var send = Assert.Single(spans, span => span.Source.Name == IngressSource && span.Kind == ActivityKind.Producer);
+        Assert.Equal(webhook.TraceId, send.TraceId);
+        Assert.Equal(webhook.SpanId, send.ParentSpanId);
 
         foreach (var consumerGroup in new[] { SyncWorker, MatchingWorker })
         {
@@ -52,7 +52,7 @@ public sealed class ObservabilityScenarios(SystemFixture fixture)
             Assert.All(processSpans, process =>
             {
                 Assert.Equal(webhook.TraceId, process.TraceId);
-                Assert.Equal(publish.SpanId, process.ParentSpanId);
+                Assert.Equal(send.SpanId, process.ParentSpanId);
             });
         }
     }

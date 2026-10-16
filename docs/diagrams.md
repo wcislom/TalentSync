@@ -72,27 +72,33 @@ sequenceDiagram
 
 The same flow is one trace in the Aspire Dashboard (ADR 010). Each webhook request is its root; the outbox and
 Event Hubs hops are carried by `ingress.Outbox.TraceParent` and the `traceparent` event property. Both consumer
-groups appear as branches, Sync.Worker's skipping the event:
+groups appear as branches, Sync.Worker's skipping the event. Span names as the dashboard shows them; the right-hand
+column is a comment:
 
 ```
-POST /webhooks/teamtailor                     ingress-api
-└─ webhook job_application.update             ingress-api
-   ├─ INSERT ingress.Outbox
-   └─ send ats-events                         ingress-api      (after the outbox delay)
-      ├─ process ats-events                   sync-worker      skipped_unhandled_type
-      │  └─ PUT (checkpoint)
-      └─ process ats-events                   matching-worker  handled
-         ├─ SELECT matching.Inbox
-         ├─ GET teamtailor /v1/job-applications
-         ├─ GET teamtailor /v1/candidates
-         ├─ SELECT matching.EnrichmentResults
-         ├─ enrich                             (only if no stored result)
-         │  └─ chat claude-haiku-5-5          model, tokens
-         ├─ INSERT matching.EnrichmentResults
-         ├─ PUT matching-platform /profiles
-         ├─ INSERT matching.Inbox
-         └─ PUT (checkpoint)
+POST /webhooks/teamtailor                        ingress-api
+└─ webhook job_application.update                ingress-api
+   ├─ INSERT                                     ingress.Outbox
+   └─ send ats-events                            ingress-api, after the outbox delay
+      ├─ process ats-events                      matching-worker, handled
+      │  ├─ SELECT [matching].[Inbox]
+      │  ├─ GET teamtailor /v1/job-applications
+      │  ├─ GET teamtailor /v1/candidates
+      │  ├─ SELECT [matching].[EnrichmentResults]
+      │  ├─ enrich                               enriched; only if no stored result
+      │  │  └─ chat claude-haiku-5-5             model, tokens; "chat" with the Fake provider
+      │  ├─ INSERT                               matching.EnrichmentResults
+      │  ├─ PUT matching-platform /profiles
+      │  ├─ INSERT                               matching.Inbox
+      │  └─ PUT                                  checkpoint in Blob storage
+      └─ process ats-events                      sync-worker, skipped_unhandled_type
+         └─ PUT                                  checkpoint
 ```
+
+An `INSERT` span carries no table name: EF Core prefixes its commands with `SET` statements, and the SqlClient
+instrumentation then summarises the command as `INSERT`. The table is in `db.query.text`; values are parameters, never
+literals. The first checkpoint of a partition is two `PUT`s, the first answered 404: the Blob SDK tries to update an
+existing checkpoint before creating it.
 
 ## Consumer handler: failure paths
 

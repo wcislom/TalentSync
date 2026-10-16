@@ -204,6 +204,6 @@ Scenario: O1 One webhook produces one trace through Ingress, the relay and both 
   When candidate "c-o1" applies in FakeTeamtailor
   Then the request span of its candidate.create webhook is the root of a trace
   And the webhook span of that event is a child of the request span
-  And the publish span of that event is a child of the webhook span
-  And every process span of that event in "sync-worker" and in "matching-worker" is a child of the publish span
+  And the send span of that event is a child of the webhook span
+  And every process span of that event in "sync-worker" and in "matching-worker" is a child of the send span
 ```
