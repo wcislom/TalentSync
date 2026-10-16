@@ -11,9 +11,8 @@ internal sealed class SpanExportPolicy : BaseProcessor<Activity>
 {
     public override void OnEnd(Activity activity)
     {
-        // A client span without a parent belongs to no flow: the relay polling the outbox, the event processor
-        // claiming partitions in Blob storage, migrations. Each poll would be a trace of its own and bury the flow.
-        // Calls inside a flow (inbox, parking lot, checkpoint) have a parent and are kept.
+        // A client span without a parent belongs to no flow: the relay polling the outbox, migrations. Each poll would
+        // be a trace of its own and bury the flow. Calls inside a flow (inbox, parking lot) have a parent and are kept.
         if (activity.Kind == ActivityKind.Client && activity.ParentSpanId == default)
         {
             activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;

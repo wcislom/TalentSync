@@ -58,7 +58,13 @@ public static class DependencyInjection
                 .AddSource(SourcePrefix + "*")
                 // Liveness probes would bury the flow.
                 .AddAspNetCoreInstrumentation(options => options.Filter = context => !context.Request.Path.StartsWithSegments("/health"))
-                .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = HttpPeerName.Enrich)
+                .AddHttpClientInstrumentation(options =>
+                {
+                    // The Blob SDK's requests are its internals (ownership polling, a checkpoint's update-or-create
+                    // round trips with an expected 404). The consumer's own checkpoint span says what happened.
+                    options.FilterHttpRequestMessage = request => !IsAzureSdk(request);
+                    options.EnrichWithHttpRequestMessage = HttpPeerName.Enrich;
+                })
                 // EF Core sends its commands through SqlClient. Parameter values are never recorded
                 // (SetDbQueryParameters is off) and EF does not inline them, so db.query.text holds no PII (invariant 14).
                 .AddSqlClientInstrumentation()
@@ -86,6 +92,9 @@ public static class DependencyInjection
 
         return services;
     }
+
+    private static bool IsAzureSdk(HttpRequestMessage request) =>
+        request.Headers.UserAgent.ToString().StartsWith("azsdk-net-", StringComparison.Ordinal);
 
     private static void UseCollector(OtlpExporterOptions options, Uri collector)
     {

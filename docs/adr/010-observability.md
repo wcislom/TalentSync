@@ -48,13 +48,16 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
   stack trace are in the log, which carries the trace id. `SpanExportPolicy` clears the status description of every
   span before export, ours and the libraries' alike. `OpenTelemetryChatClient.EnableSensitiveData` is set to false
   explicitly, so `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` cannot turn it on.
-- **A client span without a parent is not exported** (`SpanExportPolicy`): the relay polling the outbox, the event
-  processor claiming partitions in Blob storage, migrations. It belongs to no flow, and every poll would be a trace.
+- **A client span without a parent is not exported** (`SpanExportPolicy`): the relay polling the outbox, migrations.
+  It belongs to no flow, and every poll would be a trace.
+- **The checkpoint is our own span**, `checkpoint ats-events` (a settle operation), a child of the attempt that writes
+  it. The Blob SDK's HTTP requests are filtered out by their user agent: ownership polling and a checkpoint's
+  update-or-create round trips, whose first 404 per partition is expected, are the SDK's internals.
 
 ## Consequences
 
-- One trace shows the request, the outbox delay, both consumer groups and every HTTP, SQL and LLM call, the Event
-  Hubs checkpoint included.
+- One trace shows the request, the outbox delay, both consumer groups, every HTTP, SQL and LLM call, and each
+  checkpoint.
 - A relay double publish shows up in the same trace as a `skipped_duplicate` branch. A webhook that Teamtailor sends
   twice is a new trace, found by the `EventId` tag.
 - One more column and migration in `ingress`. Rows published before it start their own trace.
@@ -65,6 +68,7 @@ at Event Hubs (the envelope carries ids only) and in the retry loop (one call ca
   when the propagator is exactly `TraceContextPropagator`. That is the instrumentation's internal behaviour, pinned by
   `EdgeTraceTests` with the SDK enabled; scenario O1 runs without it.
 - HTTP client metrics include the Blob SDK's polling: unlike spans, they cannot be filtered per request.
+- The checkpoint store's latency is in the `checkpoint` span only; a slow Blob request has no span of its own.
 
 ## Alternatives considered
 

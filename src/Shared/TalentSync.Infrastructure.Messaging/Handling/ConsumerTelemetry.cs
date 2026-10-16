@@ -73,6 +73,32 @@ internal sealed class ConsumerTelemetry
         return new Attempt(this, activity, envelope);
     }
 
+    /// <summary>
+    /// Wraps the processor's checkpoint in a <c>checkpoint {hub}</c> span, a child of the attempt that writes it
+    /// (semantic conventions: a settle operation). The Blob SDK's own requests are filtered out of the traces.
+    /// </summary>
+    public Func<CancellationToken, Task> TraceCheckpoint(Func<CancellationToken, Task> checkpoint, ReceivedEvent received) =>
+        async cancellationToken =>
+        {
+            using var activity = Source.StartActivity($"checkpoint {_hubName}", ActivityKind.Client);
+            activity?.SetTag("messaging.system", "eventhubs");
+            activity?.SetTag("messaging.operation.type", "settle");
+            activity?.SetTag("messaging.operation.name", "checkpoint");
+            activity?.SetTag("messaging.destination.name", _hubName);
+            activity?.SetTag("messaging.destination.partition.id", received.PartitionId);
+            activity?.SetTag(ConsumerGroupTag, _consumerGroup);
+            try
+            {
+                await checkpoint(cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                activity?.SetTag("error.type", exception.GetType().FullName);
+                activity?.SetStatus(ActivityStatusCode.Error);
+                throw;
+            }
+        };
+
     private static string NameOf(AttemptOutcome outcome) => outcome switch
     {
         AttemptOutcome.Handled => "handled",

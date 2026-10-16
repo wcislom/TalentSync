@@ -48,6 +48,7 @@ internal sealed class EventProcessingLoop(
     /// <param name="cancellationToken">Cancelled when the processor shuts down or loses the partition.</param>
     public async Task ProcessAsync(ReceivedEvent received, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
     {
+        checkpoint = telemetry.TraceCheckpoint(checkpoint, received);
         var envelope = TryReadEnvelope(received.Body.Span);
         var failedAttempts = 0;
         var unclassifiedAttempts = 0;

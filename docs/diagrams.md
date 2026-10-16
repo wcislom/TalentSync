@@ -90,15 +90,15 @@ POST /webhooks/teamtailor                        ingress-api
       │  ├─ INSERT                               matching.EnrichmentResults
       │  ├─ PUT matching-platform /profiles
       │  ├─ INSERT                               matching.Inbox
-      │  └─ PUT                                  checkpoint in Blob storage
+      │  └─ checkpoint ats-events
       └─ process ats-events                      sync-worker, skipped_unhandled_type
-         └─ PUT                                  checkpoint
+         └─ checkpoint ats-events
 ```
 
 An `INSERT` span carries no table name: EF Core prefixes its commands with `SET` statements, and the SqlClient
 instrumentation then summarises the command as `INSERT`. The table is in `db.query.text`; values are parameters, never
-literals. The first checkpoint of a partition is two `PUT`s, the first answered 404: the Blob SDK tries to update an
-existing checkpoint before creating it.
+literals. `checkpoint` is our span around the event processor's checkpoint; the Blob SDK's own requests are not
+traced.
 
 ## Consumer handler: failure paths
 
