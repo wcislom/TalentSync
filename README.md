@@ -117,7 +117,7 @@ To click through the whole flow by hand (success, CRM outage, candidate without 
 (Git Bash). It starts the containers, builds, applies the EF migrations and starts the three hosts (on Windows each
 in its own Windows Terminal tab). Then use
 [`docs/e2e.http`](docs/e2e.http). Traces, metrics and logs of the three hosts are in the Aspire Dashboard at
-http://localhost:18888 (ADR 010).
+[http://localhost:18888](http://localhost:18888) (ADR 010).
 
 ## Simplifications
 
@@ -147,3 +147,5 @@ a test pass.
 ---
 
 Not affiliated with Teamtailor; built from its public documentation.
+
+Shared for review as a portfolio project; no license is granted for reuse.
