@@ -20,6 +20,7 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 | Event Hubs | Hub `ats-events`, ordered log per partition, independent read position per consumer group | Dead-letter (there is no DLQ) | |
 | Azurite | Checkpoints and partition ownership | | |
 | Simulators | Stand-ins for Teamtailor, CRM, Matching Platform; break on demand | Production behaviour | in-memory |
+| Aspire Dashboard | Local view of the hosts' traces, metrics and logs over OTLP (ADR 010) | Run in tests or CI | in-memory |
 
 ## Repository layout
 

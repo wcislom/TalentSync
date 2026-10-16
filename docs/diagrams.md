@@ -26,6 +26,7 @@ flowchart TB
   mp["FakeMatchingPlatform"]
   llm["LLM / FakeChatClient"]
   blob[("Azurite: checkpoints")]
+  dash["Aspire Dashboard<br/>traces, metrics, logs"]
 
   tt -->|webhook| ep --> outbox --> relay --> eh
   eh --> sh
@@ -39,6 +40,9 @@ flowchart TB
   mh -->|upsert profile| mp
   sh -.-> blob
   mh -.-> blob
+  ing -.->|OTLP| dash
+  sync -.->|OTLP| dash
+  mat -.->|OTLP| dash
 ```
 
 ## Key flow: application qualified
@@ -64,6 +68,22 @@ sequenceDiagram
   MW->>MW: validate, store result
   MW->>MP: PUT /profiles/{candidateId}
   MW->>MW: insert inbox, checkpoint
+```
+
+The same flow is one trace in the Aspire Dashboard (ADR 010). Each webhook request is its root; the outbox and
+Event Hubs hops are carried by `ingress.Outbox.TraceParent` and the `traceparent` event property. Both consumer
+groups appear as branches, Sync.Worker's skipping the event:
+
+```
+POST /webhooks/teamtailor                     ingress-api
+└─ webhook job_application.update             ingress-api
+   └─ publish job_application.update          ingress-api      (after the outbox delay)
+      ├─ process job_application.update       sync-worker      skipped_unhandled_type
+      └─ process job_application.update       matching-worker  handled
+         ├─ GET teamtailor /v1/job-applications
+         ├─ GET teamtailor /v1/candidates
+         ├─ enrichment                         (only if no stored result)
+         └─ PUT matching-platform /profiles
 ```
 
 ## Consumer handler: failure paths
