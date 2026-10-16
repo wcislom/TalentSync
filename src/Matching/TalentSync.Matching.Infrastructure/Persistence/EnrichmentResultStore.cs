@@ -39,10 +39,7 @@ internal sealed class EnrichmentResultStore(IDbContextFactory<MatchingDbContext>
             await db.SaveChangesAsync(cancellationToken);
             return enrichment;
         }
-        catch (DbUpdateException exception) when (exception.InnerException is SqlException
-                                                  {
-                                                      Number: UniqueConstraintViolation or UniqueIndexViolation,
-                                                  })
+        catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: UniqueConstraintViolation or UniqueIndexViolation })
         {
             // Another processor enriched the same CV with the same prompt first (e.g. after a partition moved mid-event). Its answer wins,
             // so both upserts send the same suggestion.
