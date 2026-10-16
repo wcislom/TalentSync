@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,7 @@ internal static class DependencyInjection
             .Bind(configuration.GetSection(OutboxRelayOptions.SectionName))
             .Validate(o => o.IsValid(), $"'{OutboxRelayOptions.SectionName}' needs BatchSize > 0, PollInterval > 0 and MaxBackoff >= PollInterval.")
             .ValidateOnStart();
+        services.AddSingleton(provider => new IngressTelemetry(provider.GetRequiredService<IMeterFactory>(), hubName));
         services.AddSingleton<OutboxPublisher>();
         services.AddHostedService<OutboxRelay>();
 

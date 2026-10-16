@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using Anthropic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -63,13 +64,21 @@ public static class DependencyInjection
                 LlmOptions.AnthropicProvider => CreateAnthropicChatClient(options.Anthropic),
                 _ => throw new InvalidOperationException($"Unknown '{LlmOptions.SectionName}:Provider'."),
             };
-            return new TelemetryChatClient(inner);
+
+            // A gen_ai "chat" span with token usage, plus the gen_ai duration and token metrics (ADR 010). Set
+            // explicitly: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true would otherwise put the CV and the
+            // model's answer into the span (invariant 14).
+            return inner.AsBuilder()
+                .UseOpenTelemetry(sourceName: MatchingTelemetry.Name, configure: client => client.EnableSensitiveData = false)
+                .Build(provider);
         });
+
+        services.AddSingleton(provider => new MatchingTelemetry(provider.GetRequiredService<IMeterFactory>()));
 
         // Singletons, so the circuit breaker sees every call of the worker.
         services.AddSingleton<ChatEnrichmentService>();
-        services.AddSingleton<IEnrichmentService>(provider =>
-            new TelemetryEnrichmentService(provider.GetRequiredService<ChatEnrichmentService>()));
+        services.AddSingleton<IEnrichmentService>(provider => new TelemetryEnrichmentService(
+            provider.GetRequiredService<ChatEnrichmentService>(), provider.GetRequiredService<MatchingTelemetry>()));
 
         return services;
     }

@@ -14,6 +14,7 @@ paths:
 | `TalentSync.Sync.Application.Tests`, `TalentSync.Matching.Application.Tests` | Unit, no I/O | Use cases: each fetch result and port result → use case result. Ports replaced by small hand-written stubs |
 | `TalentSync.Infrastructure.Teamtailor.Tests` | Unit, no network | Signature v2, webhook parsing, stage mapping, response mapping (404 → Deleted, 4xx → Rejected). Internals via `InternalsVisibleTo` |
 | `TalentSync.Infrastructure.Messaging.Tests` | Unit, no I/O | Consumer skeleton: inbox and parking lot mapping, failure classification, handler loop |
+| `TalentSync.Infrastructure.Observability.Tests` | Unit, no network | `AddObservability` with the SDK enabled on a test server (the request span is a root), `SpanExportPolicy` in front of an in-memory exporter. Internals via `InternalsVisibleTo` |
 | `TalentSync.Sync.Infrastructure.Tests` | Unit, no network | CRM client: status mapping (404 on delete = done, 4xx → Rejected), HTTP pipeline. Internals via `InternalsVisibleTo` |
 | `TalentSync.Matching.Evaluation.Tests` | Unit, no network | Prompt evaluation (ADR 009): metric calculations, golden set hash, case file validation, report format, the CI guard for the evaluation report. Never calls a model |
 | `TalentSync.IntegrationTests` | Acceptance | Scenarios from `docs/acceptance-scenarios.md` |
@@ -66,7 +67,8 @@ paths:
 
 Scenario O1 records spans with `SpanRecorder` (`Infrastructure/`), an `ActivityListener` on `TalentSync.*` and
 `Microsoft.AspNetCore` (request spans): all hosts run in the test process, so no exporter is needed. Our spans are
-matched by the `talentsync.event_id` tag, the request span by the webhook span's parent id.
+matched by the `talentsync.event_id` tag, the request span by the webhook span's parent id. O1 runs without the SDK;
+the SDK's own handling of the request span is covered by `EdgeTraceTests` in `TalentSync.Infrastructure.Observability.Tests`.
 
 ## Prompt evaluation guard
 

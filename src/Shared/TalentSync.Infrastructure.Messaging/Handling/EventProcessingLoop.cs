@@ -19,6 +19,7 @@ internal sealed class EventProcessingLoop(
     IEventHandler handler,
     IConsumerStore store,
     IOptions<ConsumerOptions> options,
+    ConsumerTelemetry telemetry,
     TimeProvider timeProvider,
     ILogger<EventProcessingLoop> logger)
 {
@@ -51,19 +52,20 @@ internal sealed class EventProcessingLoop(
         var failedAttempts = 0;
         var unclassifiedAttempts = 0;
 
-        // Every log of the use case and the clients carries these, without passing them around.
+        // Every log of the use case and the clients carries these, without passing them around. Named like the span
+        // tags, so one attribute finds an event's logs and spans.
         using var logScope = envelope is null ? null : logger.BeginScope(new Dictionary<string, object?>
         {
-            ["EventId"] = envelope.EventId,
-            ["EventType"] = envelope.Type,
-            ["CandidateId"] = envelope.CandidateId,
+            [ConsumerTelemetry.EventIdTag] = envelope.EventId,
+            [ConsumerTelemetry.EventTypeTag] = envelope.Type,
+            [ConsumerTelemetry.CandidateIdTag] = envelope.CandidateId,
         });
 
         try
         {
             await _retry.ExecuteAsync(async token =>
             {
-                using var attempt = ConsumerTelemetry.StartAttempt(received, envelope, failedAttempts + 1, timeProvider);
+                using var attempt = telemetry.StartAttempt(received, envelope, failedAttempts + 1);
                 try
                 {
                     attempt.End(await HandleOnceAsync(received, envelope, checkpoint, token));
@@ -91,6 +93,11 @@ internal sealed class EventProcessingLoop(
                     }
 
                     attempt.Fail(exception, AttemptOutcome.UnclassifiedFailure);
+                    throw;
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    attempt.End(AttemptOutcome.Cancelled);
                     throw;
                 }
             }, cancellationToken);

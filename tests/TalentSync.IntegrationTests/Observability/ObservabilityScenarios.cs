@@ -11,6 +11,7 @@ public sealed class ObservabilityScenarios(SystemFixture fixture)
 {
     private const string SyncWorker = "sync-worker";
     private const string MatchingWorker = "matching-worker";
+    private const string IngressSource = "TalentSync.Ingress";
 
     [Fact]
     public async Task O1_OneWebhookProducesOneTraceThroughIngressTheRelayAndBothWorkers()
@@ -33,14 +34,14 @@ public sealed class ObservabilityScenarios(SystemFixture fixture)
             },
             $"process spans of {eventId} in both consumer groups");
 
-        var webhook = Assert.Single(spans, span => span.Kind == ActivityKind.Internal);
+        var webhook = Assert.Single(spans, span => span.Source.Name == IngressSource && span.Kind == ActivityKind.Internal);
         var request = recorder.Find(webhook.ParentSpanId);
         Assert.NotNull(request);
         Assert.Equal(ActivityKind.Server, request.Kind);
         Assert.Equal(webhook.TraceId, request.TraceId);
         Assert.Equal(default, request.ParentSpanId);
 
-        var publish = Assert.Single(spans, span => span.Kind == ActivityKind.Producer);
+        var publish = Assert.Single(spans, span => span.Source.Name == IngressSource && span.Kind == ActivityKind.Producer);
         Assert.Equal(webhook.TraceId, publish.TraceId);
         Assert.Equal(webhook.SpanId, publish.ParentSpanId);
 

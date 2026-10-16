@@ -77,14 +77,21 @@ groups appear as branches, Sync.Worker's skipping the event:
 ```
 POST /webhooks/teamtailor                     ingress-api
 └─ webhook job_application.update             ingress-api
-   └─ publish job_application.update          ingress-api      (after the outbox delay)
-      ├─ process job_application.update       sync-worker      skipped_unhandled_type
-      └─ process job_application.update       matching-worker  handled
+   ├─ INSERT ingress.Outbox
+   └─ send ats-events                         ingress-api      (after the outbox delay)
+      ├─ process ats-events                   sync-worker      skipped_unhandled_type
+      │  └─ PUT (checkpoint)
+      └─ process ats-events                   matching-worker  handled
+         ├─ SELECT matching.Inbox
          ├─ GET teamtailor /v1/job-applications
          ├─ GET teamtailor /v1/candidates
+         ├─ SELECT matching.EnrichmentResults
          ├─ enrich                             (only if no stored result)
          │  └─ chat claude-haiku-5-5          model, tokens
-         └─ PUT matching-platform /profiles
+         ├─ INSERT matching.EnrichmentResults
+         ├─ PUT matching-platform /profiles
+         ├─ INSERT matching.Inbox
+         └─ PUT (checkpoint)
 ```
 
 ## Consumer handler: failure paths

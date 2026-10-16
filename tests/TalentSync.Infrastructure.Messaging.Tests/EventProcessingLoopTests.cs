@@ -228,10 +228,11 @@ public class EventProcessingLoopTests
             MaxBackoff = maxBackoff,
             MaxUnclassifiedAttempts = MaxUnclassifiedAttempts,
         }),
+        new ConsumerTelemetry(new TestMeterFactory(), timeProvider ?? TimeProvider.System, "test-hub", "test-consumer-group"),
         timeProvider ?? TimeProvider.System,
         NullLogger<EventProcessingLoop>.Instance);
 
-    private static ReceivedEvent Received(byte[] body) => new("0", 42, body, "test-consumer-group", TraceParent: null);
+    private static ReceivedEvent Received(byte[] body) => new("0", 42, body, TraceParent: null);
 
     private static byte[] Serialize(EventEnvelope envelope) => Encoding.UTF8.GetBytes(EventEnvelopeJson.Serialize(envelope));
 

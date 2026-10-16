@@ -34,6 +34,6 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Llm:Anthropic:ApiKey` | Matching.Worker | user-secrets only, never in the repo; required only when `Provider = Anthropic` |
 | `Llm:Anthropic:Model`, `Llm:Anthropic:MaxOutputTokens` | Matching.Worker | `claude-haiku-5-5`, 8000; the ceiling includes adaptive thinking |
 | `Llm:Anthropic:MaxRetries` | Matching.Worker | the SDK's retries of 408/409/429/5xx and connection failures; 2 |
-| `Observability:ServiceName` | all three hosts | `ingress-api`, `sync-worker`, `matching-worker`; required only when the endpoint below is set |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | all three hosts | unset = no telemetry at all (tests, CI). Set only in the `launchSettings.json` profiles (`http://localhost:4317`, Aspire Dashboard), never in `appsettings*.json`: integration tests run in `Development` and load those files |
+| `OTEL_SERVICE_NAME` | all three hosts | `ingress-api`, `sync-worker`, `matching-worker`, next to the endpoint in `launchSettings.json`; required when the endpoint is set |
 | `Llm:Fake:Mode` | Matching.Worker | `Valid`, `InvalidJson`, `OutOfRange`, `Hang`; default when the CV has no `[llm:<Mode>]` marker |

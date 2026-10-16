@@ -53,8 +53,7 @@ internal sealed class EventProcessorHost(
         var loop = scope.ServiceProvider.GetRequiredService<EventProcessingLoop>();
 
         var traceParent = args.Data.Properties.TryGetValue(EventProperties.TraceParent, out var value) ? value as string : null;
-        var received = new ReceivedEvent(
-            args.Partition.PartitionId, args.Data.SequenceNumber, args.Data.EventBody.ToMemory(), processor.ConsumerGroup, traceParent);
+        var received = new ReceivedEvent(args.Partition.PartitionId, args.Data.SequenceNumber, args.Data.EventBody.ToMemory(), traceParent);
         await loop.ProcessAsync(received, args.UpdateCheckpointAsync, args.CancellationToken);
     }
 

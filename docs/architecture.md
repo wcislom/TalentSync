@@ -42,7 +42,8 @@ src/
                                             signature v2, webhook parsing, public AddTeamtailorWebhooks() (Ingress)
                                             and AddTeamtailorApi() (workers). → Recruitment.Domain
     TalentSync.Infrastructure.Observability AddObservability(): OpenTelemetry traces, metrics and logs over OTLP,
-                                            subscribes to every TalentSync.* ActivitySource and Meter (ADR 010).
+                                            subscribes to every TalentSync.* ActivitySource and Meter, HTTP and SQL
+                                            instrumentation, SpanExportPolicy (ADR 010).
                                             Only hosts reference it. References nothing in src/
     TalentSync.Infrastructure.Messaging     EventProcessorClient hosting, consumer handler skeleton (retry loop,
                                             failure classification), HandlerResult, Inbox and ParkingLot entities
@@ -81,6 +82,7 @@ tests/
   TalentSync.Matching.Infrastructure.Tests      Matching Platform client: request body, status mapping, resilience
   TalentSync.Infrastructure.Teamtailor.Tests    signature v2, webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
   TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
+  TalentSync.Infrastructure.Observability.Tests request span is a root with the SDK enabled, SpanExportPolicy
   TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
   TalentSync.Matching.Evaluation.Tests          prompt evaluation: metrics, golden set hash, case files, report
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)

@@ -19,4 +19,7 @@ internal enum AttemptOutcome
 
     /// <summary>Retried until the attempt limit, then parked.</summary>
     UnclassifiedFailure,
+
+    /// <summary>Shutdown or a lost partition: no checkpoint, the next owner of the partition processes the event again.</summary>
+    Cancelled,
 }

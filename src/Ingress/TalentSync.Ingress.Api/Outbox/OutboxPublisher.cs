@@ -5,14 +5,14 @@ using TalentSync.Contracts;
 namespace TalentSync.Ingress.Api.Outbox;
 
 /// <summary>Sends one outbox row to Event Hubs with partition key <c>candidateId</c> (invariant 10).</summary>
-internal sealed class OutboxPublisher(EventHubProducerClient producer)
+internal sealed class OutboxPublisher(EventHubProducerClient producer, IngressTelemetry telemetry)
 {
     public async Task PublishAsync(OutboxMessage message, CancellationToken cancellationToken)
     {
-        using var activity = IngressTelemetry.StartPublish(message, producer.EventHubName);
+        using var activity = telemetry.StartSend(message);
 
         var eventData = new EventData(BinaryData.FromString(message.Envelope)) { ContentType = "application/json", MessageId = message.EventId };
-        if (IngressTelemetry.TraceParentOf(activity) is { } traceParent)
+        if (telemetry.TraceParentOf(activity) is { } traceParent)
         {
             eventData.Properties[EventProperties.TraceParent] = traceParent;
         }
@@ -23,7 +23,7 @@ internal sealed class OutboxPublisher(EventHubProducerClient producer)
         }
         catch (Exception exception)
         {
-            IngressTelemetry.Fail(activity, exception);
+            telemetry.Fail(activity, exception);
             throw;
         }
     }

@@ -22,8 +22,17 @@ public sealed class LlmProviderRegistrationTests : IDisposable
         var client = provider.GetRequiredService<IChatClient>();
 
         // The same instance the integration tests count calls on (scenario M5).
-        Assert.IsType<TelemetryChatClient>(client);
+        Assert.IsType<OpenTelemetryChatClient>(client);
         Assert.Same(provider.GetRequiredService<FakeChatClient>(), client.GetService<FakeChatClient>());
+    }
+
+    [Fact]
+    public void Telemetry_NeverCapturesMessageContent()
+    {
+        var provider = Build(new() { ["Llm:Provider"] = "Fake" });
+
+        // Invariant 14: the CV and the model's answer stay out of spans, whatever the environment says.
+        Assert.False(provider.GetRequiredService<IChatClient>().GetService<OpenTelemetryChatClient>()?.EnableSensitiveData);
     }
 
     [Fact]

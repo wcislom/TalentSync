@@ -31,6 +31,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TalentSync.Infrastructure.Messaging.Tests/TalentSync.Infrastructure.Messaging.Tests.csproj" />
+    <Project Path="tests/TalentSync.Infrastructure.Observability.Tests/TalentSync.Infrastructure.Observability.Tests.csproj" />
     <Project Path="tests/TalentSync.Infrastructure.Teamtailor.Tests/TalentSync.Infrastructure.Teamtailor.Tests.csproj" />
     <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
     <Project Path="tests/TalentSync.Matching.Application.Tests/TalentSync.Matching.Application.Tests.csproj" />

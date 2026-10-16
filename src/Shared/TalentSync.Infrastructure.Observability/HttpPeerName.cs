@@ -38,7 +38,8 @@ internal static class HttpPeerName
     }
 
     // The path without its last segment, which is the id in every API we call (/contacts/{id}, /v1/candidates/{id}).
-    // A heuristic: it keeps the span name readable and free of ids.
+    // A heuristic for /{collection}/{id} only: a call without an id, such as a list, would lose its collection name.
+    // It keeps the span name readable and free of ids.
     private static string Resource(Uri? uri)
     {
         var path = uri?.AbsolutePath.TrimEnd('/') ?? "";

@@ -35,7 +35,7 @@ No attributes, no payload body: the envelope is a notification. Workers fetch cu
 (notify-then-fetch). `Contracts` references nothing.
 
 Transport metadata goes in `EventData.Properties`, never in the envelope. The only one is `traceparent`
-(`EventProperties.TraceParent`, ADR 010): the relay's publish span, parent of every consumer attempt span.
+(`EventProperties.TraceParent`, ADR 010): the relay's send span, parent of every consumer attempt span.
 
 ## Ingress.Api
 

@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using Azure.Messaging.EventHubs;
 using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
@@ -27,14 +28,13 @@ public static class DependencyInjection
             .Validate(o => o.IsValid(), $"'{ConsumerOptions.SectionName}' needs InitialBackoff > 0, MaxBackoff >= InitialBackoff and MaxUnclassifiedAttempts > 0.")
             .ValidateOnStart();
 
+        var hubName = Required(configuration, "EventHubs:HubName");
+        var consumerGroup = Required(configuration, "EventHubs:ConsumerGroup");
         var checkpointContainer = new BlobContainerClient(
             Required(configuration, "Checkpoints:BlobConnectionString"),
             Required(configuration, "Checkpoints:Container"));
         var processor = new EventProcessorClient(
-            checkpointContainer,
-            Required(configuration, "EventHubs:ConsumerGroup"),
-            Required(configuration, "EventHubs:ConnectionString"),
-            Required(configuration, "EventHubs:HubName"));
+            checkpointContainer, consumerGroup, Required(configuration, "EventHubs:ConnectionString"), hubName);
 
         // Singletons (invariant 9): the processor holds the AMQP connection and the partition ownership.
         services.AddSingleton(checkpointContainer);
@@ -45,6 +45,9 @@ public static class DependencyInjection
         services.AddScoped<IConsumerStore, ConsumerStore<TDbContext>>();
         services.AddScoped<EventProcessingLoop>();
         services.TryAddSingleton(TimeProvider.System);
+        // IMeterFactory comes from the host (the generic host registers it).
+        services.AddSingleton(provider => new ConsumerTelemetry(
+            provider.GetRequiredService<IMeterFactory>(), provider.GetRequiredService<TimeProvider>(), hubName, consumerGroup));
 
         return services;
     }

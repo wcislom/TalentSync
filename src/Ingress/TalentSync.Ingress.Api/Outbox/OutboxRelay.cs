@@ -19,6 +19,7 @@ namespace TalentSync.Ingress.Api.Outbox;
 internal sealed class OutboxRelay(
     IDbContextFactory<IngressDbContext> dbContextFactory,
     OutboxPublisher publisher,
+    IngressTelemetry telemetry,
     IOptions<OutboxRelayOptions> options,
     TimeProvider timeProvider,
     ILogger<OutboxRelay> logger) : BackgroundService
@@ -98,7 +99,7 @@ internal sealed class OutboxRelay(
 
             row.PublishedAt = timeProvider.GetUtcNow().UtcDateTime;
             published++;
-            IngressTelemetry.RecordPublished(row);
+            telemetry.RecordPublished(row);
             logger.LogInformation("Published {EventId} ({EventName}) for candidate {CandidateId}", row.EventId, row.Type, row.CandidateId);
         }
 
