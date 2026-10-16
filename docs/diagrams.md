@@ -82,7 +82,8 @@ POST /webhooks/teamtailor                     ingress-api
       └─ process job_application.update       matching-worker  handled
          ├─ GET teamtailor /v1/job-applications
          ├─ GET teamtailor /v1/candidates
-         ├─ enrichment                         (only if no stored result)
+         ├─ enrich                             (only if no stored result)
+         │  └─ chat claude-haiku-5-5          model, tokens
          └─ PUT matching-platform /profiles
 ```
 

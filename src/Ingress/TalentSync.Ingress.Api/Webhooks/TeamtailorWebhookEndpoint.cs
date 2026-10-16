@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Security.Cryptography;
 using TalentSync.Contracts;
 using TalentSync.Infrastructure.Teamtailor.Webhooks;
@@ -72,11 +71,7 @@ internal static class TeamtailorWebhookEndpoint
         var eventId = Convert.ToHexStringLower(SHA256.HashData(rawBody));
         var receivedAt = timeProvider.GetUtcNow();
 
-        // A child of the webhook request span, which is the root of the trace (ADR 010).
-        using var activity = IngressTelemetry.Source.StartActivity($"webhook {notification.EventName}");
-        activity?.SetTag("talentsync.event_id", eventId);
-        activity?.SetTag("talentsync.event_type", notification.EventName);
-        activity?.SetTag("talentsync.candidate_id", notification.CandidateId);
+        using var activity = IngressTelemetry.StartWebhook(eventId, notification.EventName, notification.CandidateId);
 
         var envelope = new EventEnvelope
         {
@@ -110,8 +105,7 @@ internal static class TeamtailorWebhookEndpoint
         {
             // Known limitation (ADR 004): Teamtailor may not retry a 503, so this event is lost.
             // The exception carries no PII: the row holds ids only and sensitive data logging is off.
-            activity?.AddException(exception);
-            activity?.SetStatus(ActivityStatusCode.Error);
+            IngressTelemetry.Fail(activity, exception);
             logger.LogError(exception, "Could not store webhook {EventId} ({EventName}) in the outbox", eventId, notification.EventName);
             return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
         }

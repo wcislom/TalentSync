@@ -15,11 +15,15 @@ public sealed class LlmProviderRegistrationTests : IDisposable
     public void Dispose() => _providers.ForEach(p => p.Dispose());
 
     [Fact]
-    public void Fake_ResolvesFakeChatClient()
+    public void Fake_ResolvesTheFakeChatClientSingletonBehindTelemetry()
     {
         var provider = Build(new() { ["Llm:Provider"] = "Fake" });
 
-        Assert.IsType<FakeChatClient>(provider.GetRequiredService<IChatClient>());
+        var client = provider.GetRequiredService<IChatClient>();
+
+        // The same instance the integration tests count calls on (scenario M5).
+        Assert.IsType<TelemetryChatClient>(client);
+        Assert.Same(provider.GetRequiredService<FakeChatClient>(), client.GetService<FakeChatClient>());
     }
 
     [Fact]

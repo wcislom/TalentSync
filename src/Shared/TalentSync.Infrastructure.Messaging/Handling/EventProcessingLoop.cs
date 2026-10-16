@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,19 +24,6 @@ internal sealed class EventProcessingLoop(
 {
     internal const string UnreadableEnvelope = "unreadable envelope";
     internal const int MaxParkedBodyBytes = 4096;
-
-    private const string OutcomeTag = "talentsync.outcome";
-
-    private static readonly ActivitySource ActivitySource = new("TalentSync.Messaging");
-    private static readonly Meter Meter = new("TalentSync.Messaging");
-
-    private static readonly Counter<long> Attempts = Meter.CreateCounter<long>(
-        "talentsync.consumer.attempts", description: "Processing attempts by outcome.");
-
-    // From the webhook reaching Ingress to the effect being done: the outbox, the hub, the partition queue and the
-    // handler together. Notify-then-fetch makes this the delay before the CRM or the profile shows the change.
-    private static readonly Histogram<double> EventAge = Meter.CreateHistogram<double>(
-        "talentsync.consumer.event_age", unit: "s", description: "Time from receiving a webhook to handling its event.");
 
     private readonly ConsumerOptions _options = options.Value;
 
@@ -78,22 +63,17 @@ internal sealed class EventProcessingLoop(
         {
             await _retry.ExecuteAsync(async token =>
             {
-                // A span per attempt, not per event: a span is exported when it ends, so one span around the whole
-                // retry loop would stay invisible for the length of an outage (ADR 010).
-                using var activity = StartAttempt(received, envelope, failedAttempts + 1);
+                using var attempt = ConsumerTelemetry.StartAttempt(received, envelope, failedAttempts + 1, timeProvider);
                 try
                 {
-                    var outcome = await HandleOnceAsync(received, envelope, checkpoint, token);
-                    EndAttempt(activity, received, envelope, outcome);
+                    attempt.End(await HandleOnceAsync(received, envelope, checkpoint, token));
                 }
                 catch (Exception exception) when (!IsShutdown(exception, token))
                 {
                     failedAttempts++;
-                    activity?.AddException(exception);
-                    activity?.SetStatus(ActivityStatusCode.Error);
                     if (FailureClassifier.IsTransient(exception))
                     {
-                        EndAttempt(activity, received, envelope, Outcomes.TransientFailure);
+                        attempt.Fail(exception, AttemptOutcome.TransientFailure);
                         logger.LogWarning(exception, "Transient failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt}",
                             envelope?.EventId, received.PartitionId, received.SequenceNumber, failedAttempts);
                         throw;
@@ -106,11 +86,11 @@ internal sealed class EventProcessingLoop(
                     if (unclassifiedAttempts >= _options.MaxUnclassifiedAttempts
                         && await TryParkAsync(received, envelope, $"retry limit exceeded: {exception.GetType().FullName}", checkpoint, token))
                     {
-                        EndAttempt(activity, received, envelope, Outcomes.Parked);
+                        attempt.Fail(exception, AttemptOutcome.Parked);
                         return;
                     }
 
-                    EndAttempt(activity, received, envelope, Outcomes.UnclassifiedFailure);
+                    attempt.Fail(exception, AttemptOutcome.UnclassifiedFailure);
                     throw;
                 }
             }, cancellationToken);
@@ -125,41 +105,7 @@ internal sealed class EventProcessingLoop(
     private static bool IsShutdown(Exception exception, CancellationToken cancellationToken) =>
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 
-    /// <summary>A child of the relay's publish span; a missing or invalid <c>traceparent</c> starts a new trace.</summary>
-    private static Activity? StartAttempt(ReceivedEvent received, EventEnvelope? envelope, int attempt)
-    {
-        ActivityContext.TryParse(received.TraceParent, null, out var publish);
-        var activity = ActivitySource.StartActivity($"process {envelope?.Type ?? "unreadable"}", ActivityKind.Consumer, publish);
-        activity?.SetTag("messaging.system", "eventhubs");
-        activity?.SetTag("messaging.consumer.group.name", received.ConsumerGroup);
-        activity?.SetTag("messaging.destination.partition.id", received.PartitionId);
-        activity?.SetTag("talentsync.event_id", envelope?.EventId);
-        activity?.SetTag("talentsync.event_type", envelope?.Type);
-        activity?.SetTag("talentsync.candidate_id", envelope?.CandidateId);
-        activity?.SetTag("talentsync.attempt", attempt);
-        return activity;
-    }
-
-    private void EndAttempt(Activity? activity, ReceivedEvent received, EventEnvelope? envelope, string outcome)
-    {
-        activity?.SetTag(OutcomeTag, outcome);
-        Attempts.Add(
-            1,
-            new KeyValuePair<string, object?>("messaging.consumer.group.name", received.ConsumerGroup),
-            new KeyValuePair<string, object?>("talentsync.event_type", envelope?.Type),
-            new KeyValuePair<string, object?>(OutcomeTag, outcome));
-
-        if (outcome == Outcomes.Handled && envelope is not null)
-        {
-            EventAge.Record(
-                (timeProvider.GetUtcNow() - envelope.ReceivedAt).TotalSeconds,
-                new KeyValuePair<string, object?>("messaging.consumer.group.name", received.ConsumerGroup),
-                new KeyValuePair<string, object?>("talentsync.event_type", envelope.Type));
-        }
-    }
-
-    /// <returns>The outcome of the attempt, one of <see cref="Outcomes"/>.</returns>
-    private async Task<string> HandleOnceAsync(
+    private async Task<AttemptOutcome> HandleOnceAsync(
         ReceivedEvent received, EventEnvelope? envelope, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
     {
         if (envelope is null)
@@ -167,19 +113,19 @@ internal sealed class EventProcessingLoop(
             await store.ParkAsync(NewParkedEvent(received, envelope: null, UnreadableEnvelope), cancellationToken);
             await checkpoint(cancellationToken);
             logger.LogWarning("Parked unreadable event (partition {PartitionId}, sequence {SequenceNumber})", received.PartitionId, received.SequenceNumber);
-            return Outcomes.Parked;
+            return AttemptOutcome.Parked;
         }
 
         if (!handler.Handles(envelope.Type))
         {
             await checkpoint(cancellationToken);
-            return Outcomes.SkippedUnhandledType;
+            return AttemptOutcome.SkippedUnhandledType;
         }
 
         if (await store.IsHandledAsync(envelope.Source, envelope.EventId, cancellationToken))
         {
             await checkpoint(cancellationToken);
-            return Outcomes.SkippedDuplicate;
+            return AttemptOutcome.SkippedDuplicate;
         }
 
         var result = await handler.HandleAsync(envelope, cancellationToken);
@@ -191,7 +137,7 @@ internal sealed class EventProcessingLoop(
                 await checkpoint(cancellationToken);
                 logger.LogWarning("Parked {EventId} ({EventType}) for candidate {CandidateId}: {Reason}",
                     envelope.EventId, envelope.Type, envelope.CandidateId, permanent.Reason);
-                return Outcomes.Parked;
+                return AttemptOutcome.Parked;
 
             case HandlerResult.DoneResult:
                 // After the effect, never before (invariant 3). A crash here repeats the effect on redelivery,
@@ -201,7 +147,7 @@ internal sealed class EventProcessingLoop(
                     cancellationToken);
                 await checkpoint(cancellationToken);
                 logger.LogInformation("Handled {EventId} ({EventType}) for candidate {CandidateId}", envelope.EventId, envelope.Type, envelope.CandidateId);
-                return Outcomes.Handled;
+                return AttemptOutcome.Handled;
 
             default:
                 throw new InvalidOperationException($"Unknown handler result {result.GetType().Name}.");
@@ -245,15 +191,4 @@ internal sealed class EventProcessingLoop(
     };
 
     private DateTime UtcNow() => timeProvider.GetUtcNow().UtcDateTime;
-
-    /// <summary>Values of the <c>talentsync.outcome</c> tag of an attempt span.</summary>
-    private static class Outcomes
-    {
-        public const string Handled = "handled";
-        public const string SkippedDuplicate = "skipped_duplicate";
-        public const string SkippedUnhandledType = "skipped_unhandled_type";
-        public const string Parked = "parked";
-        public const string TransientFailure = "transient_failure";
-        public const string UnclassifiedFailure = "unclassified_failure";
-    }
 }

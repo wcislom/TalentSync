@@ -57,14 +57,19 @@ public static class DependencyInjection
         services.AddSingleton<IChatClient>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<LlmOptions>>().Value;
-            return options.Provider switch
+            IChatClient inner = options.Provider switch
             {
                 LlmOptions.FakeProvider => provider.GetRequiredService<FakeChatClient>(),
                 LlmOptions.AnthropicProvider => CreateAnthropicChatClient(options.Anthropic),
                 _ => throw new InvalidOperationException($"Unknown '{LlmOptions.SectionName}:Provider'."),
             };
+            return new TelemetryChatClient(inner);
         });
-        services.AddSingleton<IEnrichmentService, ChatEnrichmentService>();
+
+        // Singletons, so the circuit breaker sees every call of the worker.
+        services.AddSingleton<ChatEnrichmentService>();
+        services.AddSingleton<IEnrichmentService>(provider =>
+            new TelemetryEnrichmentService(provider.GetRequiredService<ChatEnrichmentService>()));
 
         return services;
     }

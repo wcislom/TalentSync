@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -22,19 +20,6 @@ namespace TalentSync.Matching.Infrastructure.Llm;
 /// </remarks>
 internal sealed class ChatEnrichmentService : IEnrichmentService
 {
-    private const string OutcomeTag = "talentsync.enrichment.outcome";
-
-    // A reused stored suggestion makes no call, so it has no span here: in a trace, a profile upsert without an
-    // enrichment span before it means the stored suggestion was used.
-    private static readonly ActivitySource ActivitySource = new("TalentSync.Matching");
-    private static readonly Meter Meter = new("TalentSync.Matching");
-
-    private static readonly Counter<long> Calls = Meter.CreateCounter<long>(
-        "talentsync.enrichment.calls", description: "Model calls by outcome.");
-
-    private static readonly Counter<long> Tokens = Meter.CreateCounter<long>(
-        "talentsync.enrichment.tokens", unit: "{token}", description: "Tokens billed by the provider.");
-
     private static readonly ChatOptions ChatOptions = new()
     {
         // No Temperature or other sampling options: some providers (current Claude models) answer 400 to a non-default
@@ -73,39 +58,10 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
 
     public string PromptVersion => EnrichmentPrompt.Version;
 
-    /// <remarks>
-    /// The span and the metrics carry the outcome, the model and token counts only: never the prompt, the CV or the
-    /// model's answer (invariant 14).
-    /// </remarks>
     public async Task<EnrichmentOutcome> EnrichAsync(string cvText, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(cvText);
 
-        using var activity = ActivitySource.StartActivity("enrichment", ActivityKind.Client);
-        activity?.SetTag("talentsync.prompt_version", PromptVersion);
-
-        var outcome = await CallModelAsync(cvText, activity, cancellationToken);
-
-        var outcomeName = outcome switch
-        {
-            EnrichmentOutcome.Enriched => "enriched",
-            EnrichmentOutcome.Failed { Reason: EnrichmentFailure.Timeout } => "timeout",
-            EnrichmentOutcome.Failed { Reason: EnrichmentFailure.Unavailable } => "unavailable",
-            EnrichmentOutcome.Failed { Reason: EnrichmentFailure.InvalidOutput } => "invalid_output",
-            _ => throw new InvalidOperationException("Unknown enrichment outcome."),
-        };
-        activity?.SetTag(OutcomeTag, outcomeName);
-        if (outcome is EnrichmentOutcome.Failed)
-        {
-            activity?.SetStatus(ActivityStatusCode.Error);
-        }
-
-        Calls.Add(1, new KeyValuePair<string, object?>(OutcomeTag, outcomeName));
-        return outcome;
-    }
-
-    private async Task<EnrichmentOutcome> CallModelAsync(string cvText, Activity? activity, CancellationToken cancellationToken)
-    {
         // Only the masked CV text, never the candidate id or other fields (invariant 15).
         List<ChatMessage> messages =
         [
@@ -138,25 +94,7 @@ internal sealed class ChatEnrichmentService : IEnrichmentService
             return Fail(EnrichmentFailure.Unavailable);
         }
 
-        RecordUsage(response, activity);
         return Parse(response);
-    }
-
-    private static void RecordUsage(ChatResponse response, Activity? activity)
-    {
-        activity?.SetTag("gen_ai.response.model", response.ModelId);
-        activity?.SetTag("gen_ai.usage.input_tokens", response.Usage?.InputTokenCount);
-        activity?.SetTag("gen_ai.usage.output_tokens", response.Usage?.OutputTokenCount);
-
-        if (response.Usage?.InputTokenCount is { } input)
-        {
-            Tokens.Add(input, new KeyValuePair<string, object?>("gen_ai.token.type", "input"));
-        }
-
-        if (response.Usage?.OutputTokenCount is { } output)
-        {
-            Tokens.Add(output, new KeyValuePair<string, object?>("gen_ai.token.type", "output"));
-        }
     }
 
     private EnrichmentOutcome Parse(ChatResponse response)
