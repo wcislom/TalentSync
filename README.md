@@ -8,7 +8,8 @@ matching platform, with LLM enrichment of consultant profiles.
 A portfolio project: a simplified model of a real-world integration. Not production code, but designed to behave
 correctly under failure: duplicate deliveries, retries, crashes and downstream outages.
 
-> **Status: work in progress.** Documentation and acceptance scenarios first, code in small steps.
+> **Status: MVP done**, except Teamtailor webhook signature v2 verification (scenarios I3–I4), which comes next.
+> Until then Ingress accepts unsigned webhooks.
 
 ## How it works
 
@@ -50,12 +51,30 @@ Sync.Worker ignores `job_application.*` events, so its branch is only a checkpoi
 
 ## Running locally
 
-Requires .NET 10 SDK and Docker. Target commands while the setup is being built:
+Requires .NET 10 SDK and Docker.
+
+Tests need nothing else: the integration tests start SQL Server, Azurite and the Event Hubs emulator with
+Testcontainers and run the hosts and simulators in process.
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d
-dotnet build
 dotnet test
+```
+
+For a manual run, set the SQL password once in `deploy/.env` (copy `deploy/.env.example`), give the three hosts the
+connection string in user secrets and create the schemas:
+
+```bash
+for p in Ingress/TalentSync.Ingress.Api Sync/TalentSync.Sync.Worker Matching/TalentSync.Matching.Worker; do
+  dotnet user-secrets set "ConnectionStrings:Sql" \
+    "Server=localhost,1433;Database=TalentSync;User Id=sa;Password=<SQL_SA_PASSWORD>;TrustServerCertificate=True" \
+    --project src/$p
+done
+
+docker compose -f deploy/docker-compose.yml up -d --wait
+dotnet tool restore
+dotnet ef database update --project src/Ingress/TalentSync.Ingress.Api --context IngressDbContext
+dotnet ef database update --project src/Sync/TalentSync.Sync.Infrastructure --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext
+dotnet ef database update --project src/Matching/TalentSync.Matching.Infrastructure --startup-project src/Matching/TalentSync.Matching.Worker --context MatchingDbContext
 ```
 
 `Llm:Provider` is `Fake` by default, so the system runs without an LLM key. For Claude, keep the key in user secrets
