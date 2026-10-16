@@ -53,6 +53,11 @@ namespace TalentSync.Ingress.Api.Persistence.Migrations
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("TraceParent")
+                        .HasMaxLength(55)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(55)");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(100)

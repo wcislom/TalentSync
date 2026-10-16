@@ -46,7 +46,8 @@ configurations take the schema as a constructor parameter.
 
 ## Tables (minimal columns, descriptive once migrations exist)
 
-- `Outbox`: `Id`, `EventId`, `CandidateId`, `Type`, `Envelope` (json), `CreatedAt`, `PublishedAt` (null until published).
+- `Outbox`: `Id`, `EventId`, `CandidateId`, `Type`, `Envelope` (json), `TraceParent` (W3C, nullable, ADR 010),
+  `CreatedAt`, `PublishedAt` (null until published).
   Filtered index on `PublishedAt IS NULL`.
 - `Inbox`: `Id`, `Source`, `EventId`, `ProcessedAt`.
 - `ParkingLot`: `Id`, `Source` (nullable), `EventId` (nullable), `PartitionId`, `SequenceNumber`, `Envelope`,

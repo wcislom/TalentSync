@@ -19,6 +19,8 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
         builder.Property(m => m.Envelope).HasColumnType("json");
         builder.Property(m => m.CreatedAt).HasColumnType("datetime2");
         builder.Property(m => m.PublishedAt).HasColumnType("datetime2");
+        // Version 00 of W3C traceparent is exactly 55 characters; only W3C ids are stored.
+        builder.Property(m => m.TraceParent).HasMaxLength(55).IsUnicode(false);
 
         // The relay reads only unpublished rows in Id order; published rows drop out of the index.
         builder.HasIndex(m => m.Id)

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -208,6 +209,38 @@ public class EventProcessingLoopTests
         Assert.Equal(1, _checkpoints);
     }
 
+    [Fact]
+    public async Task Checkpoint_IsASpanOfTheAttempt()
+    {
+        using var spans = new SpanCollector();
+
+        await ProcessAsync(Envelope());
+
+        var process = Assert.Single(spans.Stopped, span => span.DisplayName == "process test-hub");
+        var checkpoint = Assert.Single(spans.Stopped, span => span.DisplayName == "checkpoint test-hub");
+        Assert.Equal(process.SpanId, checkpoint.ParentSpanId);
+        Assert.Equal(ActivityStatusCode.Unset, checkpoint.Status);
+        Assert.Equal("test-checkpoints", checkpoint.GetTagItem("talentsync.checkpoint.container"));
+    }
+
+    [Fact]
+    public async Task FailedCheckpoint_MarksOnlyItsOwnSpan()
+    {
+        using var spans = new SpanCollector();
+        var failures = 1;
+
+        await Loop().ProcessAsync(
+            Received(Serialize(Envelope())),
+            _ => failures-- > 0 ? throw new TimeoutException() : Task.CompletedTask,
+            TestContext.Current.CancellationToken);
+
+        var checkpoints = spans.Stopped.Where(span => span.DisplayName == "checkpoint test-hub").ToList();
+        Assert.Equal(2, checkpoints.Count);
+        Assert.Equal(ActivityStatusCode.Error, checkpoints[0].Status);
+        Assert.Equal(typeof(TimeoutException).FullName, checkpoints[0].GetTagItem("error.type"));
+        Assert.Equal(ActivityStatusCode.Unset, checkpoints[1].Status);
+    }
+
     private Task ProcessAsync(EventEnvelope envelope) => ProcessAsync(Serialize(envelope));
 
     private Task ProcessAsync(byte[] body) =>
@@ -228,10 +261,11 @@ public class EventProcessingLoopTests
             MaxBackoff = maxBackoff,
             MaxUnclassifiedAttempts = MaxUnclassifiedAttempts,
         }),
+        new ConsumerTelemetry(new TestMeterFactory(), timeProvider ?? TimeProvider.System, "test-hub", "test-consumer-group", "test-checkpoints"),
         timeProvider ?? TimeProvider.System,
         NullLogger<EventProcessingLoop>.Instance);
 
-    private static ReceivedEvent Received(byte[] body) => new("0", 42, body);
+    private static ReceivedEvent Received(byte[] body) => new("0", 42, body, TraceParent: null);
 
     private static byte[] Serialize(EventEnvelope envelope) => Encoding.UTF8.GetBytes(EventEnvelopeJson.Serialize(envelope));
 

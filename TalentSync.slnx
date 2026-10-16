@@ -20,6 +20,7 @@
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/TalentSync.Contracts/TalentSync.Contracts.csproj" />
     <Project Path="src/Shared/TalentSync.Infrastructure.Messaging/TalentSync.Infrastructure.Messaging.csproj" />
+    <Project Path="src/Shared/TalentSync.Infrastructure.Observability/TalentSync.Infrastructure.Observability.csproj" />
     <Project Path="src/Shared/TalentSync.Infrastructure.Teamtailor/TalentSync.Infrastructure.Teamtailor.csproj" />
     <Project Path="src/Shared/TalentSync.Recruitment.Domain/TalentSync.Recruitment.Domain.csproj" />
   </Folder>
@@ -30,6 +31,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TalentSync.Infrastructure.Messaging.Tests/TalentSync.Infrastructure.Messaging.Tests.csproj" />
+    <Project Path="tests/TalentSync.Infrastructure.Observability.Tests/TalentSync.Infrastructure.Observability.Tests.csproj" />
     <Project Path="tests/TalentSync.Infrastructure.Teamtailor.Tests/TalentSync.Infrastructure.Teamtailor.Tests.csproj" />
     <Project Path="tests/TalentSync.IntegrationTests/TalentSync.IntegrationTests.csproj" />
     <Project Path="tests/TalentSync.Matching.Application.Tests/TalentSync.Matching.Application.Tests.csproj" />

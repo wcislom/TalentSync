@@ -4,6 +4,7 @@ using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using TalentSync.Contracts;
 using TalentSync.Infrastructure.Messaging.Handling;
 
 namespace TalentSync.Infrastructure.Messaging.EventHubs;
@@ -51,7 +52,8 @@ internal sealed class EventProcessorHost(
         await using var scope = scopeFactory.CreateAsyncScope();
         var loop = scope.ServiceProvider.GetRequiredService<EventProcessingLoop>();
 
-        var received = new ReceivedEvent(args.Partition.PartitionId, args.Data.SequenceNumber, args.Data.EventBody.ToMemory());
+        var traceParent = args.Data.Properties.TryGetValue(EventProperties.TraceParent, out var value) ? value as string : null;
+        var received = new ReceivedEvent(args.Partition.PartitionId, args.Data.SequenceNumber, args.Data.EventBody.ToMemory(), traceParent);
         await loop.ProcessAsync(received, args.UpdateCheckpointAsync, args.CancellationToken);
     }
 

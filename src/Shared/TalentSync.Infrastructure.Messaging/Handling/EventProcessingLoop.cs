@@ -19,6 +19,7 @@ internal sealed class EventProcessingLoop(
     IEventHandler handler,
     IConsumerStore store,
     IOptions<ConsumerOptions> options,
+    ConsumerTelemetry telemetry,
     TimeProvider timeProvider,
     ILogger<EventProcessingLoop> logger)
 {
@@ -47,23 +48,35 @@ internal sealed class EventProcessingLoop(
     /// <param name="cancellationToken">Cancelled when the processor shuts down or loses the partition.</param>
     public async Task ProcessAsync(ReceivedEvent received, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
     {
+        checkpoint = telemetry.TraceCheckpoint(checkpoint, received);
         var envelope = TryReadEnvelope(received.Body.Span);
         var failedAttempts = 0;
         var unclassifiedAttempts = 0;
+
+        // Every log of the use case and the clients carries these, without passing them around. Named like the span
+        // tags, so one attribute finds an event's logs and spans.
+        using var logScope = envelope is null ? null : logger.BeginScope(new Dictionary<string, object?>
+        {
+            [ConsumerTelemetry.EventIdTag] = envelope.EventId,
+            [ConsumerTelemetry.EventTypeTag] = envelope.Type,
+            [ConsumerTelemetry.CandidateIdTag] = envelope.CandidateId,
+        });
 
         try
         {
             await _retry.ExecuteAsync(async token =>
             {
+                using var attempt = telemetry.StartAttempt(received, envelope, failedAttempts + 1);
                 try
                 {
-                    await HandleOnceAsync(received, envelope, checkpoint, token);
+                    attempt.End(await HandleOnceAsync(received, envelope, checkpoint, token));
                 }
                 catch (Exception exception) when (!IsShutdown(exception, token))
                 {
                     failedAttempts++;
                     if (FailureClassifier.IsTransient(exception))
                     {
+                        attempt.Fail(exception, AttemptOutcome.TransientFailure);
                         logger.LogWarning(exception, "Transient failure on {EventId} (partition {PartitionId}, sequence {SequenceNumber}), attempt {Attempt}",
                             envelope?.EventId, received.PartitionId, received.SequenceNumber, failedAttempts);
                         throw;
@@ -76,9 +89,16 @@ internal sealed class EventProcessingLoop(
                     if (unclassifiedAttempts >= _options.MaxUnclassifiedAttempts
                         && await TryParkAsync(received, envelope, $"retry limit exceeded: {exception.GetType().FullName}", checkpoint, token))
                     {
+                        attempt.Fail(exception, AttemptOutcome.Parked);
                         return;
                     }
 
+                    attempt.Fail(exception, AttemptOutcome.UnclassifiedFailure);
+                    throw;
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    attempt.End(AttemptOutcome.Cancelled);
                     throw;
                 }
             }, cancellationToken);
@@ -93,7 +113,7 @@ internal sealed class EventProcessingLoop(
     private static bool IsShutdown(Exception exception, CancellationToken cancellationToken) =>
         exception is OperationCanceledException && cancellationToken.IsCancellationRequested;
 
-    private async Task HandleOnceAsync(
+    private async Task<AttemptOutcome> HandleOnceAsync(
         ReceivedEvent received, EventEnvelope? envelope, Func<CancellationToken, Task> checkpoint, CancellationToken cancellationToken)
     {
         if (envelope is null)
@@ -101,14 +121,19 @@ internal sealed class EventProcessingLoop(
             await store.ParkAsync(NewParkedEvent(received, envelope: null, UnreadableEnvelope), cancellationToken);
             await checkpoint(cancellationToken);
             logger.LogWarning("Parked unreadable event (partition {PartitionId}, sequence {SequenceNumber})", received.PartitionId, received.SequenceNumber);
-            return;
+            return AttemptOutcome.Parked;
         }
 
-        if (!handler.Handles(envelope.Type)
-            || await store.IsHandledAsync(envelope.Source, envelope.EventId, cancellationToken))
+        if (!handler.Handles(envelope.Type))
         {
             await checkpoint(cancellationToken);
-            return;
+            return AttemptOutcome.SkippedUnhandledType;
+        }
+
+        if (await store.IsHandledAsync(envelope.Source, envelope.EventId, cancellationToken))
+        {
+            await checkpoint(cancellationToken);
+            return AttemptOutcome.SkippedDuplicate;
         }
 
         var result = await handler.HandleAsync(envelope, cancellationToken);
@@ -120,7 +145,7 @@ internal sealed class EventProcessingLoop(
                 await checkpoint(cancellationToken);
                 logger.LogWarning("Parked {EventId} ({EventType}) for candidate {CandidateId}: {Reason}",
                     envelope.EventId, envelope.Type, envelope.CandidateId, permanent.Reason);
-                return;
+                return AttemptOutcome.Parked;
 
             case HandlerResult.DoneResult:
                 // After the effect, never before (invariant 3). A crash here repeats the effect on redelivery,
@@ -130,7 +155,7 @@ internal sealed class EventProcessingLoop(
                     cancellationToken);
                 await checkpoint(cancellationToken);
                 logger.LogInformation("Handled {EventId} ({EventType}) for candidate {CandidateId}", envelope.EventId, envelope.Type, envelope.CandidateId);
-                return;
+                return AttemptOutcome.Handled;
 
             default:
                 throw new InvalidOperationException($"Unknown handler result {result.GetType().Name}.");

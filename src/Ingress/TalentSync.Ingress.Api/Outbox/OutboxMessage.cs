@@ -22,6 +22,12 @@ public sealed class OutboxMessage
     /// <summary>UTC, from <see cref="TimeProvider"/>.</summary>
     public required DateTime CreatedAt { get; init; }
 
+    /// <summary>
+    /// W3C trace context of the webhook span, so the publish span continues its trace across the outbox (ADR 010).
+    /// Null without a listener, and for rows stored before the column existed.
+    /// </summary>
+    public string? TraceParent { get; init; }
+
     /// <summary>UTC. Null until the relay has published the row.</summary>
     public DateTime? PublishedAt { get; set; }
 }

@@ -25,6 +25,7 @@ internal static class TeamtailorWebhookEndpoint
         HttpRequest request,
         IWebhookParser parser,
         IngressDbContext db,
+        IngressTelemetry telemetry,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -42,7 +43,7 @@ internal static class TeamtailorWebhookEndpoint
         switch (parser.Parse(rawBody))
         {
             case WebhookParseResult.Parsed parsed:
-                return await StoreAsync(parsed.Notification, rawBody, db, timeProvider, logger, cancellationToken);
+                return await StoreAsync(parsed.Notification, rawBody, db, telemetry, timeProvider, logger, cancellationToken);
 
             case WebhookParseResult.Ignored ignored:
                 // No consumer for this event (e.g. job.*): acknowledge so the sender does not treat it as a failure.
@@ -64,12 +65,15 @@ internal static class TeamtailorWebhookEndpoint
         WebhookNotification notification,
         byte[] rawBody,
         IngressDbContext db,
+        IngressTelemetry telemetry,
         TimeProvider timeProvider,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         var eventId = Convert.ToHexStringLower(SHA256.HashData(rawBody));
         var receivedAt = timeProvider.GetUtcNow();
+
+        using var activity = telemetry.StartWebhook(eventId, notification.EventName, notification.CandidateId);
 
         var envelope = new EventEnvelope
         {
@@ -90,6 +94,7 @@ internal static class TeamtailorWebhookEndpoint
             Type = notification.EventName,
             Envelope = EventEnvelopeJson.Serialize(envelope),
             CreatedAt = receivedAt.UtcDateTime,
+            TraceParent = telemetry.TraceParentOf(activity),
         });
 
         try
@@ -102,6 +107,7 @@ internal static class TeamtailorWebhookEndpoint
         {
             // Known limitation (ADR 004): Teamtailor may not retry a 503, so this event is lost.
             // The exception carries no PII: the row holds ids only and sensitive data logging is off.
+            telemetry.Fail(activity, exception);
             logger.LogError(exception, "Could not store webhook {EventId} ({EventName}) in the outbox", eventId, notification.EventName);
             return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
         }

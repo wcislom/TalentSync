@@ -1,7 +1,9 @@
+using System.Diagnostics.Metrics;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using TalentSync.Infrastructure.Observability;
 using TalentSync.Infrastructure.Teamtailor;
 using TalentSync.Ingress.Api.Outbox;
 using TalentSync.Ingress.Api.Persistence;
@@ -42,11 +44,13 @@ internal static class DependencyInjection
             .Bind(configuration.GetSection(OutboxRelayOptions.SectionName))
             .Validate(o => o.IsValid(), $"'{OutboxRelayOptions.SectionName}' needs BatchSize > 0, PollInterval > 0 and MaxBackoff >= PollInterval.")
             .ValidateOnStart();
+        services.AddSingleton(provider => new IngressTelemetry(provider.GetRequiredService<IMeterFactory>(), hubName));
         services.AddSingleton<OutboxPublisher>();
         services.AddHostedService<OutboxRelay>();
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddTeamtailorWebhooks(configuration);
+        services.AddObservability(configuration);
 
         return services;
     }
