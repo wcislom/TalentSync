@@ -55,8 +55,8 @@ sequenceDiagram
   participant MW as Matching.Worker
   participant LLM
   participant MP as FakeMatchingPlatform
-  TT->>IN: job_application.update (signed)
-  IN->>IN: verify, insert outbox
+  TT->>IN: job_application.update
+  IN->>IN: insert outbox
   IN-->>TT: 200
   IN->>EH: relay publishes envelope (ids only)
   EH->>MW: event (partition of candidateId)

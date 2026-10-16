@@ -12,7 +12,7 @@ correctly under failure: duplicate deliveries, retries, crashes and downstream o
 
 ```mermaid
 flowchart LR
-  tt["Teamtailor<br/>(simulator)"] -->|signed webhook| ing["Ingress.Api<br/>outbox + relay"]
+  tt["Teamtailor<br/>(simulator)"] -->|webhook| ing["Ingress.Api<br/>outbox + relay"]
   ing -->|ids only| eh{{"Event Hubs<br/>key = candidateId"}}
   eh --> sw["Sync.Worker"] -->|upsert / delete contact| crm["CRM<br/>(simulator)"]
   eh --> mw["Matching.Worker"] -->|upsert profile| mp["Matching Platform<br/>(simulator)"]
@@ -132,6 +132,7 @@ Accepted for the MVP and listed in [architecture](docs/architecture.md#known-lim
 - If SQL Server is down when a webhook arrives, Ingress returns 503 and Teamtailor may not retry, so the event is
   lost. A reconciliation job against the API would close this gap.
 - One outbox relay replica: several would publish a candidate's events out of order.
+- Ingress does not verify the Teamtailor webhook signature (v2) yet, so it accepts unsigned webhooks.
 - A profile is not refreshed when the candidate's CV changes, only on the next qualification.
 
 ## Working with a coding agent

@@ -31,6 +31,8 @@ Anything marked **ASSUMPTION** is not documented. FakeTeamtailor implements it t
 
 ## Signature v2 (header `TT-Signature`)
 
+Not implemented yet: the next step after the MVP. Ingress accepts unsigned webhooks.
+
 1. Base64-decode the header → `t=<unix timestamp>,v2=<hex HMAC>`.
 2. Signed string = `<timestamp>` + `"."` + **raw request body bytes** (never re-serialised JSON).
 3. Expected = hex(HMAC-SHA256(signature key, signed string)).
@@ -42,7 +44,7 @@ v1 signed only `data.id` and is deprecated. **v2 signs the whole body.**
 We still use notify-then-fetch because webhooks can arrive out of order, payloads are partial (no CV),
 and redelivery is unclear. The API is the source of truth.
 
-Verification lives in `TalentSync.Infrastructure.Teamtailor`. FakeTeamtailor signs with its own, independent
+Verification belongs in `TalentSync.Infrastructure.Teamtailor`. FakeTeamtailor signs with its own, independent
 implementation. Do not share this code with the simulator: a shared bug would make the test pass on both sides.
 
 ## REST API
