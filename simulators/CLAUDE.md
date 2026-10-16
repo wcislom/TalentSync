@@ -38,8 +38,6 @@ Two separate surfaces, plus the test endpoints above:
   A state change that changes nothing (same stage, same values) sends no webhook, like Teamtailor.
 - `apply` with an existing `candidateId` adds an application to that candidate (no `candidate.create`); without one
   a new candidate is created. Tests pass their own ids (`c-s1`, ...) so `/calls` counts never mix between scenarios.
-- Webhooks are signed with signature v2 using `FakeTeamtailor:SignatureKey` (must equal `Teamtailor:SignatureKey`
-  in Ingress). Own implementation, never shared with `src/`.
 - Anomaly modes:
   - `rate-limit` (needs `seconds`): `/v1` returns 429 with `X-Rate-Limit-*` headers; `X-Rate-Limit-Reset` = seconds
     until the mode ends, rounded up.
@@ -49,7 +47,6 @@ Two separate surfaces, plus the test endpoints above:
   - `drop-webhook`: state changes of the candidate apply, but no webhook is sent (a delivery Teamtailor never made).
     Scenario S8 uses it for a candidate that has no CRM contact.
   - The header check runs first: a wrong key still gets 401 while an anomaly mode is on.
-  - No signature modes: invalid and stale signatures are covered by scenarios I3 and I4, which call Ingress directly.
 - `/v1` requires `Authorization: Token token=...` and `X-Api-Version`; reject without them (400/401) so the ACL is tested.
 - Stages: `New`, `Screening`, `Interview`, `Qualified`, `Rejected`.
 - Deleted candidates return 404 from `/v1`.

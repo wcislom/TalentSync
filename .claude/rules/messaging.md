@@ -39,9 +39,7 @@ Transport metadata goes in `EventData.Properties`, never in the envelope. The on
 
 ## Ingress.Api
 
-1. Read the raw body (enable buffering). Verify signature v2 through the verifier interface from
-   `Infrastructure.Teamtailor` (see teamtailor rule). Invalid → 401.
-   MVP: signature verification is done last; until then the endpoint skips it.
+1. Read the raw body once: the event id is computed over the bytes as sent.
 2. Parse the webhook through the parser interface from `Infrastructure.Teamtailor`, build the envelope,
    insert into `ingress.Outbox` in one local transaction, return 200.
 3. If the insert fails → 503. Teamtailor may not retry; this loss is accepted (see known limitations).

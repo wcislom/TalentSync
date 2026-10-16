@@ -9,7 +9,7 @@ Keep these diagrams true when a container or the flow changes.
 flowchart TB
   tt["FakeTeamtailor<br/>webhooks + JSON:API"]
   subgraph ing["Ingress.Api"]
-    ep["POST /webhooks/teamtailor<br/>signature v2"]
+    ep["POST /webhooks/teamtailor"]
     outbox[("ingress.Outbox")]
     relay["Outbox relay"]
   end
@@ -72,8 +72,9 @@ sequenceDiagram
 
 The same flow is one trace in the Aspire Dashboard (ADR 010). Each webhook request is its root; the outbox and
 Event Hubs hops are carried by `ingress.Outbox.TraceParent` and the `traceparent` event property. Both consumer
-groups appear as branches, Sync.Worker's skipping the event. Span names as the dashboard shows them; the right-hand
-column is a comment:
+groups appear as branches, Sync.Worker's skipping the event. Span names as exported (the dashboard displays messaging
+spans as `MSG eventhubs ats-events` and HTTP spans as `HTTP GET 200`); the right-hand column is a comment.
+Screenshot: [`images/trace-application-qualified.jpeg`](images/trace-application-qualified.jpeg).
 
 ```
 POST /webhooks/teamtailor                        ingress-api
@@ -87,6 +88,7 @@ POST /webhooks/teamtailor                        ingress-api
       │  ├─ SELECT [matching].[EnrichmentResults]
       │  ├─ enrich                               enriched; only if no stored result
       │  │  └─ chat claude-haiku-5-5             model, tokens; "chat" with the Fake provider
+      │  │     └─ POST api.anthropic.com         Anthropic provider only
       │  ├─ INSERT                               matching.EnrichmentResults
       │  ├─ PUT matching-platform /profiles
       │  ├─ INSERT                               matching.Inbox

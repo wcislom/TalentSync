@@ -112,7 +112,7 @@ Key names, owners and gotchas: `.claude/rules/configuration.md` (loads when `app
 In scope, minimal version of everything:
 docker compose (Event Hubs emulator, Azurite, SQL Server), the three simulators, Ingress with outbox and relay,
 Sync.Worker (inbox, ACL, CRM upsert, resilience, parking lot), Matching.Worker (Qualified rule, LLM enrichment
-with stored results and fallback, profile upsert). Teamtailor signature v2 verification is in scope but done last.
+with stored results and fallback, profile upsert).
 Observability (ADR 010): OpenTelemetry traces, metrics and logs, Aspire Dashboard locally.
 
 Matching.Worker ignores `candidate.*` events in the MVP (rule D6).
@@ -130,8 +130,7 @@ architecture tests.
 - `dotnet test` (exit code 8 = no tests ran, e.g. a project without tests yet or a filter that matched nothing)
 - One scenario: `dotnet test --project tests/TalentSync.IntegrationTests --filter-method "*.S2_*"`
 - Unit tests only: `dotnet test --project tests/TalentSync.Matching.Domain.Tests`
-- EF migration, example for Sync (descriptive: verify once the first `DbContext` exists; needs the `dotnet-ef`
-  tool and `Microsoft.EntityFrameworkCore.Design`, ask before adding them):
+- EF migration, example for Sync (`dotnet-ef` comes from the tool manifest `dotnet-tools.json`, run `dotnet tool restore` once):
   `dotnet ef migrations add <Name> --project src/Sync/TalentSync.Sync.Infrastructure --startup-project src/Sync/TalentSync.Sync.Worker --context SyncDbContext`
 - Anthropic key (I set it myself): `dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker`,
   then `dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker`

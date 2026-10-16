@@ -29,10 +29,7 @@ internal sealed class ConsumerStore<TDbContext>(IDbContextFactory<TDbContext> db
         {
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (exception.InnerException is SqlException
-                                                  {
-                                                      Number: UniqueConstraintViolation or UniqueIndexViolation,
-                                                  })
+        catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: UniqueConstraintViolation or UniqueIndexViolation })
         {
             // Invariant 12: the unique index, not a lookup, decides that the event was already handled.
         }

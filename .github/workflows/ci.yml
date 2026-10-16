@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --no-restore
+
   # Builds again instead of passing bin/ between jobs: a restore and build take under a minute, artifacts of
   # every project's output would be slower and fragile.
   test:

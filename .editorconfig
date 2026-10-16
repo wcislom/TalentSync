@@ -1,0 +1,16 @@
+# dotnet format --verify-no-changes runs in CI (Build job). end_of_line is left unset on purpose: the index holds LF,
+# Windows checkouts get CRLF through core.autocrlf, and both must pass. charset is unset too: dotnet ef writes
+# migrations with a BOM, so every new migration would fail the check.
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,slnx,xml,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

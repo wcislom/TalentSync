@@ -21,8 +21,6 @@ The webhook is treated as a signal, and the Teamtailor API as the source of trut
   `GET /v1/job-applications/{id}?include=stage`) and acts on that, not on the webhook.
 - A 404 from the API maps to `Deleted`, never to an error.
 
-This is **not** a workaround for an unsigned payload: signature v2 signs the whole body, and Ingress verifies it.
-
 ## Consequences
 
 - Stale or reordered events are harmless: each worker acts on the current API state, whatever order the events

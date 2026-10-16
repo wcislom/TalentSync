@@ -20,7 +20,7 @@ namespace TalentSync.Infrastructure.Teamtailor;
 public static class DependencyInjection
 {
     /// <summary>Webhook parsing for Ingress.</summary>
-    /// <param name="configuration">Not read yet. The signature verifier will bind the <c>Teamtailor</c> section from it.</param>
+    /// <param name="configuration">Not read.</param>
     public static IServiceCollection AddTeamtailorWebhooks(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

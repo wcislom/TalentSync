@@ -14,7 +14,7 @@ API, the CRM or the Matching Platform; its only job is to accept the webhook and
 
 Ingress persists the event before answering, and a separate relay publishes it.
 
-- The webhook endpoint verifies the signature, parses the webhook, builds the envelope (IDs only) and inserts it
+- The webhook endpoint parses the webhook, builds the envelope (IDs only) and inserts it
   into `ingress.Outbox` in one local transaction, then returns 200. If the insert fails, it returns 503.
 - The outbox relay is a `BackgroundService` inside Ingress.Api. In a loop it selects unpublished rows
   `WITH (UPDLOCK, READPAST, ROWLOCK)` ordered by `Id`, publishes each with partition key `candidateId` through a
@@ -38,4 +38,3 @@ Ingress persists the event before answering, and a separate relay publishes it.
 
 - **Publishing to Event Hubs directly from the webhook endpoint.** Rejected: the webhook would then depend on Event
   Hubs being available, and an event that fails to publish is answered with an error that Teamtailor may not retry.
-  TODO: confirm this rationale.
