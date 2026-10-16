@@ -8,9 +8,6 @@ matching platform, with LLM enrichment of consultant profiles.
 A portfolio project: a simplified model of a real-world integration. Not production code, but designed to behave
 correctly under failure: duplicate deliveries, retries, crashes and downstream outages.
 
-> **Status: MVP done**, except Teamtailor webhook signature v2 verification (scenarios I3–I4), which comes next.
-> Until then Ingress accepts unsigned webhooks.
-
 ## How it works
 
 ```mermaid
@@ -135,6 +132,7 @@ Accepted for the MVP and listed in [architecture](docs/architecture.md#known-lim
 - If SQL Server is down when a webhook arrives, Ingress returns 503 and Teamtailor may not retry, so the event is
   lost. A reconciliation job against the API would close this gap.
 - One outbox relay replica: several would publish a candidate's events out of order.
+- Ingress does not verify the Teamtailor webhook signature, so it accepts unsigned webhooks.
 - A profile is not refreshed when the candidate's CV changes, only on the next qualification.
 
 ## Working with a coding agent

@@ -38,4 +38,3 @@ Ingress persists the event before answering, and a separate relay publishes it.
 
 - **Publishing to Event Hubs directly from the webhook endpoint.** Rejected: the webhook would then depend on Event
   Hubs being available, and an event that fails to publish is answered with an error that Teamtailor may not retry.
-  TODO: confirm this rationale.

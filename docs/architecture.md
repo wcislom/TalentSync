@@ -28,6 +28,7 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 README.md                                   for humans: overview, running locally, simplifications
 TalentSync.slnx                             solution, folders mirror the directories below
 global.json                                 SDK pin, test runner = Microsoft.Testing.Platform
+dotnet-tools.json                           local tool manifest: dotnet-ef (migrations, used by deploy/run-local.sh)
 Directory.Build.props                       net10.0, nullable, implicit usings, warnings as errors
 Directory.Packages.props                    central package versions (CPM)
 src/
@@ -185,6 +186,7 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
+- Ingress does not verify the Teamtailor webhook signature (v2), so it accepts unsigned webhooks.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
 - Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
   CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.

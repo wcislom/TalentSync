@@ -32,13 +32,10 @@ internal static class TeamtailorWebhookEndpoint
     {
         var logger = loggerFactory.CreateLogger(typeof(TeamtailorWebhookEndpoint));
 
-        // Raw bytes, read once: the event id (and later signature v2) is computed over the body as sent,
-        // never over re-serialised JSON.
+        // Raw bytes, read once: the event id is computed over the body as sent, never over re-serialised JSON.
         using var buffer = new MemoryStream();
         await request.Body.CopyToAsync(buffer, cancellationToken);
         var rawBody = buffer.ToArray();
-
-        // TODO(MVP, last step): verify TT-Signature v2 here and return 401 when it is invalid.
 
         switch (parser.Parse(rawBody))
         {
