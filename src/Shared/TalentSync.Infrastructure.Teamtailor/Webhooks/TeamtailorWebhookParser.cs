@@ -1,18 +1,29 @@
+using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 namespace TalentSync.Infrastructure.Teamtailor.Webhooks;
 
 /// <summary>
 /// Tolerant reader of <c>{ "payload": { "event_name", "data": { "id", "type", "relationships" } }, "signature" }</c>.
-/// Unknown fields are ignored; attributes are never read.
+/// Unknown fields are ignored; attributes are never read. The v1 <c>signature</c> field in the body is not checked:
+/// it signs only <c>data.id</c>.
 /// </summary>
-internal sealed class TeamtailorWebhookParser : IWebhookParser
+internal sealed class TeamtailorWebhookParser(IOptions<TeamtailorWebhookOptions> options, TimeProvider timeProvider) : IWebhookParser
 {
     private const string CandidatePrefix = "candidate.";
     private const string JobApplicationPrefix = "job_application.";
 
-    public WebhookParseResult Parse(ReadOnlySpan<byte> rawBody)
+    private readonly byte[] _signatureKey = Encoding.UTF8.GetBytes(options.Value.WebhookSignatureKey);
+    private readonly TimeSpan _signatureTolerance = options.Value.WebhookSignatureTolerance;
+
+    public WebhookParseResult Parse(string? signatureHeader, ReadOnlySpan<byte> rawBody)
     {
+        if (!TeamtailorWebhookSignature.Verify(signatureHeader, rawBody, _signatureKey, _signatureTolerance, timeProvider.GetUtcNow(), out var reason))
+        {
+            return new WebhookParseResult.Unauthenticated(reason);
+        }
+
         JsonDocument document;
         try
         {

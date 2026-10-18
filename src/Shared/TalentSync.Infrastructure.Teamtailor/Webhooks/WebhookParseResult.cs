@@ -17,4 +17,10 @@ public abstract record WebhookParseResult
     /// never the body (invariant 14).
     /// </summary>
     public sealed record Invalid(string Reason) : WebhookParseResult;
+
+    /// <summary>
+    /// The signature is missing, wrong or outside the time window: the body is not read. <paramref name="Reason"/>
+    /// names the failed check only.
+    /// </summary>
+    public sealed record Unauthenticated(string Reason) : WebhookParseResult;
 }
