@@ -22,6 +22,8 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `Consumer:InitialBackoff`, `Consumer:MaxBackoff`, `Consumer:MaxUnclassifiedAttempts` | workers | handler loop; max back-off 30 s, 5 attempts (`resilience.md`) |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |
 | `Teamtailor:QualifiedStageName` | workers | `Qualified` locally. Only Matching.Worker maps stages, but `AddTeamtailorApi` validates it on start in both |
+| `Teamtailor:WebhookSignatureKey` | Ingress.Api | signature v2 key; a fake value in `appsettings.Development.json`, the real one only in user-secrets or the environment. FakeTeamtailor signs with `FakeTeamtailor:WebhookSignatureKey`, which must match |
+| `Teamtailor:WebhookSignatureTolerance` | Ingress.Api | allowed distance of the signed timestamp from our clock, either way; `00:05:00` |
 | `Teamtailor:Resilience:*` | workers | `HttpStandardResilienceOptions` of the API client (e.g. `Retry:MaxRetryAttempts` = 2); unset keys keep the library defaults, but the section itself must exist in every `*:Resilience` row or the host fails to build |
 | `Crm:BaseUrl` | Sync.Worker | |
 | `Crm:Resilience:*` | Sync.Worker | `HttpStandardResilienceOptions` of the CRM client (e.g. `Retry:MaxRetryAttempts` = 2) |

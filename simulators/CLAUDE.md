@@ -36,6 +36,9 @@ Two separate surfaces, plus the test endpoints above:
   shaped as in `.claude/rules/teamtailor.md`, including `relationships.candidate` on job application events
   (also on `destroy`, otherwise Ingress has no partition key).
   A state change that changes nothing (same stage, same values) sends no webhook, like Teamtailor.
+- Every webhook carries a `TT-Signature` v2 header signed with `FakeTeamtailor:WebhookSignatureKey` by
+  `Teamtailor/WebhookSignature` (code of its own, never shared with `src/`, see `.claude/rules/teamtailor.md`).
+  Integration tests that call Ingress directly sign with the same class.
 - `apply` with an existing `candidateId` adds an application to that candidate (no `candidate.create`); without one
   a new candidate is created. Tests pass their own ids (`c-s1`, ...) so `/calls` counts never mix between scenarios.
 - Anomaly modes:

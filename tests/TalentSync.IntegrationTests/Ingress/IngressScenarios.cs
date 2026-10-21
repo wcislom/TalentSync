@@ -1,6 +1,9 @@
+extern alias FakeTeamtailor;
+
 using System.Net;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using FakeTeamtailor::FakeTeamtailor.Teamtailor;
 using TalentSync.IntegrationTests.Infrastructure;
 
 namespace TalentSync.IntegrationTests.Ingress;
@@ -66,11 +69,12 @@ public sealed class IngressScenarios(SystemFixture fixture)
         await Eventually.GetAsync(() => ReadFromHubAsync(eventId), $"event {eventId} in the hub");
     }
 
-    private Task<HttpResponseMessage> SendWebhookAsync(string body) =>
-        fixture.Ingress.PostAsync(
-            "/webhooks/teamtailor",
-            new StringContent(body, Encoding.UTF8, "application/json"),
-            TestContext.Current.CancellationToken);
+    private Task<HttpResponseMessage> SendWebhookAsync(string body)
+    {
+        var content = new StringContent(body, Encoding.UTF8, "application/json");
+        content.Headers.Add("TT-Signature", WebhookSignature.Sign(SystemFixture.WebhookSignatureKey, Encoding.UTF8.GetBytes(body)));
+        return fixture.Ingress.PostAsync("/webhooks/teamtailor", content, TestContext.Current.CancellationToken);
+    }
 
     /// <summary>The webhook is stored before Ingress answers, so its row exists once the response is in.</summary>
     private Task<string> GetEventIdAsync(string candidateId) =>

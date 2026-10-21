@@ -185,7 +185,6 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
-- Ingress does not verify the Teamtailor webhook signature (v2) yet, so it accepts unsigned webhooks.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
 - Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
   CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.
