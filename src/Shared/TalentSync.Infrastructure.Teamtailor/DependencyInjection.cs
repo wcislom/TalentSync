@@ -20,8 +20,8 @@ namespace TalentSync.Infrastructure.Teamtailor;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Signature verification and webhook parsing for Ingress. Reads <c>Teamtailor:WebhookSignatureKey</c> and
-    /// <c>Teamtailor:WebhookSignatureTolerance</c>.
+    /// Webhook parsing, and the options of <see cref="TeamtailorSignatureEndpoint.RequireTeamtailorSignature"/>,
+    /// for Ingress. Reads <c>Teamtailor:WebhookSignatureKey</c> and <c>Teamtailor:WebhookSignatureTolerance</c>.
     /// </summary>
     public static IServiceCollection AddTeamtailorWebhooks(this IServiceCollection services, IConfiguration configuration)
     {

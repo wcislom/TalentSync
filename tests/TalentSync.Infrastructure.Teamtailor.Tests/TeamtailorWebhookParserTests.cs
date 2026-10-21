@@ -1,21 +1,11 @@
 using System.Text;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Time.Testing;
 using TalentSync.Infrastructure.Teamtailor.Webhooks;
 
 namespace TalentSync.Infrastructure.Teamtailor.Tests;
 
 public class TeamtailorWebhookParserTests
 {
-    private readonly FakeTimeProvider _time = new();
-    private readonly TeamtailorWebhookParser _parser;
-
-    public TeamtailorWebhookParserTests()
-    {
-        _parser = new(
-            Options.Create(new TeamtailorWebhookOptions { WebhookSignatureKey = WebhookSigner.Key, WebhookSignatureTolerance = TimeSpan.FromMinutes(5) }),
-            _time);
-    }
+    private readonly TeamtailorWebhookParser _parser = new();
 
     [Fact]
     public void CandidateEvent_UsesDataIdAsCandidateId()
@@ -116,10 +106,5 @@ public class TeamtailorWebhookParserTests
         Assert.DoesNotContain("example.com", invalid.Reason);
     }
 
-    /// <summary>Correctly signed, so these tests exercise parsing only; signatures: <see cref="TeamtailorWebhookSignatureTests"/>.</summary>
-    private WebhookParseResult Parse(string body)
-    {
-        var bytes = Encoding.UTF8.GetBytes(body);
-        return _parser.Parse(WebhookSigner.Sign(bytes, _time.GetUtcNow()), bytes);
-    }
+    private WebhookParseResult Parse(string body) => _parser.Parse(Encoding.UTF8.GetBytes(body));
 }

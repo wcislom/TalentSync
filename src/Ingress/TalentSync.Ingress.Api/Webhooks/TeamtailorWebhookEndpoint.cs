@@ -17,7 +17,7 @@ internal static class TeamtailorWebhookEndpoint
 
     public static IEndpointRouteBuilder MapTeamtailorWebhook(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/webhooks/teamtailor", HandleAsync);
+        endpoints.MapPost("/webhooks/teamtailor", HandleAsync).RequireTeamtailorSignature();
         return endpoints;
     }
 
