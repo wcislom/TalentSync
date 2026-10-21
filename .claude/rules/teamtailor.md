@@ -31,14 +31,17 @@ Anything marked **ASSUMPTION** is not documented. FakeTeamtailor implements it t
 
 ## Signature v2 (header `TT-Signature`)
 
-Not implemented yet: the next step after the MVP. Ingress accepts unsigned webhooks.
+Implemented in `Webhooks/TeamtailorSignatureFilter.cs`, an endpoint filter on the webhook route.
 
 1. Base64-decode the header → `t=<unix timestamp>,v2=<hex HMAC>`.
 2. Signed string = `<timestamp>` + `"."` + **raw request body bytes** (never re-serialised JSON).
 3. Expected = hex(HMAC-SHA256(signature key, signed string)).
 4. Compare with `CryptographicOperations.FixedTimeEquals`.
-5. Reject if `|now - t| > 5 minutes` (our choice; Teamtailor documents no window). Use `TimeProvider`.
-6. Invalid → 401.
+5. Reject if `|now - t| > Teamtailor:WebhookSignatureTolerance` (5 minutes, our choice; Teamtailor documents no window). Use `TimeProvider`.
+6. Invalid → 401. The log names the failed check (`malformed TT-Signature`, `signature mismatch`,
+   `timestamp outside tolerance`); the timestamp is checked after the HMAC, so the last one means a genuine webhook
+   that was late or met a skewed clock. Teamtailor does not retry, so each 401 loses the event.
+7. **ASSUMPTION:** the key is used as its UTF-8 bytes; Teamtailor does not document its encoding.
 
 v1 signed only `data.id` and is deprecated. **v2 signs the whole body.**
 We still use notify-then-fetch because webhooks can arrive out of order, payloads are partial (no CV),

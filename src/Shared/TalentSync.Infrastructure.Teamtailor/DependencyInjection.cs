@@ -19,14 +19,21 @@ namespace TalentSync.Infrastructure.Teamtailor;
 /// </summary>
 public static class DependencyInjection
 {
-    /// <summary>Webhook parsing for Ingress.</summary>
-    /// <param name="configuration">Not read.</param>
+    /// <summary>
+    /// Webhook parsing, and the options of <see cref="TeamtailorSignatureEndpoint.RequireTeamtailorSignature"/>,
+    /// for Ingress. Reads <c>Teamtailor:WebhookSignatureKey</c> and <c>Teamtailor:WebhookSignatureTolerance</c>.
+    /// </summary>
     public static IServiceCollection AddTeamtailorWebhooks(this IServiceCollection services, IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(configuration);
+        services.AddOptions<TeamtailorWebhookOptions>()
+            .Bind(configuration.GetSection(TeamtailorWebhookOptions.SectionName))
+            .Validate(o => o.IsValid(), $"'{TeamtailorWebhookOptions.SectionName}' needs a WebhookSignatureKey and WebhookSignatureTolerance > 0.")
+            .ValidateOnStart();
 
         // Stateless, so one instance serves every request.
         services.AddSingleton<IWebhookParser, TeamtailorWebhookParser>();
+
+        services.TryAddSingleton(TimeProvider.System);
         return services;
     }
 

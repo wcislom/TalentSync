@@ -40,7 +40,8 @@ src/
     TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource (port adapter) over TeamtailorApiClient
                                             (HTTP, status mapping) and TeamtailorMapper, internal JSON:API DTOs, 429 handling,
                                             stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,
-                                            webhook parsing, public AddTeamtailorWebhooks() (Ingress)
+                                            webhook parsing, signature v2 endpoint filter,
+                                            public AddTeamtailorWebhooks() (Ingress)
                                             and AddTeamtailorApi() (workers). → Recruitment.Domain
     TalentSync.Infrastructure.Observability AddObservability(): OpenTelemetry traces, metrics and logs over OTLP,
                                             subscribes to every TalentSync.* ActivitySource and Meter, HTTP and SQL
@@ -131,8 +132,9 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
 - Only hosts (composition roots) reference `Infrastructure.Teamtailor`. Its public surface is
   `AddTeamtailorWebhooks(IServiceCollection, IConfiguration)` for Ingress, `AddTeamtailorApi(IServiceCollection,
   IConfiguration)` for the workers (registers `IRecruitmentSource`), plus what Ingress needs, registered by
-  `AddTeamtailorWebhooks`: the webhook parser `IWebhookParser` and the result type it returns.
-  Implementations and JSON:API DTOs are `internal`. This is the only place that defines the public surface.
+  `AddTeamtailorWebhooks`: the webhook parser `IWebhookParser` and the result type it returns, and
+  `RequireTeamtailorSignature(RouteHandlerBuilder)`, the endpoint filter that verifies the signature on the webhook
+  route. The filter makes the project reference the ASP.NET Core shared framework. Implementations and JSON:API DTOs are `internal`. This is the only place that defines the public surface.
 - Each worker's `DbContext` lives in its own `*.Infrastructure`, so the other worker cannot see its schema.
 - Ingress does not reference `Infrastructure.Messaging`: it only produces.
 - Simulators reference nothing in `src/`. Test projects may reference both.
@@ -183,7 +185,6 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
   A reconciliation job against the API would close this gap (out of MVP scope).
 - One relay replica in the MVP; several would weaken ordering.
-- Ingress does not verify the Teamtailor webhook signature (v2) yet, so it accepts unsigned webhooks.
 - Candidate id in job application webhooks is an assumption (see `.claude/rules/teamtailor.md`).
 - Candidate delete: the CRM marks the contact as deleted and its personal data stays there; anonymisation in the
   CRM, and profile archiving and anonymisation in the Matching Platform, are out of MVP.

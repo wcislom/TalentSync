@@ -33,6 +33,9 @@ public sealed class SystemFixture : IAsyncLifetime
 {
     public const string HubName = "ats-events";
 
+    /// <summary>Shared by Ingress and FakeTeamtailor; scenarios that call Ingress directly sign with it too.</summary>
+    public const string WebhookSignatureKey = "test-webhook-signature-key";
+
     private const string AzuriteAlias = "azurite";
     private const string IngressHost = "ingress.test";
     private const string TeamtailorHost = "teamtailor.test";
@@ -103,6 +106,7 @@ public sealed class SystemFixture : IAsyncLifetime
             .UseSetting("ConnectionStrings:Sql", sqlConnectionString)
             .UseSetting("EventHubs:ConnectionString", eventHubsConnectionString)
             .UseSetting("EventHubs:HubName", HubName)
+            .UseSetting("Teamtailor:WebhookSignatureKey", WebhookSignatureKey)
             // A send to an unavailable hub must fail within seconds, not after the SDK's 4 × 60 s,
             // so that scenarios can observe the relay's failure path.
             .UseSetting("EventHubs:TryTimeout", "00:00:02")
@@ -112,6 +116,7 @@ public sealed class SystemFixture : IAsyncLifetime
 
         _fakeTeamtailor = new WebApplicationFactory<FakeTeamtailor::Program>().WithWebHostBuilder(host => host
             .UseSetting("FakeTeamtailor:WebhookUrl", $"http://{IngressHost}/webhooks/teamtailor")
+            .UseSetting("FakeTeamtailor:WebhookSignatureKey", WebhookSignatureKey)
             .ConfigureTestServices(services => RouteHttpClients(services, new Dictionary<string, TestServer>
             {
                 [IngressHost] = _ingress.Server,

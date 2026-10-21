@@ -10,11 +10,15 @@ public sealed record WebhookDelivery(string EventName, int? StatusCode);
 
 /// <summary>
 /// Posts <c>{ "payload": { "event_name", "data" } }</c> to Ingress; <c>data</c> comes from <see cref="TeamtailorJson"/>.
+/// Signed with <see cref="WebhookSignature"/>.
 /// </summary>
 public sealed class WebhookSender(HttpClient http, IConfiguration configuration, AnomalyRules anomalies, ILogger<WebhookSender> logger)
 {
     private readonly string webhookUrl = configuration["FakeTeamtailor:WebhookUrl"]
         ?? throw new InvalidOperationException("FakeTeamtailor:WebhookUrl is not configured.");
+
+    private readonly string signatureKey = configuration["FakeTeamtailor:WebhookSignatureKey"]
+        ?? throw new InvalidOperationException("FakeTeamtailor:WebhookSignatureKey is not configured.");
 
     public async Task<IReadOnlyList<WebhookDelivery>> SendAsync(string eventName, JsonObject data, CancellationToken cancellationToken)
     {
@@ -50,6 +54,7 @@ public sealed class WebhookSender(HttpClient http, IConfiguration configuration,
         {
             using var content = new ByteArrayContent(bytes);
             content.Headers.ContentType = new(MediaTypeNames.Application.Json);
+            content.Headers.Add("TT-Signature", WebhookSignature.Sign(signatureKey, bytes));
             using var response = await http.PostAsync(webhookUrl, content, cancellationToken);
 
             logger.LogInformation("Webhook {EventName} for {ResourceId}: {StatusCode}", eventName, resourceId, (int)response.StatusCode);
