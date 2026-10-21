@@ -8,7 +8,7 @@ using TalentSync.IntegrationTests.Infrastructure;
 
 namespace TalentSync.IntegrationTests.Ingress;
 
-/// <summary>Scenarios I1–I2 of <c>docs/acceptance-scenarios.md</c>.</summary>
+/// <summary>Scenarios I1–I3 of <c>docs/acceptance-scenarios.md</c>.</summary>
 [Collection(SystemCollection.Name)]
 public sealed class IngressScenarios(SystemFixture fixture)
 {
@@ -69,10 +69,25 @@ public sealed class IngressScenarios(SystemFixture fixture)
         await Eventually.GetAsync(() => ReadFromHubAsync(eventId), $"event {eventId} in the hub");
     }
 
-    private Task<HttpResponseMessage> SendWebhookAsync(string body)
+    [Fact]
+    public async Task I3_WebhookWithAnInvalidSignatureIsRejected()
+    {
+        const string candidateId = "c-i3";
+
+        var response = await SendWebhookAsync($$"""
+            { "payload": { "event_name": "candidate.update", "data": { "id": "{{candidateId}}", "type": "candidates" } } }
+            """,
+            signatureKey: "another-key");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Ingress stores before it answers, so no wait is needed for the absence.
+        Assert.False(await fixture.QueryIngressDbAsync(db => db.Outbox.AnyAsync(m => m.CandidateId == candidateId)));
+    }
+
+    private Task<HttpResponseMessage> SendWebhookAsync(string body, string signatureKey = SystemFixture.WebhookSignatureKey)
     {
         var content = new StringContent(body, Encoding.UTF8, "application/json");
-        content.Headers.Add("TT-Signature", WebhookSignature.Sign(SystemFixture.WebhookSignatureKey, Encoding.UTF8.GetBytes(body)));
+        content.Headers.Add("TT-Signature", WebhookSignature.Sign(signatureKey, Encoding.UTF8.GetBytes(body)));
         return fixture.Ingress.PostAsync("/webhooks/teamtailor", content, TestContext.Current.CancellationToken);
     }
 

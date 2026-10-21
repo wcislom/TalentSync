@@ -1,8 +1,8 @@
 # Acceptance scenarios
 
-Normative. Each scenario is a concrete example of a domain rule (`docs/domain.md`, D1–D6) or an invariant
-(`.claude/rules/invariants.md`, 1–17); the `Illustrates` line says which. A rule says what must be true in general;
-a scenario shows how to check it in one case. When a rule changes, search for its ID here.
+Normative. Each scenario is a concrete example of a domain rule (`docs/domain.md`, D1–D6), an invariant
+(`.claude/rules/invariants.md`, 1–17) or another rule in `.claude/rules/`; the `Illustrates` line says which.
+A rule says what must be true in general; a scenario shows how to check it in one case. When a rule changes, search for its ID here.
 
 - Every automated scenario has exactly one integration test named after its ID (see `.claude/rules/testing.md`).
 - Scenarios tagged `@manual` are demonstrated by hand and have no test.
@@ -180,6 +180,12 @@ Scenario: I2 Event Hubs outage delays but does not lose events
   Then Ingress responds 200
   When Event Hubs becomes available
   Then the hub receives the event with that EventId
+
+# Illustrates: Teamtailor signature v2 (.claude/rules/teamtailor.md)
+Scenario: I3 Webhook with an invalid signature is rejected
+  When a candidate.update webhook for candidate "c-i3" is sent to Ingress signed with another key
+  Then Ingress responds 401
+  And ingress.Outbox has no row for candidate "c-i3"
 ```
 
 ## Observability
