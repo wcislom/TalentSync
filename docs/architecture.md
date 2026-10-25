@@ -89,6 +89,7 @@ tests/
   TalentSync.Matching.Evaluation.Tests          prompt evaluation: metrics, golden set hash, case files, report
   TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
 eval/                                       offline evaluation of the enrichment prompt (ADR 009), never run in CI
+  README.md                                 what each metric catches, how to read a report
   TalentSync.Matching.Evaluation            console runner over ChatEnrichmentService. → Matching.Infrastructure
   cases/                                    golden set: one JSON per fictional CV
   reports/                                  committed reports; local/ is gitignored
