@@ -96,7 +96,9 @@ eval/                                       offline evaluation of the enrichment
   reports/                                  committed reports; local/ is gitignored
   run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
 deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
-                                            eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts)
+                                            eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts),
+                                            host.Dockerfile (one image per host), migrations.Dockerfile + migrate.sh
+                                            (idempotent EF scripts applied with sqlcmd, ADR 011)
 docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
                                             images/ (screenshots for the README)
@@ -215,4 +217,4 @@ Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summar
 | [008](adr/008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction: one way from Teamtailor, ownership per field, full replace of the fields we own (last write wins) |
 | [009](adr/009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt: golden set of fictional CVs, metrics in code, report per `(PromptVersion, GoldenSetHash)`, run manually never in CI; a CI test only checks that a report exists for the current pair |
 | [010](adr/010-observability.md) | Observability: OpenTelemetry over OTLP, Aspire Dashboard locally, one `Infrastructure.Observability` project referenced by the hosts, trace context propagated explicitly through the outbox and `EventData` properties, one consumer span per attempt |
-| [011](adr/011-kubernetes-deployment.md) | Kubernetes deployment: only our hosts in the cluster (kind locally), infrastructure in docker compose, one Helm chart, relay switched by `OutboxRelay:Enabled` and run as a one-replica StatefulSet, migrations as a Helm hook Job |
+| [011](adr/011-kubernetes-deployment.md) | Kubernetes deployment: only our hosts in the cluster (kind locally), infrastructure in docker compose, one Helm chart, relay switched by `OutboxRelay:Enabled` and run as a one-replica StatefulSet, migrations as a Helm hook Job before any host rolls out |

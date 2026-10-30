@@ -23,8 +23,10 @@ and migrations on start would race between replicas.
   on an unreachable node).
 - **Workers:** a Deployment each, at most as many replicas as partitions (4).
 - **Probes:** `/health/live` only, never dependency checks: a SQL outage must not restart every pod.
-- **Migrations:** an EF migration bundle per `DbContext`, run as a `pre-install` / `pre-upgrade` hook Job. Helm runs
-  it before the hosts roll out and stops the upgrade if it fails.
+- **Migrations:** an idempotent EF migration script per `DbContext`, generated when the image is built and applied
+  with `sqlcmd` by a `pre-install` / `pre-upgrade` hook Job. The database is ready before any host rolls out; if a
+  migration fails, Helm stops the upgrade and every host keeps its previous version. The Job needs only the SQL
+  connection.
 - **Secrets** in a Kubernetes Secret created from the gitignored `deploy/.env` by the local run script, never in
   chart values; the chart only references it by name.
   A Kubernetes Secret is base64, not encryption, and readable by anyone who can read Secrets or create pods in the
@@ -39,7 +41,10 @@ and migrations on start would race between replicas.
   effects are idempotent and LLM results are stored (invariants 2, 3, 5).
 - Ingress.Api waits briefly before stopping (`preStop`), so a webhook that arrives after SIGTERM is not refused and
   lost.
-- Migrations must stay compatible with the previous code version, since old pods run during a rollout.
+- A failed migration is rolled back by its own transaction; migrations that ran before it stay applied. Being
+  backward compatible, they need no rollback, and the next upgrade skips them.
+- Migrations must stay compatible with the previous code version, since old pods run during a rollout. Schema
+  changes are forward only: a Helm rollback restores the previous pods, not the previous schema.
 - Not verified yet: whether pods in kind on Docker Desktop (Windows) reach the containers in docker compose.
 
 ## Alternatives considered
@@ -49,4 +54,11 @@ and migrations on start would race between replicas.
 - **SQL Server and Event Hubs in the cluster.** Rejected: production uses managed services.
 - **Kustomize.** Plain YAML, built into `kubectl`. Rejected: the migration Job would need its ordering in a script,
   and there is no release history or rollback.
-- **Migrations on host start.** Rejected: replicas race.
+- **An init container per host, migrating its own schema.** A failed migration would block only its host. Rejected:
+  hosts could run different versions for a while, every pod start would run migrations, and replicas starting
+  together would need a lock.
+- **Migrations in the host process (`Database.Migrate()`).** Rejected: replicas race, and the application would need
+  DDL rights and migration code.
+- **An EF migration bundle.** Rejected for now: without a design-time `DbContext` factory it builds the host's
+  services, so it would need the worker's configuration and secrets. Worth it once a migration renames or drops
+  a column, which an idempotent script can fail on.
