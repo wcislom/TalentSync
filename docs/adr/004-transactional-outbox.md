@@ -4,6 +4,9 @@
 
 Accepted
 
+Amended 2026-10-30: the relay can be switched off with `OutboxRelay:Enabled` (default `true`). In Kubernetes the
+API replicas run with it off and one separate pod runs the relay (ADR 011). Still one relay replica.
+
 ## Context
 
 Teamtailor expects a fast 2xx and documents no timeout. Its changelog says failed deliveries are not retried, so an

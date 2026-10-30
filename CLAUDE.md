@@ -114,10 +114,11 @@ docker compose (Event Hubs emulator, Azurite, SQL Server), the three simulators,
 Sync.Worker (inbox, ACL, CRM upsert, resilience, parking lot), Matching.Worker (Qualified rule, LLM enrichment
 with stored results and fallback, profile upsert).
 Observability (ADR 010): OpenTelemetry traces, metrics and logs, Aspire Dashboard locally.
+Kubernetes deployment (ADR 011): one Helm chart for the hosts on a local kind cluster.
 
 Matching.Worker ignores `candidate.*` events in the MVP (rule D6).
 
-Out of scope until asked: Kubernetes manifests, admin API / JWT,
+Out of scope until asked: the `azure` Helm values (AKS, workload identity, Key Vault), admin API / JWT,
 reconciliation job, parking lot replay endpoint, archiving profiles on candidate delete,
 architecture tests.
 

@@ -79,6 +79,7 @@ The reasoning is in [architecture decision records](docs/adr/README.md):
 | [008](docs/adr/008-source-of-truth-and-sync-direction.md) | One-way sync from Teamtailor, ownership per field |
 | [009](docs/adr/009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt |
 | [010](docs/adr/010-observability.md) | OpenTelemetry, one trace per webhook through the outbox and Event Hubs |
+| [011](docs/adr/011-kubernetes-deployment.md) | Kubernetes: our hosts only, one Helm chart, one relay pod |
 
 ## Running locally
 
