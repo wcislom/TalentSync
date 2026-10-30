@@ -15,3 +15,4 @@ plus Alternatives considered.
 | [008](008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction | Accepted |
 | [009](009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt | Accepted |
 | [010](010-observability.md) | Observability | Accepted |
+| [011](011-kubernetes-deployment.md) | Kubernetes deployment | Accepted |
