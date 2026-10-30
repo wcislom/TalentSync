@@ -51,6 +51,9 @@ internal sealed class OutboxRelay(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Seen in the log of an API replica, it means OutboxRelay:Enabled is missing there (invariant 13).
+        logger.LogInformation("Outbox relay started");
+
         try
         {
             while (true)
