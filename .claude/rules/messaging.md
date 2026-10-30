@@ -47,7 +47,7 @@ Transport metadata goes in `EventData.Properties`, never in the envelope. The on
 
 ## Outbox relay
 
-- `BackgroundService` inside Ingress.Api. Loop: select unpublished rows
+- `BackgroundService` inside Ingress.Api, registered only when `OutboxRelay:Enabled` is `true` (ADR 011). Loop: select unpublished rows
   `WITH (UPDLOCK, READPAST, ROWLOCK)` ordered by `Id`, publish with partition key, mark published, commit.
 - Crash after publish and before mark → the event is published again. Expected; consumers handle it.
 - One replica (invariant 13).

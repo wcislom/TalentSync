@@ -17,7 +17,8 @@ Proposed names (descriptive: once implemented, the code is the reference).
 | `EventHubs:ConnectionString`, `EventHubs:HubName` | all three hosts | hub `ats-events` |
 | `EventHubs:TryTimeout`, `EventHubs:MaxRetries` | Ingress.Api | SDK retry of one send; defaults = SDK defaults (60 s, 3) |
 | `EventHubs:ConsumerGroup` | workers | `sync-worker` / `matching-worker` |
-| `OutboxRelay:BatchSize`, `OutboxRelay:PollInterval`, `OutboxRelay:MaxBackoff` | Ingress.Api | defaults in `appsettings.json` |
+| `OutboxRelay:Enabled` | Ingress.Api | `true` in `appsettings.json`; `false` in the API replicas of a cluster, where one separate pod runs the relay (ADR 011). Without it no EventHubs connection string is needed |
+| `OutboxRelay:BatchSize`, `OutboxRelay:PollInterval`, `OutboxRelay:MaxBackoff` | Ingress.Api | defaults in `appsettings.json`; read only when the relay is enabled |
 | `Checkpoints:BlobConnectionString`, `Checkpoints:Container` | workers | Azurite locally |
 | `Consumer:InitialBackoff`, `Consumer:MaxBackoff`, `Consumer:MaxUnclassifiedAttempts` | workers | handler loop; max back-off 30 s, 5 attempts (`resilience.md`) |
 | `Teamtailor:BaseUrl`, `Teamtailor:ApiKey`, `Teamtailor:ApiVersion` | workers | API version `20240904` |

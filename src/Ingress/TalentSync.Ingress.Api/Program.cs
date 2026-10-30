@@ -8,6 +8,7 @@ builder.Services.AddIngress(builder.Configuration);
 var app = builder.Build();
 
 app.MapTeamtailorWebhook();
+app.MapHealthChecks("/health/live");
 
 app.Run();
 

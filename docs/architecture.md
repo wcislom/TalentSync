@@ -51,8 +51,9 @@ src/
                                             failure classification), HandlerResult, Inbox and ParkingLot entities
                                             with schema-parameterised EF config. → Contracts
   Ingress/
-    TalentSync.Ingress.Api                  host: webhook endpoint, envelope, IngressDbContext + Outbox, relay,
-                                            EventHubProducerClient. → Contracts, Infrastructure.Teamtailor
+    TalentSync.Ingress.Api                  host: webhook endpoint, envelope, IngressDbContext + Outbox, relay and
+                                            EventHubProducerClient (only when OutboxRelay:Enabled), /health/live.
+                                            → Contracts, Infrastructure.Teamtailor
   Sync/
     TalentSync.Sync.Application             UseCases/SyncCandidateToCrmUseCase, Ports/ICrm. → Recruitment.Domain
     TalentSync.Sync.Infrastructure          CrmClient + resilience, SyncDbContext. → Sync.Application, Infrastructure.Messaging
