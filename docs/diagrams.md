@@ -1,6 +1,7 @@
 # TalentSync diagrams
 
-For humans. Descriptive: `docs/architecture.md` is the reference for containers, layout and the key flow.
+For humans. Descriptive: `docs/architecture.md` is the reference for containers and the key flow,
+`docs/repository-layout.md` for the layout.
 Keep these diagrams true when a container or the flow changes.
 
 ## Containers

@@ -3,6 +3,7 @@
 Business context, glossary and domain rules D1–D6: `docs/domain.md`.
 Expected behaviour and failure scenarios: `docs/acceptance-scenarios.md`.
 Mermaid diagrams of the containers and the key flow (for humans): `docs/diagrams.md`.
+Repository layout (projects, folders, tools): `docs/repository-layout.md`. ADR summaries: `docs/adr/README.md`.
 
 The **dependency rules** below are normative. Layout, flows and names are descriptive: once code exists, the code
 is current (see "When docs and code disagree" in `CLAUDE.md`).
@@ -21,94 +22,6 @@ Three deployables, split by runtime behaviour, not by business capability. They 
 | Azurite | Checkpoints and partition ownership | | |
 | Simulators | Stand-ins for Teamtailor, CRM, Matching Platform; break on demand | Production behaviour | in-memory |
 | Aspire Dashboard | Local view of the hosts' traces, metrics and logs over OTLP (ADR 010) | Run in tests or CI | in-memory |
-
-## Repository layout
-
-```
-README.md                                   for humans: overview, running locally, simplifications
-TalentSync.slnx                             solution, folders mirror the directories below
-global.json                                 SDK pin, test runner = Microsoft.Testing.Platform
-dotnet-tools.json                           local tool manifest: dotnet-ef (migrations, used by deploy/run-local.sh)
-Directory.Build.props                       net10.0, nullable, implicit usings, warnings as errors
-Directory.Packages.props                    central package versions (CPM)
-src/
-  Shared/
-    TalentSync.Contracts                    event envelope, event names, SchemaVersion. References nothing
-    TalentSync.Recruitment.Domain           our read-only model of recruitment: Candidate, JobApplication,
-                                            ApplicationStatus, FetchResult<T> (Found | Deleted | Rejected),
-                                            port IRecruitmentSource. References nothing
-    TalentSync.Infrastructure.Teamtailor    ACL: TeamtailorRecruitmentSource (port adapter) over TeamtailorApiClient
-                                            (HTTP, status mapping) and TeamtailorMapper, internal JSON:API DTOs, 429 handling,
-                                            stage mapping from config, 404 → Deleted, 4xx / unmappable → Rejected,
-                                            webhook parsing, signature v2 endpoint filter,
-                                            public AddTeamtailorWebhooks() (Ingress)
-                                            and AddTeamtailorApi() (workers). → Recruitment.Domain
-    TalentSync.Infrastructure.Observability AddObservability(): OpenTelemetry traces, metrics and logs over OTLP,
-                                            subscribes to every TalentSync.* ActivitySource and Meter, HTTP and SQL
-                                            instrumentation, SpanExportPolicy (ADR 010).
-                                            Only hosts reference it. References nothing in src/
-    TalentSync.Infrastructure.Messaging     EventProcessorClient hosting, consumer handler skeleton (retry loop,
-                                            failure classification), HandlerResult, Inbox and ParkingLot entities
-                                            with schema-parameterised EF config. → Contracts
-  Ingress/
-    TalentSync.Ingress.Api                  host: webhook endpoint, envelope, IngressDbContext + Outbox, relay and
-                                            EventHubProducerClient (only when OutboxRelay:Enabled), /health/live.
-                                            → Contracts, Infrastructure.Teamtailor
-  Sync/
-    TalentSync.Sync.Application             UseCases/SyncCandidateToCrmUseCase, Ports/ICrm. → Recruitment.Domain
-    TalentSync.Sync.Infrastructure          CrmClient + resilience, SyncDbContext. → Sync.Application, Infrastructure.Messaging
-    TalentSync.Sync.Worker                  host: candidate.* handler (use case result → HandlerResult),
-                                            composition root, group "sync-worker". Web host: only /health/live
-                                            (liveness for an orchestrator, no dependency checks)
-  Matching/
-    TalentSync.Matching.Domain              ConsultantProfile, CandidateId, Skill, Confidence, Seniority,
-                                            Enrichment (+ TryCreate → EnrichmentValidation), EnrichmentStatus. References nothing
-    TalentSync.Matching.Application         UseCases/CreateConsultantProfileUseCase, Ports/IMatchingPlatform,
-                                            IEnrichmentService, IEnrichmentResultStore, CvHash.
-                                            → Matching.Domain, Recruitment.Domain
-    TalentSync.Matching.Infrastructure      Llm/ (CvMasker, EnrichmentPrompt, ChatEnrichmentService over IChatClient,
-                                            Fake/FakeChatClient),
-                                            EnrichmentResults/, MatchingPlatformClient, MatchingDbContext with
-                                            EnrichmentResultStore. → Matching.Application, Infrastructure.Messaging
-    TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
-                                            composition root, group "matching-worker". Web host: only /health/live
-                                            (liveness for an orchestrator, no dependency checks)
-simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
-  FakeTeamtailor                            No references to src/.
-  FakeCrm
-  FakeMatchingPlatform
-tests/
-  TalentSync.Matching.Domain.Tests
-  TalentSync.Sync.Application.Tests             use case: fetch result and CRM result → use case result
-  TalentSync.Matching.Application.Tests         use case: qualified / not qualified / deleted / rejected, stored or new
-                                                enrichment (stored before the upsert), failure → NotEnriched
-  TalentSync.Matching.Infrastructure.Tests      Matching Platform client: request body, status mapping, resilience
-  TalentSync.Infrastructure.Teamtailor.Tests    webhook parsing, stage mapping, 404 → Deleted, 4xx → Rejected
-  TalentSync.Infrastructure.Messaging.Tests     consumer skeleton: inbox / parking lot mapping, failure classification, handler loop
-  TalentSync.Infrastructure.Observability.Tests request span is a root with the SDK enabled, SpanExportPolicy
-  TalentSync.Sync.Infrastructure.Tests          CRM client: status mapping, 404 on delete = done, resilience
-  TalentSync.Matching.Evaluation.Tests          prompt evaluation: metrics, golden set hash, case files, report
-  TalentSync.IntegrationTests                   acceptance scenarios (see .claude/rules/testing.md)
-eval/                                       offline evaluation of the enrichment prompt (ADR 009), never run in CI
-  README.md                                 what each metric catches, how to read a report
-  TalentSync.Matching.Evaluation            console runner over ChatEnrichmentService. → Matching.Infrastructure
-  cases/                                    golden set: one JSON per fictional CV
-  reports/                                  committed reports; local/ is gitignored
-  run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
-deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
-                                            eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts),
-                                            host.Dockerfile (one image per host), migrations.Dockerfile + migrate.sh
-                                            (idempotent EF scripts applied with sqlcmd, ADR 011)
-docs/                                       domain.md, architecture.md, acceptance-scenarios.md, diagrams.md,
-                                            adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
-                                            images/ (screenshots for the README)
-.github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary)
-.claude/rules/                              topic rules, some load only for matching paths
-.claude/settings.json                       permissions and hooks enforced by the harness
-.claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
-.gitattributes                              *.sh keeps LF line endings (Git Bash on Windows)
-.dockerignore                               build context for simulator images (repo root)
-```
 
 ## Layers and projects
 
@@ -200,21 +113,3 @@ partition. Notify-then-fetch makes stale or reordered events harmless: each work
   Deliberate: parking every event would only create a replay job.
 - Unclassified exceptions are retried 5 times per handler invocation, then parked. The limit is counted in memory
   and does not cover a failure that kills the process.
-
-## ADRs
-
-Written ADRs are in `docs/adr/` (index: `docs/adr/README.md`). This table summarises all of them.
-
-| ADR | Decision |
-|---|---|
-| [001](adr/001-project-structure.md) | Project structure: by context first, then by layer; a project wherever the compiler should enforce a rule; no Common project |
-| [002](adr/002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus: replay, independent consumers; cost: no DLQ → parking lot and failure classification |
-| [003](adr/003-notify-then-fetch.md) | Notify-then-fetch: event is a signal, API state is the truth (ordering, partial payloads, unclear redelivery) |
-| [004](adr/004-transactional-outbox.md) | Transactional outbox in Ingress: persist before 200, a single relay publishes; cost: 503 when SQL is down loses the event |
-| [005](adr/005-idempotency.md) | Idempotency: idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
-| [006](adr/006-partition-key-candidate-id.md) | Partition key = `candidateId`, consequences for scaling and the job application payload assumption |
-| [007](adr/007-llm-enrichment.md) | LLM enrichment: own port over `IChatClient` (Claude via the Anthropic SDK), PII masking, validation, short retries in the provider SDK inside our timeout, fallback to `NotEnriched`, enrichment inline in the handler |
-| [008](adr/008-source-of-truth-and-sync-direction.md) | Source of truth and sync direction: one way from Teamtailor, ownership per field, full replace of the fields we own (last write wins) |
-| [009](adr/009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt: golden set of fictional CVs, metrics in code, report per `(PromptVersion, GoldenSetHash)`, run manually never in CI; a CI test only checks that a report exists for the current pair |
-| [010](adr/010-observability.md) | Observability: OpenTelemetry over OTLP, Aspire Dashboard locally, one `Infrastructure.Observability` project referenced by the hosts, trace context propagated explicitly through the outbox and `EventData` properties, one consumer span per attempt |
-| [011](adr/011-kubernetes-deployment.md) | Kubernetes deployment: only our hosts in the cluster (kind locally), infrastructure in docker compose, one Helm chart, relay switched by `OutboxRelay:Enabled` and run as a one-replica StatefulSet, migrations as a Helm hook Job before any host rolls out |
