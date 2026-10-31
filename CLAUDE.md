@@ -6,16 +6,17 @@ It is a simplified model of a real-world integration. Not production code, but i
 under failure: duplicates, retries, crashes, outages.
 
 - Business context, glossary, domain rules D1–D6: @docs/domain.md
-- Containers, repository layout, dependency rules, key flow, limitations: @docs/architecture.md
+- Containers, dependency rules, key flow, limitations: @docs/architecture.md
 
 ## Where things are
 
 | Document | Kind | Loaded |
 |---|---|---|
 | `docs/domain.md` | Normative: business language and domain rules | Always (imported above) |
-| `docs/architecture.md` | Dependency rules are normative; layout and flows are descriptive | Always (imported above) |
+| `docs/architecture.md` | Dependency rules are normative; flows are descriptive | Always (imported above) |
+| `docs/repository-layout.md` | Descriptive: every project and folder, what it holds, what it references | Open it before adding, moving or removing a project, folder or tool. Keep it true in the same change |
 | `docs/acceptance-scenarios.md` | Normative: expected behaviour, one integration test per scenario | Open it before writing or changing tests or behaviour |
-| `docs/adr/` | Normative: decisions and rationale. Index: `docs/adr/README.md` | Open the relevant ADR before changing what it decides. Summary of all ADRs: the ADR table in `architecture.md` |
+| `docs/adr/` | Normative: decisions and rationale. Index: `docs/adr/README.md` | Open the relevant ADR before changing what it decides. One-line summary of each: the table in `docs/adr/README.md` |
 | `.claude/rules/invariants.md` | Normative | Always |
 | Other `.claude/rules/*.md` | Rules for specific paths (`paths:` frontmatter) | When a matching file is read or written |
 | `simulators/CLAUDE.md` | Rules for the fake external systems | When a file in `simulators/` is read or written |
