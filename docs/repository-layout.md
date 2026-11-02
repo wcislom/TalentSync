@@ -77,7 +77,9 @@ eval/                                       offline evaluation of the enrichment
 deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
                                             eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts),
                                             host.Dockerfile (one image per host), migrations.Dockerfile + migrate.sh
-                                            (idempotent EF scripts applied with sqlcmd, ADR 011)
+                                            (idempotent EF scripts applied with sqlcmd, ADR 011),
+                                            kind/cluster.yaml (local cluster for the hosts: pinned node image,
+                                            host port 5065 → NodePort 30065 of Ingress.Api)
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
                                             images/ (screenshots for the README)
