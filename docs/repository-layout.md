@@ -7,7 +7,7 @@ moved or removed. Dependency rules between these projects: `docs/architecture.md
 README.md                                   for humans: overview, running locally, simplifications
 TalentSync.slnx                             solution, folders mirror the directories below
 global.json                                 SDK pin, test runner = Microsoft.Testing.Platform
-dotnet-tools.json                           local tool manifest: dotnet-ef (migrations, used by deploy/run-local.sh)
+dotnet-tools.json                           local tool manifest: dotnet-ef (migrations, used by deploy/local/run.sh)
 Directory.Build.props                       net10.0, nullable, implicit usings, warnings as errors
 Directory.Packages.props                    central package versions (CPM)
 src/
@@ -74,12 +74,16 @@ eval/                                       offline evaluation of the enrichment
   cases/                                    golden set: one JSON per fictional CV
   reports/                                  committed reports; local/ is gitignored
   run-eval.sh                               runs the evaluation locally; provider, runs, output and model as variables at the top
-deploy/                                     docker-compose.yml (infra + simulators + Aspire Dashboard), simulator.Dockerfile,
-                                            eventhubs/Config.json, run-local.sh (containers, migrations, the three hosts),
-                                            host.Dockerfile (one image per host), migrations.Dockerfile + migrate.sh
-                                            (idempotent EF scripts applied with sqlcmd, ADR 011),
-                                            kind/cluster.yaml (local cluster for the hosts: pinned node image,
+deploy/
+  infra/                                    what runs next to the hosts, shared by local/ and kubernetes/:
+                                            docker-compose.yml (SQL Server, Event Hubs emulator, Azurite, simulators,
+                                            Aspire Dashboard), eventhubs/Config.json, .env.example (.env is gitignored)
+  local/                                    run.sh: the hosts with `dotnet run` (containers, build, migrations, three tabs)
+  kubernetes/                               the hosts in a cluster (ADR 011): kind/cluster.yaml (pinned node image,
                                             host port 5065 → NodePort 30065 of Ingress.Api)
+  images/                                   how images are built: host.Dockerfile (one image per host),
+                                            simulator.Dockerfile, migrations.Dockerfile + migrations-entrypoint.sh
+                                            (idempotent EF scripts applied with sqlcmd by the Helm hook Job)
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
                                             images/ (screenshots for the README)

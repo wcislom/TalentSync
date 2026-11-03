@@ -39,6 +39,6 @@ RUN apt-get update \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /tmp/packages-microsoft-prod.deb
 COPY --from=build /scripts/ /migrations/
-COPY --chmod=755 deploy/migrate.sh /migrations/migrate.sh
+COPY --chmod=755 deploy/images/migrations-entrypoint.sh /migrations/migrations-entrypoint.sh
 USER ubuntu
-ENTRYPOINT ["/migrations/migrate.sh"]
+ENTRYPOINT ["/migrations/migrations-entrypoint.sh"]

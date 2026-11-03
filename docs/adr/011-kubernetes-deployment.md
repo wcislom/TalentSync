@@ -14,7 +14,7 @@ and migrations on start would race between replicas.
 
 - **Only our hosts run in the cluster.** SQL Server, Azurite, the Event Hubs emulator, the simulators and the Aspire
   Dashboard stay in docker compose, as managed services and external systems would in production.
-- **Local cluster: kind. Manifests: one Helm chart** (`deploy/helm/talentsync`) for all hosts, with
+- **Local cluster: kind. Manifests: one Helm chart** (`deploy/kubernetes/helm/talentsync`) for all hosts, with
   `values-local.yaml`. Templates stay close to plain YAML: only what differs between environments is a value
   (images, addresses, replicas); no helper library.
 - **The relay is switched by `OutboxRelay:Enabled`** (default `true`, so the local run and tests do not change).
@@ -27,7 +27,7 @@ and migrations on start would race between replicas.
   with `sqlcmd` by a `pre-install` / `pre-upgrade` hook Job. The database is ready before any host rolls out; if a
   migration fails, Helm stops the upgrade and every host keeps its previous version. The Job needs only the SQL
   connection.
-- **Secrets** in a Kubernetes Secret created from the gitignored `deploy/.env` by the local run script, never in
+- **Secrets** in a Kubernetes Secret created from the gitignored `deploy/infra/.env` by the local run script, never in
   chart values; the chart only references it by name.
   A Kubernetes Secret is base64, not encryption, and readable by anyone who can read Secrets or create pods in the
   namespace. Fine for a local cluster; production would use workload identity for Azure resources (no connection
@@ -45,7 +45,10 @@ and migrations on start would race between replicas.
   backward compatible, they need no rollback, and the next upgrade skips them.
 - Migrations must stay compatible with the previous code version, since old pods run during a rollout. Schema
   changes are forward only: a Helm rollback restores the previous pods, not the previous schema.
-- Not verified yet: whether pods in kind on Docker Desktop (Windows) reach the containers in docker compose.
+- Pods in kind on Docker Desktop (Windows) reach docker compose through `host.docker.internal` on the published
+  ports; compose reaches Ingress.Api through host port 5065, mapped by kind to a NodePort. Verified, not automated.
+- Kubernetes 1.35+ refuses to run on cgroup v1, so kind needs cgroup v2 on the Docker host (on Windows: a current
+  WSL2 kernel).
 
 ## Alternatives considered
 

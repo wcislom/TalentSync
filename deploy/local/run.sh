@@ -2,21 +2,21 @@
 # Starts everything for a local run: docker compose (infrastructure and simulators), build, EF migrations, then
 # Ingress.Api, Sync.Worker and Matching.Worker. On Windows each host gets its own Windows Terminal tab (stop it with Ctrl+C there);
 # elsewhere they run in this terminal and Ctrl+C stops all three.
-# Containers keep running: docker compose -f deploy/docker-compose.yml stop
+# Containers keep running: docker compose -f deploy/infra/docker-compose.yml stop
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 
 titles=(Ingress.Api Sync.Worker Matching.Worker)
 projects=(src/Ingress/TalentSync.Ingress.Api src/Sync/TalentSync.Sync.Worker src/Matching/TalentSync.Matching.Worker)
 
 echo "Starting containers..."
-docker compose -f deploy/docker-compose.yml up -d --wait
+docker compose -f deploy/infra/docker-compose.yml up -d --wait
 # The emulator loses its events on every restart while Azurite keeps the checkpoints, so a checkpoint can point past
 # the end of a partition ("The supplied offset is invalid"). Start both clean on every run. SQL keeps its data.
 # --renew-anon-volumes: Azurite keeps its data in an anonymous volume, which --force-recreate alone reattaches.
-docker compose -f deploy/docker-compose.yml up -d --wait --force-recreate --renew-anon-volumes azurite eventhubs
+docker compose -f deploy/infra/docker-compose.yml up -d --wait --force-recreate --renew-anon-volumes azurite eventhubs
 
 # One build before the three `dotnet run --no-build`: three parallel builds of the shared projects collide on files.
 # A host that is still running locks its DLLs; the build then fails and names it.

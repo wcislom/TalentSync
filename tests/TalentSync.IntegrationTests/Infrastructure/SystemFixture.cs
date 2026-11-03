@@ -56,13 +56,13 @@ public sealed class SystemFixture : IAsyncLifetime
 
     public SystemFixture()
     {
-        // The emulator's own Azurite, also used by the workers for checkpoints, as in deploy/docker-compose.yml.
+        // The emulator's own Azurite, also used by the workers for checkpoints, as in deploy/infra/docker-compose.yml.
         _azurite = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.37.0")
             .WithNetwork(_network)
             .WithNetworkAliases(AzuriteAlias)
             .Build();
 
-        // Must match deploy/eventhubs/Config.json: the module builds its own emulator configuration.
+        // Must match deploy/infra/eventhubs/Config.json: the module builds its own emulator configuration.
         _eventHubs = new EventHubsBuilder("mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.2.1")
             .WithAcceptLicenseAgreement(true)
             .WithAzuriteContainer(_network, _azurite, AzuriteAlias)

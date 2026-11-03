@@ -3,4 +3,4 @@
 **/TestResults/
 .git/
 .claude/
-deploy/.env
+deploy/infra/.env

@@ -1,6 +1,7 @@
 # Local infrastructure: SQL Server, Event Hubs emulator and Azurite (emulator metadata, later worker checkpoints),
-# the three simulators and the Aspire Dashboard. The TalentSync hosts run on the host with `dotnet run`.
-# Secrets come from deploy/.env (gitignored, copy deploy/.env.example).
+# the three simulators and the Aspire Dashboard. Shared by both ways of running the TalentSync hosts: `dotnet run`
+# (deploy/local) and the kind cluster (deploy/kubernetes).
+# Secrets come from deploy/infra/.env (gitignored, copy deploy/infra/.env.example).
 name: talentsync
 
 services:
@@ -8,7 +9,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?set SQL_SA_PASSWORD in deploy/.env}
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?set SQL_SA_PASSWORD in deploy/infra/.env}
     ports:
       - "1433:1433"
     volumes:
@@ -31,7 +32,7 @@ services:
   # Events and entities do not survive a restart of this container (documented emulator limitation).
   # After changing Config.json recreate both containers: entity metadata lives in Azurite, so a restart keeps the old
   # entities. Azurite's data is in an anonymous volume, which only -V (--renew-anon-volumes) replaces:
-  # `docker compose -f deploy/docker-compose.yml up -d --force-recreate -V azurite eventhubs`
+  # `docker compose -f deploy/infra/docker-compose.yml up -d --force-recreate -V azurite eventhubs`
   # The namespace name in Config.json is a preset of the emulator and cannot be renamed.
   # No healthcheck: the image documents no health endpoint.
   eventhubs:
@@ -53,8 +54,8 @@ services:
   # Unchanged source is a cache hit and keeps the running container.
   fake-teamtailor:
     build:
-      context: ..
-      dockerfile: deploy/simulator.Dockerfile
+      context: ../..
+      dockerfile: deploy/images/simulator.Dockerfile
       args:
         SIMULATOR: FakeTeamtailor
     pull_policy: build
@@ -68,8 +69,8 @@ services:
 
   fake-crm:
     build:
-      context: ..
-      dockerfile: deploy/simulator.Dockerfile
+      context: ../..
+      dockerfile: deploy/images/simulator.Dockerfile
       args:
         SIMULATOR: FakeCrm
     pull_policy: build
@@ -78,8 +79,8 @@ services:
 
   fake-matching-platform:
     build:
-      context: ..
-      dockerfile: deploy/simulator.Dockerfile
+      context: ../..
+      dockerfile: deploy/images/simulator.Dockerfile
       args:
         SIMULATOR: FakeMatchingPlatform
     pull_policy: build

@@ -48,7 +48,7 @@ paths:
   Azurite (`Testcontainers.EventHubs`). The docker compose stack is for running the system by hand, not for tests.
 - Containers start once per xUnit collection fixture (`tests/TalentSync.IntegrationTests/Infrastructure/`).
   The fixture applies migrations before the host starts.
-- The emulator configuration in the fixture must match `deploy/eventhubs/Config.json`.
+- The emulator configuration in the fixture must match `deploy/infra/eventhubs/Config.json`.
 - Event Hubs outage: pause the emulator container (`PauseAsync`), never stop it. A restarted container gets a new
   host port and loses its events. The fixture shortens the SDK's send timeout so a send to a paused hub fails fast.
 - Simulators run in process too (`WebApplicationFactory`). Every web host has a public global `Program` (.NET 10),

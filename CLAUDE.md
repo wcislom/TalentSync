@@ -125,9 +125,9 @@ architecture tests.
 
 ## Commands
 
-- `docker compose -f deploy/docker-compose.yml up -d`
-- Everything for a manual run (containers, build, the three hosts in separate tabs): `deploy/run-local.sh`
-- Reset local state (SQL data, checkpoints): `docker compose -f deploy/docker-compose.yml down -v`
+- `docker compose -f deploy/infra/docker-compose.yml up -d`
+- Everything for a manual run (containers, build, the three hosts in separate tabs): `deploy/local/run.sh`
+- Reset local state (SQL data, checkpoints): `docker compose -f deploy/infra/docker-compose.yml down -v`
 - `dotnet build`
 - `dotnet test` (exit code 8 = no tests ran, e.g. a project without tests yet or a filter that matched nothing)
 - One scenario: `dotnet test --project tests/TalentSync.IntegrationTests --filter-method "*.S2_*"`
