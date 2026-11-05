@@ -1,0 +1,17 @@
+# Only what differs between environments is a value (ADR 011); everything else is in the templates or in the hosts'
+# appsettings.json. Connection strings and keys are never values: the templates read them from the Secret
+# `talentsync`, created outside the chart.
+
+# Image of each host: <registry>talentsync-<host>:<tag>.
+image:
+  registry: ""
+  tag: ""
+
+ingressApi:
+  replicas: 2
+  service:
+    type: ClusterIP
+    nodePort: null
+
+# OTLP/gRPC endpoint of the telemetry backend (ADR 010). Empty: the hosts export nothing.
+otlpEndpoint: ""

@@ -1,0 +1,81 @@
+# Receives webhooks. Several replicas, none of them runs the outbox relay (ingress-relay.yaml does).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-api
+  labels:
+    app.kubernetes.io/name: ingress-api
+    app.kubernetes.io/part-of: talentsync
+spec:
+  replicas: {{ .Values.ingressApi.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-api
+        app.kubernetes.io/part-of: talentsync
+    spec:
+      containers:
+        - name: ingress-api
+          image: "{{ .Values.image.registry }}talentsync-ingress-api:{{ required "image.tag is required" .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # Invariant 13: deliberately not a value. If this line is missing, every replica runs a relay and nothing
+            # fails, but a later event of a candidate can be published before an earlier one.
+            - name: OutboxRelay__Enabled
+              value: "false"
+            - name: ConnectionStrings__Sql
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-connection-string
+            - name: Teamtailor__WebhookSignatureKey
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: teamtailor-webhook-signature-key
+            {{- with .Values.otlpEndpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: ingress-api
+            {{- end }}
+          # Liveness only, never a dependency check: with SQL down every pod would restart and nothing would improve.
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+          # Same endpoint: a new pod gets traffic only once Kestrel listens, so a rollout refuses no webhook.
+          readinessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+          lifecycle:
+            # The pod keeps serving while the Service stops routing to it. Without the wait a webhook that arrives
+            # after SIGTERM is refused, and Teamtailor may not retry it: the event would be lost.
+            preStop:
+              sleep:
+                seconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-api
+  labels:
+    app.kubernetes.io/name: ingress-api
+    app.kubernetes.io/part-of: talentsync
+spec:
+  type: {{ .Values.ingressApi.service.type }}
+  selector:
+    app.kubernetes.io/name: ingress-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      {{- with .Values.ingressApi.service.nodePort }}
+      nodePort: {{ . }}
+      {{- end }}
