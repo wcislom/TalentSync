@@ -15,5 +15,7 @@ teamtailor:
   baseUrl: http://host.docker.internal:5111
 crm:
   baseUrl: http://host.docker.internal:5123
+matchingPlatform:
+  baseUrl: http://host.docker.internal:5075
 
 otlpEndpoint: http://host.docker.internal:4317

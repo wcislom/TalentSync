@@ -1,0 +1,71 @@
+# job_application.* → Matching Platform. Replicas share the partitions of the matching-worker consumer group; beyond
+# the partition count (4) a replica owns nothing. No Service: the worker only pulls from Event Hubs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matching-worker
+  labels:
+    app.kubernetes.io/name: matching-worker
+    app.kubernetes.io/part-of: talentsync
+spec:
+  replicas: {{ .Values.matchingWorker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: matching-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: matching-worker
+        app.kubernetes.io/part-of: talentsync
+    spec:
+      containers:
+        - name: matching-worker
+          image: "{{ .Values.image.registry }}talentsync-matching-worker:{{ required "image.tag is required" .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ConnectionStrings__Sql
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-connection-string
+            - name: EventHubs__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: eventhubs-connection-string
+            - name: Checkpoints__BlobConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: checkpoints-connection-string
+            - name: Teamtailor__BaseUrl
+              value: {{ required "teamtailor.baseUrl is required" .Values.teamtailor.baseUrl | quote }}
+            - name: Teamtailor__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: teamtailor-api-key
+            - name: MatchingPlatform__BaseUrl
+              value: {{ required "matchingPlatform.baseUrl is required" .Values.matchingPlatform.baseUrl | quote }}
+            - name: Llm__Provider
+              value: {{ required "llm.provider is required" .Values.llm.provider | quote }}
+            # Optional, so that Provider = Fake needs no key. With Provider = Anthropic and no key the host stops on
+            # start (options validation) and the pod restarts until the key is in the Secret.
+            - name: Llm__Anthropic__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: anthropic-api-key
+                  optional: true
+            {{- with .Values.otlpEndpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: matching-worker
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http

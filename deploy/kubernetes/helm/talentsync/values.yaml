@@ -16,12 +16,20 @@ ingressApi:
 # At most the partition count of ats-events (4): a replica beyond it owns no partition.
 syncWorker:
   replicas: 2
+matchingWorker:
+  replicas: 2
 
 # Addresses of the external systems.
 teamtailor:
   baseUrl: ""
 crm:
   baseUrl: ""
+matchingPlatform:
+  baseUrl: ""
+
+# Fake or Anthropic. Anthropic needs the key `anthropic-api-key` in the Secret `talentsync`.
+llm:
+  provider: Fake
 
 # OTLP/gRPC endpoint of the telemetry backend (ADR 010). Empty: the hosts export nothing.
 otlpEndpoint: ""
