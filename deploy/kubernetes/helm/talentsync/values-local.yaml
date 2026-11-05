@@ -10,4 +10,10 @@ ingressApi:
     # its webhooks.
     nodePort: 30065
 
+# Simulators, on the host ports of their launchSettings.json.
+teamtailor:
+  baseUrl: http://host.docker.internal:5111
+crm:
+  baseUrl: http://host.docker.internal:5123
+
 otlpEndpoint: http://host.docker.internal:4317

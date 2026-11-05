@@ -13,5 +13,15 @@ ingressApi:
     type: ClusterIP
     nodePort: null
 
+# At most the partition count of ats-events (4): a replica beyond it owns no partition.
+syncWorker:
+  replicas: 2
+
+# Addresses of the external systems.
+teamtailor:
+  baseUrl: ""
+crm:
+  baseUrl: ""
+
 # OTLP/gRPC endpoint of the telemetry backend (ADR 010). Empty: the hosts export nothing.
 otlpEndpoint: ""

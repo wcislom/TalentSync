@@ -1,0 +1,61 @@
+# candidate.* → CRM. Replicas share the partitions of the sync-worker consumer group; beyond the partition count (4)
+# a replica owns nothing. No Service: the worker only pulls from Event Hubs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync-worker
+  labels:
+    app.kubernetes.io/name: sync-worker
+    app.kubernetes.io/part-of: talentsync
+spec:
+  replicas: {{ .Values.syncWorker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sync-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sync-worker
+        app.kubernetes.io/part-of: talentsync
+    spec:
+      containers:
+        - name: sync-worker
+          image: "{{ .Values.image.registry }}talentsync-sync-worker:{{ required "image.tag is required" .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ConnectionStrings__Sql
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-connection-string
+            - name: EventHubs__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: eventhubs-connection-string
+            - name: Checkpoints__BlobConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: checkpoints-connection-string
+            - name: Teamtailor__BaseUrl
+              value: {{ required "teamtailor.baseUrl is required" .Values.teamtailor.baseUrl | quote }}
+            - name: Teamtailor__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: teamtailor-api-key
+            - name: Crm__BaseUrl
+              value: {{ required "crm.baseUrl is required" .Values.crm.baseUrl | quote }}
+            {{- with .Values.otlpEndpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: sync-worker
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
