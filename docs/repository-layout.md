@@ -83,7 +83,9 @@ deploy/
                                             host port 5065 → NodePort 30065 of Ingress.Api),
                                             helm/talentsync (one chart for all hosts; values-local.yaml for kind;
                                             templates/ingress-api.yaml, ingress-relay.yaml, sync-worker.yaml,
-                                            matching-worker.yaml)
+                                            matching-worker.yaml),
+                                            create-secret.sh (the Secret `talentsync` from infra/.env and the local
+                                            keys; restarts the hosts when a value changes)
   images/                                   how images are built: host.Dockerfile (one image per host),
                                             simulator.Dockerfile, migrations.Dockerfile + migrations-entrypoint.sh
                                             (idempotent EF scripts applied with sqlcmd by the Helm hook Job)
