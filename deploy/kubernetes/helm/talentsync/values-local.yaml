@@ -1,8 +1,6 @@
-# kind on Docker Desktop. Images are loaded into the node with `kind load`, so there is no registry.
+# kind on Docker Desktop. Images are loaded into the node with `kind load`, so there is no registry; the image tag is
+# set by deploy/kubernetes/deploy.sh.
 # Everything in docker compose (deploy/infra) is reached through host.docker.internal on its published port.
-image:
-  tag: local
-
 ingressApi:
   service:
     type: NodePort
