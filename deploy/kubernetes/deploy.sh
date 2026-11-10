@@ -2,6 +2,8 @@
 # Deploys the hosts to the local kind cluster (ADR 011): the Secret, the migrations and host images, `kind load`,
 # `helm upgrade`.
 # Needs the cluster (kind/cluster.yaml) and docker compose (deploy/infra) running.
+# Arguments go to `helm upgrade`, e.g. `--set llm.provider=Anthropic` (needs ANTHROPIC_API_KEY in deploy/infra/.env).
+# Fake stays the default, so a plain deploy never calls the billed model.
 # Each run gets a new image tag, so `helm upgrade` sees a changed manifest and rolls the pods; under one fixed tag the
 # pods would keep running the old image.
 set -euo pipefail
@@ -43,4 +45,5 @@ helm upgrade --install talentsync deploy/kubernetes/helm/talentsync \
   --kube-context "$context" \
   -f deploy/kubernetes/helm/talentsync/values-local.yaml \
   --set image.tag="$tag" \
-  --wait --timeout 3m
+  --wait --timeout 3m \
+  "$@"
