@@ -21,8 +21,17 @@ set +a
 # Pods reach docker compose through host.docker.internal on the published ports (ADR 011). The hosts run as
 # Production in the cluster, so nothing comes from appsettings.Development.json.
 azurite_key="Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+# The migrations Job runs sqlcmd, which takes the parts, not a connection string. Both come from these variables, so
+# they cannot point at different databases.
+sql_server="host.docker.internal,1433"
+sql_database=TalentSync
+sql_user=sa
 args=(
-  --from-literal=sql-connection-string="Server=host.docker.internal,1433;Database=TalentSync;User Id=sa;Password=$SQL_SA_PASSWORD;TrustServerCertificate=True"
+  --from-literal=sql-connection-string="Server=$sql_server;Database=$sql_database;User Id=$sql_user;Password=$SQL_SA_PASSWORD;TrustServerCertificate=True"
+  --from-literal=sql-server="$sql_server"
+  --from-literal=sql-database="$sql_database"
+  --from-literal=sql-user="$sql_user"
+  --from-literal=sql-password="$SQL_SA_PASSWORD"
   --from-literal=eventhubs-connection-string="Endpoint=sb://host.docker.internal;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
   --from-literal=checkpoints-connection-string="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=$azurite_key;BlobEndpoint=http://host.docker.internal:10000/devstoreaccount1;"
   --from-literal=teamtailor-api-key=fake-api-key

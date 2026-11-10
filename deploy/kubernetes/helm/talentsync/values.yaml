@@ -19,6 +19,10 @@ syncWorker:
 matchingWorker:
   replicas: 2
 
+# true only for a SQL Server with a self-signed certificate.
+migrations:
+  trustServerCertificate: false
+
 # Addresses of the external systems.
 teamtailor:
   baseUrl: ""
