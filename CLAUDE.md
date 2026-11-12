@@ -116,10 +116,12 @@ Sync.Worker (inbox, ACL, CRM upsert, resilience, parking lot), Matching.Worker (
 with stored results and fallback, profile upsert).
 Observability (ADR 010): OpenTelemetry traces, metrics and logs, Aspire Dashboard locally.
 Kubernetes deployment (ADR 011): one Helm chart for the hosts on a local kind cluster.
+Admin app (ADR 012): Angular app with Parking lot and Scenarios pages, a read-only parking lot endpoint in each
+worker, no authentication.
 
 Matching.Worker ignores `candidate.*` events in the MVP (rule D6).
 
-Out of scope until asked: the `azure` Helm values (AKS, workload identity, Key Vault), admin API / JWT,
+Out of scope until asked: the `azure` Helm values (AKS, workload identity, Key Vault), authentication (OIDC / JWT),
 reconciliation job, parking lot replay endpoint, archiving profiles on candidate delete,
 architecture tests.
 
