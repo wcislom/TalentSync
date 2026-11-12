@@ -82,7 +82,7 @@ jobs:
       # Simulators (Fake*) are not part of the product, so +TalentSync.* leaves them out.
       - name: Generate coverage report
         if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
-        uses: danielpalme/ReportGenerator-GitHub-Action@5
+        uses: danielpalme/ReportGenerator-GitHub-Action@v5
         with:
           reports: TestResults/*.cobertura.xml
           targetdir: CoverageReport
