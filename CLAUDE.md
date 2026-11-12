@@ -128,6 +128,8 @@ architecture tests.
 - `docker compose -f deploy/infra/docker-compose.yml up -d`
 - Everything for a manual run (containers, build, the three hosts in separate tabs): `deploy/local/run.sh`
 - Reset local state (SQL data, checkpoints): `docker compose -f deploy/infra/docker-compose.yml down -v`
+- Hosts in kind (ADR 011, needs docker compose up): `kind create cluster --name talentsync --config deploy/kubernetes/kind/cluster.yaml` once,
+  then `deploy/kubernetes/deploy.sh` (extra arguments go to `helm upgrade`). Remove: `kind delete cluster --name talentsync`
 - `dotnet build`
 - `dotnet test` (exit code 8 = no tests ran, e.g. a project without tests yet or a filter that matched nothing)
 - One scenario: `dotnet test --project tests/TalentSync.IntegrationTests --filter-method "*.S2_*"`
