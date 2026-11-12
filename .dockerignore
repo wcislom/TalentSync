@@ -4,3 +4,6 @@
 .git/
 .claude/
 deploy/infra/.env
+**/node_modules/
+**/.angular/
+**/dist/

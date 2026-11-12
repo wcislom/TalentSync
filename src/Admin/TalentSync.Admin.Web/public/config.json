@@ -1,0 +1,6 @@
+{
+  "atsSimulatorUrl": "http://localhost:5111",
+  "crmSimulatorUrl": "http://localhost:5123",
+  "matchingPlatformSimulatorUrl": "http://localhost:5075",
+  "tracesUrl": "http://localhost:18888"
+}

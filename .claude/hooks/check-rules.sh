@@ -15,7 +15,7 @@ problems=""
 # 1. "Teamtailor" never in *.Domain or *.Application (code or project references).
 inner=( src/*/TalentSync.*.Domain src/*/TalentSync.*.Application )
 if [ ${#inner[@]} -gt 0 ]; then
-  hits=$(grep -rIin --include='*.cs' --include='*.csproj' --exclude-dir=bin --exclude-dir=obj \
+  hits=$(grep -rIin --include='*.cs' --include='*.csproj' --exclude-dir=bin --exclude-dir=obj --exclude-dir=node_modules \
          'teamtailor' "${inner[@]}" 2>/dev/null)
   if [ -n "$hits" ]; then
     problems+=$'"Teamtailor" in a Domain or Application project (CLAUDE.md, Naming; use the IRecruitmentSource port):\n'"$hits"$'\n\n'
@@ -23,7 +23,7 @@ if [ ${#inner[@]} -gt 0 ]; then
 fi
 
 # 2. No direct clock in src/: use TimeProvider.
-hits=$(grep -rIEn --include='*.cs' --exclude-dir=bin --exclude-dir=obj \
+hits=$(grep -rIEn --include='*.cs' --exclude-dir=bin --exclude-dir=obj --exclude-dir=node_modules \
        'DateTime(Offset)?\.(UtcNow|Now)\b' src 2>/dev/null)
 if [ -n "$hits" ]; then
   problems+=$'Direct clock in src/ (CLAUDE.md, Tech stack; inject TimeProvider instead):\n'"$hits"$'\n'

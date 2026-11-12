@@ -20,6 +20,9 @@ Fake external systems used to run and demo TalentSync locally. **They are not pa
   replaces the rule. `GET /anomalies` lists active rules, `DELETE /anomalies?candidateId=` clears them (all without the id).
   Tests always pass `candidateId`, so a failure mode never leaks into another scenario running in parallel.
   Each simulator lists its modes below. Simulators must be **easy to break on purpose**.
+- CORS: the Admin app (`src/Admin`) calls the simulators from the browser. Allowed origins in `Cors:AllowedOrigins`
+  (`appsettings.json`, because the containers run as Production). `UseCors` is the first middleware, so a preflight
+  never reaches the call log.
 - `GET /calls`: counts per endpoint, per candidate and per response status code,
   so tests can prove "one effect" (see `docs/acceptance-scenarios.md`).
 

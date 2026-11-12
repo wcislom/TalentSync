@@ -10,17 +10,19 @@ is current (see "When docs and code disagree" in `CLAUDE.md`).
 
 ## Containers
 
-Three deployables, split by runtime behaviour, not by business capability. They share code and are released together.
+Four deployables: three .NET hosts, split by runtime behaviour, not by business capability, and the Admin app
+(ADR 012). They are released together.
 
 | Container | Responsibility | Does not | Owns |
 |---|---|---|---|
 | **Ingress.Api** | Persist a notification envelope, return 200. Relay publishes outbox → Event Hubs | Call any API, interpret stages, hold domain logic | `ingress.*` |
 | **Sync.Worker** | `candidate.*` → fetch candidate → upsert or delete CRM contact | Handle application events | `sync.*`, checkpoints of `sync-worker` |
 | **Matching.Worker** | `job_application.*` → qualified? → fetch candidate + CV → enrichment (stored) → upsert profile | Decide matches, block on LLM failure, handle `candidate.*` (D6) | `matching.*`, checkpoints of `matching-worker` |
+| **Admin.Web** | Angular app in the browser. Scenarios page: drives the demo scenarios against the simulators (ADR 012) | Call Teamtailor, the CRM or the Matching Platform; write to TalentSync; authenticate users (MVP) | nothing |
 | SQL Server | Three schemas, one owner each | Act as a channel between workers | |
 | Event Hubs | Hub `ats-events`, ordered log per partition, independent read position per consumer group | Dead-letter (there is no DLQ) | |
 | Azurite | Checkpoints and partition ownership | | |
-| Simulators | Stand-ins for Teamtailor, CRM, Matching Platform; break on demand | Production behaviour | in-memory |
+| Simulators | Stand-ins for Teamtailor, CRM, Matching Platform; break on demand, driven from the Admin app's Scenarios page | Production behaviour | in-memory |
 | Aspire Dashboard | Local view of the hosts' traces, metrics and logs over OTLP (ADR 010) | Run in tests or CI | in-memory |
 
 ## Layers and projects
@@ -54,6 +56,7 @@ Deliberate asymmetries: Ingress has no domain and is one project; Sync has no bu
   route. The filter makes the project reference the ASP.NET Core shared framework. Implementations and JSON:API DTOs are `internal`. This is the only place that defines the public surface.
 - Each worker's `DbContext` lives in its own `*.Infrastructure`, so the other worker cannot see its schema.
 - Ingress does not reference `Infrastructure.Messaging`: it only produces.
+- `Admin.Web` references nothing in `src/`. It reaches the workers and the simulators over HTTP only.
 - Simulators reference nothing in `src/`. Test projects may reference both.
 
 | Rule | Enforced by |

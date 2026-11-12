@@ -1,0 +1,61 @@
+@let current = scenario();
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>{{ current.title }}</mat-card-title>
+    <mat-card-subtitle>{{ current.description }}</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <p class="expectation"><strong>Expect:</strong> {{ current.expectation }}</p>
+
+    @if (candidateId(); as id) {
+      <p>Candidate: <code>{{ id }}</code></p>
+    }
+
+    @if (steps().length > 0) {
+      <ol class="steps">
+        @for (step of steps(); track $index) {
+          <li>
+            <span class="status">
+              @switch (step.status) {
+                @case ('running') {
+                  <mat-spinner diameter="18" />
+                }
+                @case ('done') {
+                  <mat-icon class="done">check_circle</mat-icon>
+                }
+                @case ('failed') {
+                  <mat-icon class="failed">error</mat-icon>
+                }
+              }
+            </span>
+            <span class="label">{{ step.label }}</span>
+            @if (step.error) {
+              <span class="error">{{ step.error }}</span>
+            }
+          </li>
+        }
+      </ol>
+    }
+
+    @if (checkLabel(); as label) {
+      <h4>{{ label }}</h4>
+      @if (checkResponse.isLoading()) {
+        <mat-spinner diameter="24" />
+      } @else if (checkError(); as error) {
+        <p class="error">{{ error }}</p>
+      } @else {
+        <pre>{{ checkResult() | json }}</pre>
+      }
+    }
+  </mat-card-content>
+
+  <mat-card-actions>
+    <button matButton="filled" (click)="run()" [disabled]="running()">Run</button>
+    @for (check of current.checks; track check.label) {
+      <button matButton (click)="runCheck(check)" [disabled]="!candidateId() || running()">
+        {{ check.label }}
+      </button>
+    }
+  </mat-card-actions>
+</mat-card>

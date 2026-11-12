@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Starts everything for a local run: docker compose (infrastructure and simulators), build, EF migrations, then
-# Ingress.Api, Sync.Worker and Matching.Worker. On Windows each host gets its own Windows Terminal tab (stop it with Ctrl+C there);
-# elsewhere they run in this terminal and Ctrl+C stops all three.
+# Ingress.Api, Sync.Worker, Matching.Worker and the Admin app (ng serve). On Windows each gets its own Windows Terminal
+# tab (stop it with Ctrl+C there); elsewhere they run in this terminal and Ctrl+C stops all of them.
 # Containers keep running: docker compose -f deploy/infra/docker-compose.yml stop
 set -euo pipefail
 
@@ -10,6 +10,7 @@ cd "$root"
 
 titles=(Ingress.Api Sync.Worker Matching.Worker)
 projects=(src/Ingress/TalentSync.Ingress.Api src/Sync/TalentSync.Sync.Worker src/Matching/TalentSync.Matching.Worker)
+admin=src/Admin/TalentSync.Admin.Web
 
 echo "Starting containers..."
 docker compose -f deploy/infra/docker-compose.yml up -d --wait
@@ -22,6 +23,12 @@ docker compose -f deploy/infra/docker-compose.yml up -d --wait --force-recreate 
 # A host that is still running locks its DLLs; the build then fails and names it.
 echo "Building..."
 dotnet build TalentSync.slnx --nologo --verbosity quiet
+
+# npm writes node_modules/.package-lock.json on install; a lock file newer than it means the dependencies changed.
+if [ ! -f "$admin/node_modules/.package-lock.json" ] || [ "$admin/package-lock.json" -nt "$admin/node_modules/.package-lock.json" ]; then
+  echo "Installing Admin app packages..."
+  (cd "$admin" && npm ci --no-audit --no-fund)
+fi
 
 # Before the hosts start, so neither the relay nor a worker meets a missing table. Applies only pending migrations.
 # The connection string comes from each host's user secrets (README, "Running locally").
@@ -40,13 +47,17 @@ if command -v wt.exe >/dev/null 2>&1; then
       cmd /k dotnet run --no-build --launch-profile http --project "${projects[$i]}"
     echo "Started ${titles[$i]}"
   done
-  echo "Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888"
+  MSYS_NO_PATHCONV=1 wt.exe -w talentsync new-tab --title Admin.Web -d "$(cygpath -w "$root/$admin")" cmd /k npm start
+  echo "Started Admin.Web"
+  echo "Scenarios: http://localhost:4200. Traces and logs: http://localhost:18888"
 else
   trap 'kill $(jobs -p) 2>/dev/null' INT TERM EXIT
   for i in "${!titles[@]}"; do
     dotnet run --no-build --launch-profile http --project "${projects[$i]}" 2>&1 | sed -u "s/^/[${titles[$i]}] /" &
     echo "Started ${titles[$i]}"
   done
-  echo "Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888. Ctrl+C stops all three hosts."
+  (cd "$admin" && npm start) 2>&1 | sed -u "s/^/[Admin.Web] /" &
+  echo "Started Admin.Web"
+  echo "Scenarios: http://localhost:4200. Traces and logs: http://localhost:18888. Ctrl+C stops everything."
   wait
 fi
