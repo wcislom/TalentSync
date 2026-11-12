@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { APP_CONFIG } from '../config';
 
 export interface NewCandidate {
@@ -17,15 +17,25 @@ export interface AnomalyRule {
   seconds: number;
 }
 
-/** Drives the three simulators. Responses stay untyped except the ids a later step needs. */
+interface WebhookDelivery {
+  eventName: string;
+  /** Null when Ingress did not answer. */
+  statusCode: number | null;
+}
+
+interface StateChange {
+  webhooks: WebhookDelivery[];
+}
+
+/** Drives the three simulators. Responses stay untyped except the ids a later step needs and webhook delivery. */
 @Injectable({ providedIn: 'root' })
 export class Simulators {
   private readonly http = inject(HttpClient);
   private readonly config = inject(APP_CONFIG);
 
   apply(jobId: string, candidateId: string, candidate: NewCandidate): Promise<{ jobApplicationId: string }> {
-    return firstValueFrom(
-      this.http.post<{ jobApplicationId: string }>(`${this.ats}/recruiter/jobs/${jobId}/apply`, {
+    return this.change(
+      this.http.post<StateChange & { jobApplicationId: string }>(`${this.ats}/recruiter/jobs/${jobId}/apply`, {
         candidateId,
         ...candidate,
       }),
@@ -33,13 +43,13 @@ export class Simulators {
   }
 
   changeStage(jobApplicationId: string, stage: string): Promise<unknown> {
-    return firstValueFrom(
-      this.http.patch(`${this.ats}/recruiter/job-applications/${jobApplicationId}/stage`, { stage }),
+    return this.change(
+      this.http.patch<StateChange>(`${this.ats}/recruiter/job-applications/${jobApplicationId}/stage`, { stage }),
     );
   }
 
   updateCandidate(candidateId: string, changes: Partial<NewCandidate>): Promise<unknown> {
-    return firstValueFrom(this.http.patch(`${this.ats}/recruiter/candidates/${candidateId}`, changes));
+    return this.change(this.http.patch<StateChange>(`${this.ats}/recruiter/candidates/${candidateId}`, changes));
   }
 
   breakAts(rule: AnomalyRule): Promise<unknown> {
@@ -68,5 +78,19 @@ export class Simulators {
 
   private get ats(): string {
     return this.config.atsSimulatorUrl;
+  }
+
+  // The simulator applies a change even when its webhook fails (Teamtailor does not retry a delivery), so its 2xx
+  // says nothing about whether TalentSync will ever see the event. Each delivery is checked on its own.
+  private async change<T extends StateChange>(request: Observable<T>): Promise<T> {
+    const response = await firstValueFrom(request);
+    const failed = response.webhooks.filter((w) => w.statusCode === null || w.statusCode < 200 || w.statusCode > 299);
+    if (failed.length > 0) {
+      const details = failed
+        .map((w) => `${w.eventName}: ${w.statusCode ?? 'no response, is Ingress.Api running?'}`)
+        .join('; ');
+      throw new Error(`The change was made, but its webhook did not reach Ingress (${details})`);
+    }
+    return response;
   }
 }

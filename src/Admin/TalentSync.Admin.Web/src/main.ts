@@ -5,4 +5,11 @@ import { loadAppConfig } from './app/config';
 
 loadAppConfig()
   .then((config) => bootstrapApplication(App, appConfig(config)))
-  .catch((err) => console.error(err));
+  .catch((error: unknown) => {
+    console.error(error);
+    // Angular never started, so nothing else would tell the user why the page is empty.
+    const message = document.createElement('p');
+    message.style.padding = '16px';
+    message.textContent = `The Admin app could not start: ${error instanceof Error ? error.message : String(error)}`;
+    document.body.replaceChildren(message);
+  });

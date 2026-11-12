@@ -6,8 +6,11 @@ const JOB_ID = 'job-1';
 const crmContact: Check = {
   label: 'CRM contact',
   url: (simulators) => simulators.crmContactsUrl(),
+  // A non-list body is shown as it came: a throw here would run inside computed() and break the whole card.
   select: (body, candidateId) =>
-    (body as { candidateId: string }[]).find((contact) => contact.candidateId === candidateId) ?? 'No contact yet',
+    Array.isArray(body)
+      ? (body.find((contact) => contact?.candidateId === candidateId) ?? 'No contact yet')
+      : body,
 };
 
 const crmCalls: Check = {
@@ -94,14 +97,16 @@ export const SCENARIOS: Scenario[] = [
   {
     key: 'poison',
     title: '4. Poison event',
-    description: 'The ATS simulator answers 400 to every API call about this candidate for 30 seconds, then the candidate applies.',
+    description: 'The ATS simulator answers 400 to every API call about this candidate for 2 minutes, then the candidate applies.',
     expectation:
       'A 400 is a permanent failure: Sync.Worker parks candidate.create and Matching.Worker parks ' +
       'job_application.create, then both move on. The ATS simulator calls show the 400s. ' +
-      'The anomaly expires by itself: clearing it by hand before a worker fetches would let the event through.',
+      'Only if a worker fetches within the 2 minutes: a worker behind on its partition would see the anomaly expired ' +
+      'and process the event normally. Clearing the anomaly by hand has the same effect.',
     async run(simulators, candidateId, step) {
-      await step('Break the ATS simulator API for 30 s (400)', () =>
-        simulators.breakAts({ mode: 'bad-request', seconds: 30, candidateId }),
+      // Long enough for a backlog or a slow LLM call ahead on the partition; it affects only this candidate.
+      await step('Break the ATS simulator API for 2 min (400)', () =>
+        simulators.breakAts({ mode: 'bad-request', seconds: 120, candidateId }),
       );
       await step('Apply (candidate.create, job_application.create)', () =>
         simulators.apply(JOB_ID, candidateId, {

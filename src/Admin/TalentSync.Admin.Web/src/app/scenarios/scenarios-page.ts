@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { APP_CONFIG } from '../config';
 import { ScenarioCard } from './scenario-card';
 import { SCENARIOS } from './scenarios';
 
@@ -8,8 +9,8 @@ import { SCENARIOS } from './scenarios';
   template: `
     <h1>Scenarios</h1>
     <p>
-      Each run uses a new candidate id. A webhook a step triggers is one trace in the Aspire Dashboard
-      (<a href="http://localhost:18888" target="_blank" rel="noopener">localhost:18888</a>).
+      Each run uses a new candidate id. A webhook a step triggers is one trace in the
+      <a [href]="tracesUrl" target="_blank" rel="noopener">Aspire Dashboard</a>.
     </p>
     <div class="grid">
       @for (scenario of scenarios; track scenario.key) {
@@ -27,4 +28,5 @@ import { SCENARIOS } from './scenarios';
 })
 export class ScenariosPage {
   protected readonly scenarios = SCENARIOS;
+  protected readonly tracesUrl = inject(APP_CONFIG).tracesUrl;
 }
