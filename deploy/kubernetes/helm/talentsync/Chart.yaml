@@ -1,0 +1,5 @@
+apiVersion: v2
+name: talentsync
+description: The TalentSync hosts (ADR 011). Infrastructure and external systems are not part of the chart.
+type: application
+version: 0.1.0

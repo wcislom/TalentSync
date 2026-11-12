@@ -1,0 +1,18 @@
+# Local cluster for the hosts (ADR 011). Infrastructure and simulators stay in docker compose; pods reach them through
+# host.docker.internal on the ports compose publishes.
+# kind create cluster --name talentsync --config deploy/kubernetes/kind/cluster.yaml
+# Port mappings exist only at creation: after changing this file, delete and recreate the cluster.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # Pinned with its digest, as kind recommends: a newer kind release would otherwise change the Kubernetes version.
+    # Needs cgroup v2 on the Docker host (Kubernetes 1.35+ refuses cgroup v1; WSL2 kernel 6.x has v2).
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+    extraPortMappings:
+      # Ingress.Api keeps the host port of its launchSettings.json, so FakeTeamtailor's webhook URL in docker compose
+      # works whether Ingress runs with `dotnet run` or in this cluster (not both: same port).
+      # 30065 must match the NodePort of the ingress-api Service in the chart.
+      - containerPort: 30065
+        hostPort: 5065
+        protocol: TCP

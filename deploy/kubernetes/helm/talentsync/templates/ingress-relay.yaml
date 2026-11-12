@@ -1,0 +1,58 @@
+# The outbox relay: the Ingress.Api image with the relay on, in exactly one pod (invariant 13, ADR 011).
+# A StatefulSet, not a Deployment: on an update, or when its node stops responding, it starts no new pod until the old
+# one is gone, so two relays never run at once. It receives no webhooks: the ingress-api Service does not select it.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ingress-relay
+  labels:
+    app.kubernetes.io/name: ingress-relay
+    app.kubernetes.io/part-of: talentsync
+spec:
+  # Invariant 13: deliberately not a value.
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-relay
+        app.kubernetes.io/part-of: talentsync
+    spec:
+      containers:
+        - name: ingress-relay
+          image: "{{ .Values.image.registry }}talentsync-ingress-api:{{ required "image.tag is required" .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: OutboxRelay__Enabled
+              value: "true"
+            - name: ConnectionStrings__Sql
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-connection-string
+            - name: EventHubs__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: eventhubs-connection-string
+            # Unused here, but Ingress.Api validates it on start.
+            - name: Teamtailor__WebhookSignatureKey
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: teamtailor-webhook-signature-key
+            {{- with .Values.otlpEndpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ . | quote }}
+            # The relay is part of Ingress.Api, as in a local run: its spans stay under the same service.
+            - name: OTEL_SERVICE_NAME
+              value: ingress-api
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http

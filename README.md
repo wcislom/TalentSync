@@ -92,7 +92,7 @@ Testcontainers and run the hosts and simulators in process.
 dotnet test
 ```
 
-For a manual run, set the SQL password once in `deploy/.env` (copy `deploy/.env.example`) and give the three hosts
+For a manual run, set the SQL password once in `deploy/infra/.env` (copy `deploy/infra/.env.example`) and give the three hosts
 the connection string in user secrets:
 
 ```bash
@@ -111,11 +111,49 @@ dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/Ta
 dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
 ```
 
-To click through the whole flow by hand (success, CRM outage, candidate without a CV), run `deploy/run-local.sh`
+To click through the whole flow by hand (success, CRM outage, candidate without a CV), run `deploy/local/run.sh`
 (Git Bash). It starts the containers, builds, applies the EF migrations and starts the three hosts (on Windows each
 in its own Windows Terminal tab). Then use
 [`docs/e2e.http`](docs/e2e.http). Traces, metrics and logs of the three hosts are in the Aspire Dashboard at
 [http://localhost:18888](http://localhost:18888) (ADR 010).
+
+### In a local Kubernetes cluster
+
+Requires [kind](https://kind.sigs.k8s.io/), Helm and `kubectl`. Only the three hosts run in the cluster; SQL Server,
+Event Hubs, Azurite, the simulators and the Aspire Dashboard stay in docker compose (ADR 011).
+
+```bash
+docker compose -f deploy/infra/docker-compose.yml up -d
+kind create cluster --name talentsync --config deploy/kubernetes/kind/cluster.yaml
+deploy/kubernetes/deploy.sh
+```
+
+`deploy.sh` creates the Secret from `deploy/infra/.env`, builds the images, loads them into kind and runs
+`helm upgrade --install`, which applies the migrations before any host starts. Run it again after a code change.
+Extra arguments go to Helm, e.g. `deploy/kubernetes/deploy.sh --set llm.provider=Anthropic` (needs
+`ANTHROPIC_API_KEY` in `deploy/infra/.env`; every real call is billed).
+
+Ingress.Api listens on host port 5065 in both modes, so stop the `dotnet run` hosts first. [`docs/e2e.http`](docs/e2e.http)
+and the Aspire Dashboard work the same way. To clean up:
+
+```bash
+helm uninstall talentsync --kube-context kind-talentsync   # remove the hosts, keep the cluster
+kind delete cluster --name talentsync                      # remove the cluster
+```
+
+### After a Docker restart
+
+The Event Hubs emulator loses its events on restart, but the checkpoints in Azurite survive. A checkpoint then points
+past the end of the new log, and the workers log `The supplied offset '…' is invalid` and read nothing from that
+partition, in both modes. Reset both containers and restart the workers:
+
+```bash
+docker compose -f deploy/infra/docker-compose.yml up -d --force-recreate -V azurite eventhubs
+kubectl --context kind-talentsync rollout restart deployment/sync-worker deployment/matching-worker   # in kind
+```
+
+With `dotnet run`, restart the two worker hosts instead. Events published before the reset are gone; start
+`docs/e2e.http` again with a new `@run`.
 
 ## Simplifications
 

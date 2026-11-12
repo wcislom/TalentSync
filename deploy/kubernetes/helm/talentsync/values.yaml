@@ -1,0 +1,39 @@
+# Only what differs between environments is a value (ADR 011); everything else is in the templates or in the hosts'
+# appsettings.json. Connection strings and keys are never values: the templates read them from the Secret
+# `talentsync`, created outside the chart.
+
+# Image of each host: <registry>talentsync-<host>:<tag>.
+image:
+  registry: ""
+  tag: ""
+
+ingressApi:
+  replicas: 2
+  service:
+    type: ClusterIP
+    nodePort: null
+
+# At most the partition count of ats-events (4): a replica beyond it owns no partition.
+syncWorker:
+  replicas: 2
+matchingWorker:
+  replicas: 2
+
+# true only for a SQL Server with a self-signed certificate.
+migrations:
+  trustServerCertificate: false
+
+# Addresses of the external systems.
+teamtailor:
+  baseUrl: ""
+crm:
+  baseUrl: ""
+matchingPlatform:
+  baseUrl: ""
+
+# Fake or Anthropic. Anthropic needs the key `anthropic-api-key` in the Secret `talentsync`.
+llm:
+  provider: Fake
+
+# OTLP/gRPC endpoint of the telemetry backend (ADR 010). Empty: the hosts export nothing.
+otlpEndpoint: ""

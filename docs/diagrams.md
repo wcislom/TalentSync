@@ -46,6 +46,47 @@ flowchart TB
   mat -.->|OTLP| dash
 ```
 
+## Deployment: local Kubernetes
+
+The hosts in kind, everything else in docker compose (ADR 011; `deploy/kubernetes`, `deploy/infra`). Both sides
+reach each other through the Docker host: pods call `host.docker.internal` on the ports compose publishes, and
+webhooks come in on host port 5065, mapped by kind to the NodePort of `ingress-api`.
+
+```mermaid
+flowchart LR
+  %% Edges join subgraphs, never the nodes inside them. Inside, the nodes are unlinked, so they share one rank, and in
+  %% LR one rank is a column. Each subgraph needs `direction LR`: without it Mermaid flips the parent's direction.
+  subgraph kind["kind cluster · Helm release talentsync"]
+    direction LR
+    mig["Job migrations<br/>pre-install / pre-upgrade hook"]
+    api["ingress-api<br/>Deployment · 2 replicas<br/>relay off, NodePort 30065"]
+    rel["ingress-relay<br/>StatefulSet · 1 replica<br/>relay on"]
+    sw["sync-worker<br/>Deployment · 2 replicas"]
+    mw["matching-worker<br/>Deployment · 2 replicas"]
+  end
+  subgraph infra["docker compose: infrastructure"]
+    direction LR
+    sql[("SQL Server :1433")]
+    eh{{"Event Hubs :5672"}}
+    az[("Azurite :10000")]
+    dash["Aspire Dashboard<br/>OTLP :4317"]
+  end
+  subgraph sims["docker compose: simulators"]
+    direction LR
+    tt["FakeTeamtailor :5111"]
+    crm["FakeCrm :5123"]
+    mp["FakeMatchingPlatform :5075"]
+  end
+
+  sims <-->|"webhooks in on host :5065<br/>API calls out"| kind
+  kind -->|"SQL, events,<br/>checkpoints, OTLP"| infra
+```
+
+`deploy/kubernetes/deploy.sh` runs the Helm upgrade: the migrations Job must succeed before any host rolls out.
+Every pod and the Job read their connection strings and keys from the Secret `talentsync`, created from
+`deploy/infra/.env`.
+The relay runs in exactly one pod (invariant 13); the API replicas have it switched off by one line in the template.
+
 ## Key flow: application qualified
 
 ```mermaid

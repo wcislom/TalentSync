@@ -1,0 +1,50 @@
+# Applies the idempotent migration scripts of the three schemas before any host rolls out (ADR 011). A failed Job
+# fails the install or upgrade, so every host keeps its previous version.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrations
+  labels:
+    app.kubernetes.io/name: migrations
+    app.kubernetes.io/part-of: talentsync
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    # A failed Job stays until the next upgrade, so its logs can be read.
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  # One retry covers SQL Server not accepting connections yet. A broken migration fails both attempts; the scripts
+  # are idempotent, so the second attempt skips what the first one applied.
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrations
+        app.kubernetes.io/part-of: talentsync
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrations
+          image: "{{ .Values.image.registry }}talentsync-migrations:{{ required "image.tag is required" .Values.image.tag }}"
+          env:
+            - name: SQL_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-server
+            - name: SQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-database
+            - name: SQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-user
+            - name: SQLCMDPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: talentsync
+                  key: sql-password
+            - name: SQL_TRUST_SERVER_CERTIFICATE
+              value: {{ .Values.migrations.trustServerCertificate | quote }}

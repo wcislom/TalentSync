@@ -1,0 +1,23 @@
+# kind on Docker Desktop. Images are loaded into the node with `kind load`, so there is no registry; the image tag is
+# set by deploy/kubernetes/deploy.sh.
+# Everything in docker compose (deploy/infra) is reached through host.docker.internal on its published port.
+ingressApi:
+  service:
+    type: NodePort
+    # Must match extraPortMappings in deploy/kubernetes/kind/cluster.yaml: host port 5065, where FakeTeamtailor sends
+    # its webhooks.
+    nodePort: 30065
+
+# SQL Server in docker compose has a self-signed certificate.
+migrations:
+  trustServerCertificate: true
+
+# Simulators, on the host ports of their launchSettings.json.
+teamtailor:
+  baseUrl: http://host.docker.internal:5111
+crm:
+  baseUrl: http://host.docker.internal:5123
+matchingPlatform:
+  baseUrl: http://host.docker.internal:5075
+
+otlpEndpoint: http://host.docker.internal:4317
