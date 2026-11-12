@@ -1,5 +1,32 @@
-// Fictional. The email and phone are there on purpose: the enrichment adapter must mask them before the LLM call.
-export const SAMPLE_CV = `ADAM TESTOWY
+import { NewCandidate, SEEDED_JOB_ID } from '../data-access/simulators-client';
+import { Scenario } from '../model/scenario';
+import { consultantProfile, crmContact } from './result-checks';
+
+export const successScenario: Scenario = {
+  key: 'ok',
+  title: '1. Success',
+  description: 'A candidate applies with a CV, then the application moves to Qualified.',
+  expectation:
+    'The CRM contact is Active. After a few seconds the profile is Enriched, with skills and seniority from the CV.',
+  async run(simulators, candidateId, step) {
+    const { jobApplicationId } = await step('Apply with a CV (candidate.create, job_application.create)', () =>
+      simulators.apply(SEEDED_JOB_ID, candidateId, candidate),
+    );
+    await step('Move the application to Qualified (job_application.update)', () =>
+      simulators.changeStage(jobApplicationId, 'Qualified'),
+    );
+  },
+  checks: [crmContact, consultantProfile],
+};
+
+// Fictional. The email and phone in the CV are there on purpose: the enrichment adapter must mask them before the
+// LLM call.
+const candidate: NewCandidate = {
+  firstName: 'Adam',
+  lastName: 'Testowy',
+  email: 'adam.testowy@example.com',
+  phone: '+48 500 200 300',
+  resumeText: `ADAM TESTOWY
 Senior Backend Engineer / Tech Lead
 Warsaw, Poland | adam.testowy@example.com | +48 500 200 300
 
@@ -33,4 +60,5 @@ CERTIFICATIONS
 Azure Solutions Architect Expert (AZ-305), Azure Developer Associate (AZ-204).
 
 LANGUAGES
-Polish (native), English (C1), German (A2).`;
+Polish (native), English (C1), German (A2).`,
+};

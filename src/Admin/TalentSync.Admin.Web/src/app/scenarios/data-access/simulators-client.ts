@@ -1,7 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
-import { APP_CONFIG } from '../config';
+import { RUNTIME_CONFIG } from '../../core/runtime-config/runtime-config';
+
+/** A job the ATS simulator seeds on start (simulators/FakeTeamtailor). */
+export const SEEDED_JOB_ID = 'job-1';
 
 export interface NewCandidate {
   firstName: string;
@@ -29,9 +32,9 @@ interface StateChange {
 
 /** Drives the three simulators. Responses stay untyped except the ids a later step needs and webhook delivery. */
 @Injectable({ providedIn: 'root' })
-export class Simulators {
+export class SimulatorsClient {
   private readonly http = inject(HttpClient);
-  private readonly config = inject(APP_CONFIG);
+  private readonly config = inject(RUNTIME_CONFIG);
 
   apply(jobId: string, candidateId: string, candidate: NewCandidate): Promise<{ jobApplicationId: string }> {
     return this.change(

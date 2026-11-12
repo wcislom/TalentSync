@@ -5,8 +5,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Check, Scenario } from './scenario';
-import { Simulators } from './simulators';
+import { SimulatorsClient } from '../data-access/simulators-client';
+import { ResultCheck } from '../model/result-check';
+import { Scenario } from '../model/scenario';
 
 interface StepEntry {
   label: string;
@@ -23,13 +24,13 @@ interface StepEntry {
 export class ScenarioCard {
   readonly scenario = input.required<Scenario>();
 
-  private readonly simulators = inject(Simulators);
+  private readonly simulators = inject(SimulatorsClient);
 
   protected readonly candidateId = signal<string | undefined>(undefined);
   protected readonly steps = signal<StepEntry[]>([]);
   protected readonly running = signal(false);
 
-  private readonly check = signal<{ check: Check; url: string } | undefined>(undefined);
+  private readonly check = signal<{ check: ResultCheck; url: string } | undefined>(undefined);
   protected readonly checkLabel = computed(() => this.check()?.check.label);
   protected readonly checkResponse = httpResource<unknown>(() => this.check()?.url);
   protected readonly checkResult = computed(() => {
@@ -59,7 +60,7 @@ export class ScenarioCard {
     }
   }
 
-  runCheck(check: Check): void {
+  runCheck(check: ResultCheck): void {
     const candidateId = this.candidateId();
     if (!candidateId) {
       return;

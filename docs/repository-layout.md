@@ -54,9 +54,15 @@ src/
                                             (liveness for an orchestrator, no dependency checks)
   Admin/
     TalentSync.Admin.Web                    Angular app (ADR 012), npm package talentsync-admin-web, Node pinned in .nvmrc.
-                                            src/app/scenarios: Scenarios page, drives the simulators from the browser
-                                            (Simulators client, one ScenarioCard per scenario). public/config.json:
-                                            simulator and traces addresses, read and checked at runtime. References nothing in src/ (HTTP only)
+                                            References nothing in src/ (HTTP only). Under src/app, by feature, one folder
+                                            per component:
+                                            core/runtime-config: RuntimeConfig + loader of public/config.json
+                                            (simulator and traces addresses, read and checked before bootstrap; not
+                                            app.config.ts, which holds Angular's providers)
+                                            scenarios/: scenarios-page/, scenario-card/, data-access/simulators-client.ts
+                                            (HTTP to the simulators), model/ (scenario.ts: Scenario + Step;
+                                            result-check.ts), catalog/ (one *.scenario.ts per scenario with its
+                                            candidate, result-checks.ts, scenario-catalog.ts with the page order)
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
   FakeTeamtailor                            No references to src/. CORS for the Admin app origin (Cors:AllowedOrigins).
   FakeCrm

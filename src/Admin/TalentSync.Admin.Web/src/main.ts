@@ -1,10 +1,10 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { App } from './app/app';
 import { appConfig } from './app/app.config';
-import { loadAppConfig } from './app/config';
+import { loadRuntimeConfig } from './app/core/runtime-config/load-runtime-config';
 
-loadAppConfig()
-  .then((config) => bootstrapApplication(App, appConfig(config)))
+loadRuntimeConfig()
+  .then((runtimeConfig) => bootstrapApplication(App, appConfig(runtimeConfig)))
   .catch((error: unknown) => {
     console.error(error);
     // Angular never started, so nothing else would tell the user why the page is empty.

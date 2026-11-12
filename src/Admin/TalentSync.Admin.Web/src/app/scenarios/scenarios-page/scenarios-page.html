@@ -1,0 +1,10 @@
+<h1>Scenarios</h1>
+<p>
+  Each run uses a new candidate id. A webhook a step triggers is one trace in the
+  <a [href]="tracesUrl" target="_blank" rel="noopener">Aspire Dashboard</a>.
+</p>
+<div class="grid">
+  @for (scenario of scenarios; track scenario.key) {
+    <app-scenario-card [scenario]="scenario" />
+  }
+</div>
