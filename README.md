@@ -141,6 +141,20 @@ helm uninstall talentsync --kube-context kind-talentsync   # remove the hosts, k
 kind delete cluster --name talentsync                      # remove the cluster
 ```
 
+### After a Docker restart
+
+The Event Hubs emulator loses its events on restart, but the checkpoints in Azurite survive. A checkpoint then points
+past the end of the new log, and the workers log `The supplied offset '…' is invalid` and read nothing from that
+partition, in both modes. Reset both containers and restart the workers:
+
+```bash
+docker compose -f deploy/infra/docker-compose.yml up -d --force-recreate -V azurite eventhubs
+kubectl --context kind-talentsync rollout restart deployment/sync-worker deployment/matching-worker   # in kind
+```
+
+With `dotnet run`, restart the two worker hosts instead. Events published before the reset are gone; start
+`docs/e2e.http` again with a new `@run`.
+
 ## Simplifications
 
 - Teamtailor, the CRM and the Matching Platform are **in-memory simulators** (`simulators/`) that can be broken
