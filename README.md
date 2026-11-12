@@ -111,11 +111,11 @@ dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/Ta
 dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
 ```
 
-To click through the whole flow by hand (success, CRM outage, candidate without a CV), run `deploy/local/run.sh`
-(Git Bash). It starts the containers, builds, applies the EF migrations and starts the three hosts (on Windows each
-in its own Windows Terminal tab). Then use
-[`docs/e2e.http`](docs/e2e.http). Traces, metrics and logs of the three hosts are in the Aspire Dashboard at
-[http://localhost:18888](http://localhost:18888) (ADR 010).
+To click through the whole flow by hand (success, CRM outage, candidate without a CV, poison event), run
+`deploy/local/run.sh` (Git Bash, Node 22.22.3+, 24.15+ or 26). It starts the containers, builds, applies the EF
+migrations and starts the three hosts and the Admin app (on Windows each in its own Windows Terminal tab). Then open
+the Scenarios page of the Admin app at [http://localhost:4200](http://localhost:4200) (ADR 012). Traces, metrics and
+logs of the three hosts are in the Aspire Dashboard at [http://localhost:18888](http://localhost:18888) (ADR 010).
 
 ### In a local Kubernetes cluster
 
@@ -133,8 +133,8 @@ deploy/kubernetes/deploy.sh
 Extra arguments go to Helm, e.g. `deploy/kubernetes/deploy.sh --set llm.provider=Anthropic` (needs
 `ANTHROPIC_API_KEY` in `deploy/infra/.env`; every real call is billed).
 
-Ingress.Api listens on host port 5065 in both modes, so stop the `dotnet run` hosts first. [`docs/e2e.http`](docs/e2e.http)
-and the Aspire Dashboard work the same way. To clean up:
+Ingress.Api listens on host port 5065 in both modes, so stop the `dotnet run` hosts first. The Admin app (`npm start`
+in `src/Admin/TalentSync.Admin.Web`) and the Aspire Dashboard work the same way. To clean up:
 
 ```bash
 helm uninstall talentsync --kube-context kind-talentsync   # remove the hosts, keep the cluster
@@ -152,8 +152,8 @@ docker compose -f deploy/infra/docker-compose.yml up -d --force-recreate -V azur
 kubectl --context kind-talentsync rollout restart deployment/sync-worker deployment/matching-worker   # in kind
 ```
 
-With `dotnet run`, restart the two worker hosts instead. Events published before the reset are gone; start
-`docs/e2e.http` again with a new `@run`.
+With `dotnet run`, restart the two worker hosts instead. Events published before the reset are gone; run
+the scenarios again (each run uses a new candidate id).
 
 ## Simplifications
 

@@ -49,7 +49,7 @@ if command -v wt.exe >/dev/null 2>&1; then
   done
   MSYS_NO_PATHCONV=1 wt.exe -w talentsync new-tab --title Admin.Web -d "$(cygpath -w "$root/$admin")" cmd /k npm start
   echo "Started Admin.Web"
-  echo "Admin app: http://localhost:4200. Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888"
+  echo "Scenarios: http://localhost:4200. Traces and logs: http://localhost:18888"
 else
   trap 'kill $(jobs -p) 2>/dev/null' INT TERM EXIT
   for i in "${!titles[@]}"; do
@@ -58,6 +58,6 @@ else
   done
   (cd "$admin" && npm start) 2>&1 | sed -u "s/^/[Admin.Web] /" &
   echo "Started Admin.Web"
-  echo "Admin app: http://localhost:4200. Click through the flow with docs/e2e.http. Traces and logs: http://localhost:18888. Ctrl+C stops everything."
+  echo "Scenarios: http://localhost:4200. Traces and logs: http://localhost:18888. Ctrl+C stops everything."
   wait
 fi

@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.expectation {
+  margin-top: 12px;
+}
+
+.steps {
+  padding-left: 0;
+  list-style: none;
+
+  // Two columns: a fixed one for the icon, so it never shrinks, and the text, with the error below the label.
+  li {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    column-gap: 8px;
+    row-gap: 4px;
+    margin: 8px 0;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+  }
+
+  .label {
+    align-self: center;
+  }
+
+  .error {
+    grid-column: 2;
+  }
+}
+
+.done {
+  color: var(--mat-sys-primary);
+}
+
+.failed {
+  color: var(--mat-sys-error);
+}
+
+.error {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  overflow-wrap: anywhere;
+}
+
+mat-card-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+pre {
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px;
+  background: var(--mat-sys-surface-container);
+  border-radius: 4px;
+  font-size: 12px;
+}

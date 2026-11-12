@@ -38,6 +38,32 @@ jobs:
       - name: Check formatting
         run: dotnet format --verify-no-changes --no-restore
 
+  # No tests yet: the Scenarios page has none on purpose (ADR 012); the parking lot tests come with that page.
+  admin-web:
+    name: Admin app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/Admin/TalentSync.Admin.Web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: src/Admin/TalentSync.Admin.Web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/Admin/TalentSync.Admin.Web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
   # Builds again instead of passing bin/ between jobs: a restore and build take under a minute, artifacts of
   # every project's output would be slower and fragile.
   test:

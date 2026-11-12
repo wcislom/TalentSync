@@ -52,8 +52,13 @@ src/
     TalentSync.Matching.Worker              host: job_application.* handler (use case result → HandlerResult),
                                             composition root, group "matching-worker". Web host: only /health/live
                                             (liveness for an orchestrator, no dependency checks)
+  Admin/
+    TalentSync.Admin.Web                    Angular app (ADR 012), npm package talentsync-admin-web, Node pinned in .nvmrc.
+                                            src/app/scenarios: Scenarios page, drives the simulators from the browser
+                                            (Simulators client, one ScenarioCard per scenario). public/config.json:
+                                            simulator addresses, read at runtime. References nothing in src/ (HTTP only)
 simulators/                                 fake external systems, NOT part of the product (see simulators/CLAUDE.md).
-  FakeTeamtailor                            No references to src/.
+  FakeTeamtailor                            No references to src/. CORS for the Admin app origin (Cors:AllowedOrigins).
   FakeCrm
   FakeMatchingPlatform
 tests/
@@ -78,7 +83,8 @@ deploy/
   infra/                                    what runs next to the hosts, shared by local/ and kubernetes/:
                                             docker-compose.yml (SQL Server, Event Hubs emulator, Azurite, simulators,
                                             Aspire Dashboard), eventhubs/Config.json, .env.example (.env is gitignored)
-  local/                                    run.sh: the hosts with `dotnet run` (containers, build, migrations, three tabs)
+  local/                                    run.sh: the hosts with `dotnet run` and the Admin app with `npm start`
+                                            (containers, build, npm ci when the lock file changed, migrations, four tabs)
   kubernetes/                               the hosts in a cluster (ADR 011): kind/cluster.yaml (pinned node image,
                                             host port 5065 → NodePort 30065 of Ingress.Api),
                                             helm/talentsync (one chart for all hosts; values-local.yaml for kind;
@@ -91,12 +97,14 @@ deploy/
                                             simulator.Dockerfile, migrations.Dockerfile + migrations-entrypoint.sh
                                             (idempotent EF scripts applied with sqlcmd by the Helm hook Job)
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
-                                            adr/ (index: adr/README.md), e2e.http (end-to-end demo by hand),
+                                            adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
-.github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary)
+.github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary);
+                                            Admin app job (npm ci, build)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
+                                            (skips bin, obj, node_modules)
 .gitattributes                              *.sh keeps LF line endings (Git Bash on Windows)
-.dockerignore                               build context for simulator images (repo root)
+.dockerignore                               build context for images (repo root); excludes node_modules, .angular, dist
 ```
