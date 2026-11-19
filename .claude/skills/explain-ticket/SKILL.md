@@ -32,15 +32,16 @@ If `$ARGUMENTS` is not a single issue number, say so and stop.
 
 ## Output
 
-To the terminal, in English, about 25 lines at most, exactly these sections:
+To the terminal, in English, exactly these sections. Length follows the size: about 20 lines for S, more for L or XL
+when the content needs it. Completeness beats brevity, but every line must carry a fact, not padding.
 
 ```
 Summary:   1–2 sentences: what the issue asks for, in the repo's glossary terms
 Size:      S/M/L/XL – one sentence why
 Rules:     IDs only (e.g. D2, invariant 15, ADR 007). A conflict with a normative doc goes first, marked CONFLICT
-Where:     at most 5 paths, most important first
+Where:     every path the change must touch (code, config, simulators, docs), most important first
 Scenarios: affected scenario IDs, plus one Given/When/Then sketch marked DRAFT
-Risks:     at most 3 bullets, open questions included
+Risks:     one bullet per risk, open questions included
 ```
 
 - Cite IDs; never copy text from the docs.
