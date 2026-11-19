@@ -108,6 +108,7 @@ docs/                                       domain.md, architecture.md, reposito
 .github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary);
                                             Admin app job (npm ci, build)
 .claude/rules/                              topic rules, some load only for matching paths
+.claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue)
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
