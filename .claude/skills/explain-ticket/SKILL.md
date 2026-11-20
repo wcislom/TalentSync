@@ -32,18 +32,22 @@ If `$ARGUMENTS` is not a single issue number, say so and stop.
 
 ## Output
 
-To the terminal, in English, exactly these sections. No length limit: completeness beats brevity, but every line must
-carry a fact, not padding.
+To the terminal, exactly these sections. Write in the conversation's language (the session setting or the language
+the user writes in); English when neither sets one. Section names, IDs, paths and code identifiers stay as they are.
+No length limit: completeness beats brevity, but every line must carry a fact, not padding.
 
 ```
 Summary:   1–2 sentences: what the issue asks for, in the repo's glossary terms
 Size:      S/M/L/XL – one sentence why
 Rules:     A conflict with a normative doc first, marked CONFLICT. Then only the ADRs, domain rules and .claude/rules
            files the change must follow or would change, as IDs or file names, no descriptions (e.g. D2, ADR 007,
-           llm.md). "none" when the change only has to follow the always-loaded invariants
-Where:     every path the change must touch (code, config, simulators, docs), most important first
-Scenarios: affected scenario IDs, plus one Given/When/Then sketch marked DRAFT
-Risks:     one bullet per risk, at most 2 lines each, open questions included
+           llm.md). Cite an invariant only when the issue's subject is that invariant's subject (e.g. masking PII:
+           14, 15). "none" when nothing else applies
+Where:     only paths the change modifies or adds (code, config, simulators, docs), most important first
+Scenarios: affected scenario IDs. A Given/When/Then sketch marked DRAFT only when the change needs a new acceptance
+           scenario; otherwise "none: unit tests in <project>"
+Checked:   what you verified is not affected, one line each: only what the issue raises or a reader would suspect
+Risks:     one bullet per risk, at most 2 lines each, open questions included. A verified non-issue goes under Checked
 ```
 
 - Cite IDs; never copy text from the docs.
