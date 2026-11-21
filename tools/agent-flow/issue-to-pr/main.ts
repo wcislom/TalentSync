@@ -7,8 +7,10 @@ import { hashIssueBody } from './body-sha.ts';
 import { flowLog } from './flow-log.ts';
 import { acquireLock, readLockState, releaseLock } from './lock.ts';
 import { decideNextStep, NextStepKind } from './next-step.ts';
+import type { FlowState } from './next-step.ts';
 import { latestTrustedPlan } from './plan-marker.ts';
 import { steps } from './steps.ts';
+import type { StepName } from './steps.ts';
 
 function parseIssueNumber(args: string[]): number {
   if (args.length !== 1 || !/^[1-9][0-9]*$/.test(args[0])) {
@@ -22,55 +24,66 @@ function failProcess(): void {
   process.exitCode = 1;
 }
 
-async function main(): Promise<void> {
-  const issueNumber = parseIssueNumber(process.argv.slice(2));
+async function readFlowState(issueNumber: number): Promise<FlowState> {
   const [issue, issueComments, timelineEvents, pullRequestNumber] = await Promise.all([
     getIssue(issueNumber),
     getIssueComments(issueNumber),
     getIssueTimeline(issueNumber),
     findPullRequestFrom(getAgentBranch(issueNumber)),
   ]);
-
-  const nextStep = decideNextStep({
+  return {
     lockState: readLockState(issue.labels, timelineEvents, config.labels.agentRunning),
     bodySha: hashIssueBody(issue.body),
     plannedBodySha: latestTrustedPlan(issueComments, config.trustedAuthors)?.plannedBodySha ?? null,
     planApproved: issue.labels.includes(config.labels.planApproved),
     pullRequestNumber,
-  }, new Date(), config.lockStaleAfterMinutes);
+  };
+}
 
+async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: RunBudget): Promise<void> {
+  // Steps of one run share a session, so each sees what the previous one produced.
+  let session: Session | undefined;
+  for (const stepName of stepNames) {
+    const step = steps[stepName];
+    if (step.stub) {
+      flowLog.stepStubbed(stepName, step.skill, issueNumber);
+      continue;
+    }
+    if (runBudget.isSpent()) throw new Error(`budget spent before step ${stepName}`);
+    flowLog.stepStarted(stepName, step.skill, issueNumber);
+    const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.remaining(), session);
+    runBudget.record(skillRun);
+    session = skillRun.session;
+    flowLog.stepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.remaining());
+    if (!skillRun.succeeded) throw new Error(`step ${stepName} stopped: ${skillRun.outcome}`);
+  }
+}
+
+// Never throws, so it cannot hide the error of the step before it.
+async function tryReleaseLock(issueNumber: number): Promise<void> {
+  try {
+    await releaseLock(issueNumber, config.labels.agentRunning);
+    flowLog.lockReleased(issueNumber);
+  } catch (error) {
+    flowLog.lockReleaseFailed(issueNumber, error);
+    failProcess();
+  }
+}
+
+async function main(): Promise<void> {
+  const issueNumber = parseIssueNumber(process.argv.slice(2));
+  const currentStep = await readFlowState(issueNumber);
+  const nextStep = decideNextStep(currentStep, new Date(), config.lockStaleAfterMinutes);
   flowLog.nextStep(issueNumber, nextStep);
   if (nextStep.kind === NextStepKind.Stop) return;
 
   await acquireLock(issueNumber, config.labels.agentRunning, nextStep.replaceStaleLock);
   flowLog.lockTaken(issueNumber, nextStep.replaceStaleLock);
   const runBudget = new RunBudget(config.budget);
-  // Steps of one run share a session, so each sees what the previous one produced.
-  let session: Session | undefined;
   try {
-    for (const stepName of nextStep.steps) {
-      const step = steps[stepName];
-      if (step.stub) {
-        flowLog.stepStubbed(stepName, step.skill, issueNumber);
-        continue;
-      }
-      if (runBudget.isSpent()) throw new Error(`budget spent before step ${stepName}`);
-      flowLog.stepStarted(stepName, step.skill, issueNumber);
-      const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.remaining(), session);
-      runBudget.record(skillRun);
-      session = skillRun.session;
-      flowLog.stepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.remaining());
-      if (!skillRun.succeeded) throw new Error(`step ${stepName} stopped: ${skillRun.outcome}`);
-    }
+    await runSteps(issueNumber, nextStep.steps, runBudget);
   } finally {
-    try {
-      await releaseLock(issueNumber, config.labels.agentRunning);
-      flowLog.lockReleased(issueNumber);
-    } catch (error) {
-      // Not rethrown, so it cannot hide the step's own error.
-      flowLog.lockReleaseFailed(issueNumber, error);
-      failProcess();
-    }
+    await tryReleaseLock(issueNumber);
     flowLog.runFinished(issueNumber, runBudget);
   }
 }
