@@ -109,7 +109,9 @@ docs/                                       domain.md, architecture.md, reposito
                                             Admin app job (npm ci, build). The "Protect main" ruleset requires the
                                             Build, Test and Admin app checks by job name: renaming a job blocks every merge
 .claude/rules/                              topic rules, some load only for matching paths
-.claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue)
+.claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
+                                            review-pr (read-only review of a PR against the repo's rules; prints a
+                                            summary and JSON findings anchored to diff lines, posts nothing)
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
