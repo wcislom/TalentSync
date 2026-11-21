@@ -102,6 +102,17 @@ deploy/
   images/                                   how images are built: host.Dockerfile (one image per host),
                                             simulator.Dockerfile, migrations.Dockerfile + migrations-entrypoint.sh
                                             (idempotent EF scripts applied with sqlcmd by the Helm hook Job)
+tools/
+  agent-flow/                               automations that run Claude Code skills through the Agent SDK (epic #48).
+                                            One package.json, TypeScript run natively by Node (no build step, no tsc),
+                                            tests with node:test (`npm --prefix tools/agent-flow test`).
+                                            Not part of the product, references nothing in src/
+    shared/                                 github-client.ts (every gh call, argument arrays, JSON), run-skill.ts (one skill
+                                            per SDK session, project settings only, turn and cost budget),
+                                            config.ts (labels, stale lock minutes, trusted authors, budget)
+    issue-to-pr/                            orchestrator: main.ts (read GitHub state → decide → lock → steps →
+                                            release), decide.ts (pure decision table), body-sha.ts, plan-marker.ts,
+                                            lock.ts (label agent:running, age from the issue timeline), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
