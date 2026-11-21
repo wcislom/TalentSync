@@ -1,6 +1,7 @@
 import { config, getAgentBranch } from '../shared/config.ts';
 import type { Budget } from '../shared/config.ts';
 import { format, logger } from '../shared/logger.ts';
+import type { RunBudget } from '../shared/run-budget.ts';
 import type { SkillRun } from '../shared/skill-runner.ts';
 import { NextStepKind, RunReason, StopReason } from './next-step.ts';
 import type { NextStep } from './next-step.ts';
@@ -63,8 +64,8 @@ export const flowLog = {
     logger.error(`issue #${issueNumber}: failed to release the lock (${config.labels.agentRunning}), `
       + `it goes stale after ${config.lockStaleAfterMinutes} min: ${format.errorMessage(cause)}`);
   },
-  runFinished(issueNumber: number, totalTurns: number, totalCostUsd: number): void {
-    logger.info(`issue #${issueNumber}: total ${totalTurns} turns, ${format.usd(totalCostUsd)}`);
+  runFinished(issueNumber: number, runBudget: RunBudget): void {
+    logger.info(`issue #${issueNumber}: total ${runBudget.turns} turns, ${format.usd(runBudget.costUsd)}`);
   },
   failed(cause: unknown): void {
     logger.error(`issue-to-pr failed: ${format.errorMessage(cause)}`);

@@ -111,6 +111,7 @@ tools/
                                             skill in a new or resumed SDK session, project settings only, turn and cost budget),
                                             logger.ts (the only place that writes to the console; groups and ::error::
                                             in GitHub Actions; formatting of cost, duration and time),
+                                            run-budget.ts (RunBudget: turns and cost spent against the run's limit),
                                             config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
                                             test/
     issue-to-pr/                            orchestrator: main.ts (read GitHub state → next step → lock → steps →

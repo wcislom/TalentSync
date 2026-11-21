@@ -1,6 +1,6 @@
 import { config, getAgentBranch } from '../shared/config.ts';
-import type { Budget } from '../shared/config.ts';
 import { findPullRequestFrom, getIssue, getIssueComments, getIssueTimeline } from '../shared/github-client.ts';
+import { RunBudget } from '../shared/run-budget.ts';
 import { runSkill } from '../shared/skill-runner.ts';
 import type { Session } from '../shared/skill-runner.ts';
 import { hashIssueBody } from './body-sha.ts';
@@ -17,11 +17,9 @@ function parseIssueNumber(args: string[]): number {
   return Number(args[0]);
 }
 
-function budgetLeft(totalTurns: number, totalCostUsd: number): Budget {
-  return {
-    maxTurns: config.budget.maxTurns - totalTurns,
-    maxBudgetUsd: config.budget.maxBudgetUsd - totalCostUsd,
-  };
+// Sets the exit code instead of calling process.exit(), so the lock release and pending log output still finish.
+function failProcess(): void {
+  process.exitCode = 1;
 }
 
 async function main(): Promise<void> {
@@ -46,8 +44,7 @@ async function main(): Promise<void> {
 
   await acquireLock(issueNumber, config.labels.agentRunning, nextStep.replaceStaleLock);
   flowLog.lockTaken(issueNumber, nextStep.replaceStaleLock);
-  let totalTurns = 0;
-  let totalCostUsd = 0;
+  const runBudget = new RunBudget(config.budget);
   // Steps of one run share a session, so each sees what the previous one produced.
   let session: Session | undefined;
   try {
@@ -57,16 +54,12 @@ async function main(): Promise<void> {
         flowLog.stepStubbed(stepName, step.skill, issueNumber);
         continue;
       }
-      const remainingBudget = budgetLeft(totalTurns, totalCostUsd);
-      if (remainingBudget.maxTurns <= 0 || remainingBudget.maxBudgetUsd <= 0) {
-        throw new Error(`budget spent before step ${stepName}`);
-      }
+      if (runBudget.isSpent()) throw new Error(`budget spent before step ${stepName}`);
       flowLog.stepStarted(stepName, step.skill, issueNumber);
-      const skillRun = await runSkill(step.skill, String(issueNumber), remainingBudget, session);
-      totalTurns += skillRun.turns;
-      totalCostUsd += skillRun.stepCostUsd;
+      const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.remaining(), session);
+      runBudget.record(skillRun);
       session = skillRun.session;
-      flowLog.stepFinished(stepName, step.skill, issueNumber, skillRun, budgetLeft(totalTurns, totalCostUsd));
+      flowLog.stepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.remaining());
       if (!skillRun.succeeded) throw new Error(`step ${stepName} stopped: ${skillRun.outcome}`);
     }
   } finally {
@@ -76,13 +69,13 @@ async function main(): Promise<void> {
     } catch (error) {
       // Not rethrown, so it cannot hide the step's own error.
       flowLog.lockReleaseFailed(issueNumber, error);
-      process.exitCode = 1;
+      failProcess();
     }
-    flowLog.runFinished(issueNumber, totalTurns, totalCostUsd);
+    flowLog.runFinished(issueNumber, runBudget);
   }
 }
 
 main().catch((error: unknown) => {
   flowLog.failed(error);
-  process.exitCode = 1;
+  failProcess();
 });
