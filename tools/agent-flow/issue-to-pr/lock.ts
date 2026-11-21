@@ -5,26 +5,26 @@ import { addLabel, removeLabel } from '../shared/github-client.ts';
 // separate requests, so two runs that start together can both see no label and both proceed.
 // Correctness comes from idempotent effects (one plan comment edited in place, no force push, an existing PR = done).
 
-export type LockState = { held: boolean; labeledAt: Date | null };
+export type LockState = { held: boolean; heldSince: Date | null };
 
-export function lockState(labels: string[], timeline: TimelineEvent[], lockLabel: string): LockState {
+export function readLockState(labels: string[], timelineEvents: TimelineEvent[], lockLabel: string): LockState {
   const held = labels.includes(lockLabel);
-  return { held, labeledAt: held ? lastLabeledAt(timeline, lockLabel) : null };
+  return { held, heldSince: held ? lastLabeledAt(timelineEvents, lockLabel) : null };
 }
 
-export function lastLabeledAt(timeline: TimelineEvent[], label: string): Date | null {
+function lastLabeledAt(timelineEvents: TimelineEvent[], label: string): Date | null {
   let latest: Date | null = null;
-  for (const event of timeline) {
+  for (const event of timelineEvents) {
     if (event.event !== 'labeled' || event.labelName !== label) continue;
-    const at = new Date(event.createdAt);
-    if (latest === null || at > latest) latest = at;
+    const labeledAt = new Date(event.createdAt);
+    if (latest === null || labeledAt > latest) latest = labeledAt;
   }
   return latest;
 }
 
 // A stale label is removed first so that adding it again writes a new `labeled` event and resets its age.
-export async function acquireLock(issueNumber: number, lockLabel: string, staleLabelPresent: boolean): Promise<void> {
-  if (staleLabelPresent) await removeLabel(issueNumber, lockLabel);
+export async function acquireLock(issueNumber: number, lockLabel: string, replaceStaleLock: boolean): Promise<void> {
+  if (replaceStaleLock) await removeLabel(issueNumber, lockLabel);
   await addLabel(issueNumber, lockLabel);
 }
 

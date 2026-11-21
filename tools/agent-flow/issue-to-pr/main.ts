@@ -1,19 +1,14 @@
-import { config } from '../shared/config.ts';
-import { getIssue, getIssueComments, getIssueTimeline, pullRequestExists } from '../shared/github-client.ts';
-import { runSkill } from '../shared/run-skill.ts';
-import type { Session } from '../shared/run-skill.ts';
-import { bodySha } from './body-sha.ts';
-import { decide } from './decide.ts';
-import type { StepName } from './decide.ts';
-import { acquireLock, lockState, releaseLock } from './lock.ts';
-import { findPlanBodySha } from './plan-marker.ts';
-
-// A step whose skill does not exist yet only logs what it would run. #44 and #42 flip their entry.
-const steps: Record<StepName, { skill: string; implemented: boolean }> = {
-  explain: { skill: 'explain-ticket', implemented: true },
-  plan: { skill: 'plan-ticket', implemented: false },
-  implement: { skill: 'implement-ticket', implemented: false },
-};
+import { config, getAgentBranch } from '../shared/config.ts';
+import type { Budget } from '../shared/config.ts';
+import { getIssue, getIssueComments, getIssueTimeline, hasPullRequestFrom } from '../shared/github-client.ts';
+import { logger } from '../shared/logger.ts';
+import { runSkill } from '../shared/skill-runner.ts';
+import type { Session } from '../shared/skill-runner.ts';
+import { hashIssueBody } from './body-sha.ts';
+import { acquireLock, readLockState, releaseLock } from './lock.ts';
+import { decideNextStep } from './next-step.ts';
+import { latestTrustedPlan } from './plan-marker.ts';
+import { steps } from './steps.ts';
 
 function parseIssueNumber(args: string[]): number {
   if (args.length !== 1 || !/^[1-9][0-9]*$/.test(args[0])) {
@@ -24,60 +19,65 @@ function parseIssueNumber(args: string[]): number {
 
 async function main(): Promise<void> {
   const issueNumber = parseIssueNumber(process.argv.slice(2));
-  const [issue, comments, timeline, prExists] = await Promise.all([
+  const [issue, issueComments, timelineEvents, pullRequestExists] = await Promise.all([
     getIssue(issueNumber),
     getIssueComments(issueNumber),
     getIssueTimeline(issueNumber),
-    pullRequestExists(`${config.agentBranchPrefix}${issueNumber}`),
+    hasPullRequestFrom(getAgentBranch(issueNumber)),
   ]);
 
-  const decision = decide({
-    lock: lockState(issue.labels, timeline, config.labels.lock),
-    bodySha: bodySha(issue.body),
-    planBodySha: findPlanBodySha(comments, config.trustedAuthors),
+  const nextStep = decideNextStep({
+    lockState: readLockState(issue.labels, timelineEvents, config.labels.agentRunning),
+    bodySha: hashIssueBody(issue.body),
+    plannedBodySha: latestTrustedPlan(issueComments, config.trustedAuthors)?.plannedBodySha ?? null,
     planApproved: issue.labels.includes(config.labels.planApproved),
-    pullRequestExists: prExists,
+    pullRequestExists,
   }, new Date(), config.lockStaleAfterMinutes);
 
-  if (decision.kind === 'stop') {
-    console.log(`issue #${issueNumber}: stop, ${decision.reason}`);
+  if (nextStep.kind === 'stop') {
+    logger.stopped(issueNumber, nextStep.reason);
     return;
   }
 
-  console.log(`issue #${issueNumber}: run ${decision.steps.join(', ')}`);
-  await acquireLock(issueNumber, config.labels.lock, decision.staleLockPresent);
-  let turns = 0;
-  let costUsd = 0;
+  logger.stepsPlanned(issueNumber, nextStep.steps);
+  await acquireLock(issueNumber, config.labels.agentRunning, nextStep.replaceStaleLock);
+  let totalTurns = 0;
+  let totalCostUsd = 0;
   // Steps of one run share a session, so each sees what the previous one produced.
   let session: Session | undefined;
   try {
-    for (const name of decision.steps) {
-      const { skill, implemented } = steps[name];
-      if (!implemented) {
-        console.log(`[${name}] would run /${skill} ${issueNumber}`);
+    for (const stepName of nextStep.steps) {
+      const step = steps[stepName];
+      if (step.stub) {
+        logger.stepStubbed(stepName, step.skill, issueNumber);
         continue;
       }
-      const remaining = { maxTurns: config.budget.maxTurns - turns, maxBudgetUsd: config.budget.maxBudgetUsd - costUsd };
-      if (remaining.maxTurns <= 0 || remaining.maxBudgetUsd <= 0) throw new Error(`budget spent before step ${name}`);
-      console.log(`[${name}] running /${skill} ${issueNumber}`);
-      const run = await runSkill(skill, String(issueNumber), remaining, session);
-      turns += run.turns;
-      costUsd += run.costUsd;
-      session = run.session;
+      const remainingBudget: Budget = {
+        maxTurns: config.budget.maxTurns - totalTurns,
+        maxBudgetUsd: config.budget.maxBudgetUsd - totalCostUsd,
+      };
+      if (remainingBudget.maxTurns <= 0 || remainingBudget.maxBudgetUsd <= 0) {
+        throw new Error(`budget spent before step ${stepName}`);
+      }
+      logger.stepStarted(stepName, step.skill, issueNumber);
+      const skillRun = await runSkill(step.skill, String(issueNumber), remainingBudget, session);
+      totalTurns += skillRun.turns;
+      totalCostUsd += skillRun.stepCostUsd;
+      session = skillRun.session;
     }
   } finally {
-    console.log(`issue #${issueNumber}: ${turns} turns, $${costUsd.toFixed(4)} in total`);
+    logger.runFinished(issueNumber, totalTurns, totalCostUsd);
     try {
-      await releaseLock(issueNumber, config.labels.lock);
+      await releaseLock(issueNumber, config.labels.agentRunning);
     } catch (error) {
       // Not rethrown, so it cannot hide the step's own error; the label goes stale after lockStaleAfterMinutes.
-      console.error(`issue #${issueNumber}: failed to release the lock: ${(error as Error).message}`);
+      logger.lockReleaseFailed(issueNumber, error);
       process.exitCode = 1;
     }
   }
 }
 
 main().catch((error: unknown) => {
-  console.error(`issue-to-pr failed: ${error instanceof Error ? error.message : String(error)}`);
+  logger.failed(error);
   process.exitCode = 1;
 });

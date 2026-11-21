@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findPlanBodySha, formatPlanMarker, parsePlanMarker } from '../plan-marker.ts';
+import { formatPlanMarker, latestTrustedPlan, parsePlanMarker } from '../plan-marker.ts';
 
 const sha = 'a'.repeat(64);
 const otherSha = 'b'.repeat(64);
 
 test('a formatted marker parses back to its hash', () => {
-  assert.equal(parsePlanMarker(`${formatPlanMarker(sha)}\n\nPlan text`), sha);
+  assert.deepEqual(parsePlanMarker(`${formatPlanMarker(sha)}\n\nPlan text`), { plannedBodySha: sha });
 });
 
 test('a marker that does not start the comment is ignored', () => {
@@ -19,7 +19,7 @@ test('a marker with a malformed hash is ignored', () => {
 
 test('plan comments from untrusted authors are ignored', () => {
   const comments = [{ authorLogin: 'someone-else', body: formatPlanMarker(sha) }];
-  assert.equal(findPlanBodySha(comments, ['owner']), null);
+  assert.equal(latestTrustedPlan(comments, ['owner']), null);
 });
 
 test('the last plan comment from a trusted author wins', () => {
@@ -29,5 +29,5 @@ test('the last plan comment from a trusted author wins', () => {
     { authorLogin: 'owner', body: formatPlanMarker(otherSha) },
     { authorLogin: 'someone-else', body: formatPlanMarker(sha) },
   ];
-  assert.equal(findPlanBodySha(comments, ['owner']), otherSha);
+  assert.deepEqual(latestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha });
 });

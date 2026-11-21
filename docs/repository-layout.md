@@ -107,11 +107,15 @@ tools/
                                             One package.json, TypeScript run natively by Node (no build step, no tsc),
                                             tests with node:test (`npm --prefix tools/agent-flow test`).
                                             Not part of the product, references nothing in src/
-    shared/                                 github-client.ts (every gh call, argument arrays, JSON), run-skill.ts (one skill
-                                            per SDK session, project settings only, turn and cost budget),
-                                            config.ts (labels, stale lock minutes, trusted authors, budget)
-    issue-to-pr/                            orchestrator: main.ts (read GitHub state → decide → lock → steps →
-                                            release), decide.ts (pure decision table), body-sha.ts, plan-marker.ts,
+    shared/                                 github-client.ts (every gh call, argument arrays, JSON), skill-runner.ts (a
+                                            skill in a new or resumed SDK session, project settings only, turn and cost budget),
+                                            logger.ts (the only place that writes to the console; ids, names and numbers
+                                            only, groups and ::error:: in GitHub Actions),
+                                            config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
+                                            test/
+    issue-to-pr/                            orchestrator: main.ts (read GitHub state → next step → lock → steps →
+                                            release), next-step.ts (pure decision table), steps.ts (step → skill,
+                                            stub or not), body-sha.ts, plan-marker.ts,
                                             lock.ts (label agent:running, age from the issue timeline), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),

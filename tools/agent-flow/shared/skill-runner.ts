@@ -2,23 +2,22 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import { config } from './config.ts';
 import type { Budget } from './config.ts';
+import { logger } from './logger.ts';
 
-// costUsd is the session's running total, which a resumed session's results carry forward.
-export type Session = { id: string; costUsd: number };
-export type SkillRun = { turns: number; costUsd: number; session: Session };
+export type Session = { id: string; totalCostUsd: number };
+export type SkillRun = { turns: number; stepCostUsd: number; session: Session };
 
-// Logs only the skill name, turns and cost: the conversation is derived from the issue body, and CI logs are public.
-// With `previous`, the skill runs in that session and sees the earlier steps' output (plan-ticket builds on
+// With `resumeFrom`, the skill runs in that session and sees the earlier steps' output (plan-ticket builds on
 // explain-ticket's) without it passing through logs, GitHub or a prompt argument.
-export async function runSkill(skill: string, argument: string, budget: Budget, previous?: Session): Promise<SkillRun> {
+export async function runSkill(skill: string, argument: string, budget: Budget, resumeFrom?: Session): Promise<SkillRun> {
   const abortController = new AbortController();
-  const session = query({
+  const sdkQuery = query({
     // A string prompt goes through slash-command dispatch (unless `verbatimPrompts`), which is how a user runs a
     // skill with `disable-model-invocation: true`; the model itself could not invoke it through the Skill tool.
     prompt: `/${skill} ${argument}`,
     options: {
       cwd: config.repoRoot,
-      resume: previous?.id,
+      resume: resumeFrom?.id,
       // Project only: the skill, CLAUDE.md and the permission rules in .claude/settings.json, the same on
       // every machine. The user's own settings and skills are not loaded.
       settingSources: ['project'],
@@ -37,7 +36,7 @@ export async function runSkill(skill: string, argument: string, budget: Budget, 
   });
 
   let resultMessage: SDKResultMessage | null = null;
-  for await (const message of session) {
+  for await (const message of sdkQuery) {
     if (message.type === 'system' && message.subtype === 'init' && !message.slash_commands.includes(skill)) {
       // Without this check an unknown command reaches the model as plain text and it improvises.
       abortController.abort();
@@ -49,18 +48,17 @@ export async function runSkill(skill: string, argument: string, budget: Budget, 
 
   // total_cost_usd of a resumed session includes the earlier calls, but only when its transcript saved their total;
   // a total below the previous one means it was not carried over and covers this call alone.
-  const sessionCostUsd = resultMessage.total_cost_usd;
-  const previousCostUsd = previous?.costUsd ?? 0;
-  const run: SkillRun = {
+  const reportedTotal = resultMessage.total_cost_usd;
+  const previousTotal = resumeFrom?.totalCostUsd ?? 0;
+  const skillRun: SkillRun = {
     turns: resultMessage.num_turns,
-    costUsd: sessionCostUsd >= previousCostUsd ? sessionCostUsd - previousCostUsd : sessionCostUsd,
-    session: { id: resultMessage.session_id, costUsd: Math.max(sessionCostUsd, previousCostUsd) },
+    stepCostUsd: reportedTotal >= previousTotal ? reportedTotal - previousTotal : reportedTotal,
+    session: { id: resultMessage.session_id, totalCostUsd: Math.max(reportedTotal, previousTotal) },
   };
-  console.log(`[${skill}] ${resultMessage.subtype}: ${run.turns} turns, $${run.costUsd.toFixed(4)}, `
-    + `${resultMessage.permission_denials.length} permission denials`);
+  logger.skillFinished(skill, resultMessage.subtype, skillRun.turns, skillRun.stepCostUsd, resultMessage.permission_denials.length);
 
   if (resultMessage.subtype !== 'success' || resultMessage.is_error) {
     throw new Error(`skill ${skill} stopped: ${resultMessage.subtype}${resultMessage.is_error ? ' (error)' : ''}`);
   }
-  return run;
+  return skillRun;
 }

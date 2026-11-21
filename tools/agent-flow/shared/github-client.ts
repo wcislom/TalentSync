@@ -35,25 +35,25 @@ async function ghApiAll<T>(endpoint: string): Promise<T[]> {
 export async function getIssue(issueNumber: number): Promise<Issue> {
   const raw = await ghJson<{ body: string | null; labels: { name: string }[] }>(
     ['issue', 'view', String(issueNumber), '--json', 'body,labels']);
-  return { body: raw.body ?? '', labels: raw.labels.map((l) => l.name) };
+  return { body: raw.body ?? '', labels: raw.labels.map((label) => label.name) };
 }
 
 export async function getIssueComments(issueNumber: number): Promise<IssueComment[]> {
   const raw = await ghApiAll<{ user: { login: string } | null; body: string | null }>(
     `repos/{owner}/{repo}/issues/${issueNumber}/comments`);
-  return raw.map((c) => ({ authorLogin: c.user?.login ?? '', body: c.body ?? '' }));
+  return raw.map((comment) => ({ authorLogin: comment.user?.login ?? '', body: comment.body ?? '' }));
 }
 
 export async function getIssueTimeline(issueNumber: number): Promise<TimelineEvent[]> {
   const raw = await ghApiAll<{ event: string; label?: { name: string }; created_at: string }>(
     `repos/{owner}/{repo}/issues/${issueNumber}/timeline`);
-  return raw.map((e) => ({ event: e.event, labelName: e.label?.name ?? null, createdAt: e.created_at }));
+  return raw.map((event) => ({ event: event.event, labelName: event.label?.name ?? null, createdAt: event.created_at }));
 }
 
-export async function pullRequestExists(headBranch: string): Promise<boolean> {
-  const prs = await ghJson<{ number: number }[]>(
-    ['pr', 'list', '--head', headBranch, '--state', 'all', '--json', 'number']);
-  return prs.length > 0;
+export async function hasPullRequestFrom(branch: string): Promise<boolean> {
+  const pullRequests = await ghJson<{ number: number }[]>(
+    ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number']);
+  return pullRequests.length > 0;
 }
 
 export async function addLabel(issueNumber: number, label: string): Promise<void> {
