@@ -1,6 +1,7 @@
 import { config } from '../shared/config.ts';
 import { getIssue, getIssueComments, getIssueTimeline, pullRequestExists } from '../shared/github-client.ts';
 import { runSkill } from '../shared/run-skill.ts';
+import type { Session } from '../shared/run-skill.ts';
 import { bodySha } from './body-sha.ts';
 import { decide } from './decide.ts';
 import type { StepName } from './decide.ts';
@@ -47,6 +48,8 @@ async function main(): Promise<void> {
   await acquireLock(issueNumber, config.labels.lock, decision.staleLockPresent);
   let turns = 0;
   let costUsd = 0;
+  // Steps of one run share a session, so each sees what the previous one produced.
+  let session: Session | undefined;
   try {
     for (const name of decision.steps) {
       const { skill, implemented } = steps[name];
@@ -57,9 +60,10 @@ async function main(): Promise<void> {
       const remaining = { maxTurns: config.budget.maxTurns - turns, maxBudgetUsd: config.budget.maxBudgetUsd - costUsd };
       if (remaining.maxTurns <= 0 || remaining.maxBudgetUsd <= 0) throw new Error(`budget spent before step ${name}`);
       console.log(`[${name}] running /${skill} ${issueNumber}`);
-      const run = await runSkill(skill, String(issueNumber), remaining);
+      const run = await runSkill(skill, String(issueNumber), remaining, session);
       turns += run.turns;
       costUsd += run.costUsd;
+      session = run.session;
     }
   } finally {
     console.log(`issue #${issueNumber}: ${turns} turns, $${costUsd.toFixed(4)} in total`);
