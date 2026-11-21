@@ -106,9 +106,11 @@ docs/                                       domain.md, architecture.md, reposito
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
 .github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary);
-                                            Admin app job (npm ci, build)
+                                            Admin app job (npm ci, build). The "Protect main" ruleset requires the
+                                            Build, Test and Admin app checks by job name: renaming a job blocks every merge
 .claude/rules/                              topic rules, some load only for matching paths
-.claude/settings.json                       permissions and hooks enforced by the harness
+.claude/settings.json                       permissions and hooks enforced by the harness; denies merging and
+                                            reviewing PRs (prefix match, so not a hard guarantee: see issue #46)
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
 .gitattributes                              *.sh keeps LF line endings (Git Bash on Windows)
