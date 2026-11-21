@@ -47,13 +47,18 @@ export async function getIssueComments(issueNumber: number): Promise<IssueCommen
 export async function getIssueTimeline(issueNumber: number): Promise<TimelineEvent[]> {
   const raw = await ghApiAll<{ event: string; label?: { name: string }; created_at: string }>(
     `repos/{owner}/{repo}/issues/${issueNumber}/timeline`);
-  return raw.map((event) => ({ event: event.event, labelName: event.label?.name ?? null, createdAt: event.created_at }));
+  return raw.map((event) => ({
+    event: event.event,
+    labelName: event.label?.name ?? null,
+    createdAt: event.created_at,
+  }));
 }
 
-export async function hasPullRequestFrom(branch: string): Promise<boolean> {
+// Any state counts, closed and merged included: the branch already produced its PR.
+export async function findPullRequestFrom(branch: string): Promise<number | null> {
   const pullRequests = await ghJson<{ number: number }[]>(
     ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number']);
-  return pullRequests.length > 0;
+  return pullRequests[0]?.number ?? null;
 }
 
 export async function addLabel(issueNumber: number, label: string): Promise<void> {

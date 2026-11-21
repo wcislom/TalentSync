@@ -2,14 +2,29 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import { config } from './config.ts';
 import type { Budget } from './config.ts';
-import { logger } from './logger.ts';
 
 export type Session = { id: string; totalCostUsd: number };
-export type SkillRun = { turns: number; stepCostUsd: number; session: Session };
+export type SkillRun = {
+  succeeded: boolean;
+  // The SDK result subtype, e.g. success or error_max_budget_usd.
+  outcome: string;
+  turns: number;
+  stepCostUsd: number;
+  durationMs: number;
+  // Tool names only: the denied calls' inputs can hold issue content.
+  deniedTools: string[];
+  session: Session;
+};
 
 // With `resumeFrom`, the skill runs in that session and sees the earlier steps' output (plan-ticket builds on
 // explain-ticket's) without it passing through logs, GitHub or a prompt argument.
-export async function runSkill(skill: string, argument: string, budget: Budget, resumeFrom?: Session): Promise<SkillRun> {
+// A skill that stops early (budget, error) is returned, not thrown, so its turns and cost still count.
+export async function runSkill(
+  skill: string,
+  argument: string,
+  budget: Budget,
+  resumeFrom?: Session,
+): Promise<SkillRun> {
   const abortController = new AbortController();
   const sdkQuery = query({
     // A string prompt goes through slash-command dispatch (unless `verbatimPrompts`), which is how a user runs a
@@ -50,15 +65,13 @@ export async function runSkill(skill: string, argument: string, budget: Budget, 
   // a total below the previous one means it was not carried over and covers this call alone.
   const reportedTotal = resultMessage.total_cost_usd;
   const previousTotal = resumeFrom?.totalCostUsd ?? 0;
-  const skillRun: SkillRun = {
+  return {
+    succeeded: resultMessage.subtype === 'success' && !resultMessage.is_error,
+    outcome: resultMessage.is_error ? `${resultMessage.subtype} (error)` : resultMessage.subtype,
     turns: resultMessage.num_turns,
     stepCostUsd: reportedTotal >= previousTotal ? reportedTotal - previousTotal : reportedTotal,
+    durationMs: resultMessage.duration_ms,
+    deniedTools: [...new Set(resultMessage.permission_denials.map((denial) => denial.tool_name))],
     session: { id: resultMessage.session_id, totalCostUsd: Math.max(reportedTotal, previousTotal) },
   };
-  logger.skillFinished(skill, resultMessage.subtype, skillRun.turns, skillRun.stepCostUsd, resultMessage.permission_denials.length);
-
-  if (resultMessage.subtype !== 'success' || resultMessage.is_error) {
-    throw new Error(`skill ${skill} stopped: ${resultMessage.subtype}${resultMessage.is_error ? ' (error)' : ''}`);
-  }
-  return skillRun;
 }

@@ -1,34 +1,54 @@
 import type { LockState } from './lock.ts';
-import type { StepName } from './steps.ts';
+import { StepName } from './steps.ts';
 
-export type StopReason = 'already running' | 'waiting for approval' | 'done';
+export const NextStepKind = { Stop: 'Stop', Steps: 'Steps' } as const;
+export type NextStepKind = (typeof NextStepKind)[keyof typeof NextStepKind];
+
+export const StopReason = {
+  AlreadyRunning: 'AlreadyRunning',
+  WaitingForApproval: 'WaitingForApproval',
+  Done: 'Done',
+} as const;
+export type StopReason = (typeof StopReason)[keyof typeof StopReason];
+
+export const RunReason = { NoPlan: 'NoPlan', PlanOutOfDate: 'PlanOutOfDate', PlanApproved: 'PlanApproved' } as const;
+export type RunReason = (typeof RunReason)[keyof typeof RunReason];
 
 export type FlowState = {
   lockState: LockState;
   bodySha: string;
   plannedBodySha: string | null;
   planApproved: boolean;
-  pullRequestExists: boolean;
+  pullRequestNumber: number | null;
 };
 
+type Stop = typeof NextStepKind.Stop;
+
 export type NextStep =
-  | { kind: 'stop'; reason: StopReason }
-  | { kind: 'steps'; steps: StepName[]; replaceStaleLock: boolean };
+  | { kind: Stop; reason: typeof StopReason.AlreadyRunning; heldSince: Date; staleAt: Date }
+  | { kind: Stop; reason: typeof StopReason.WaitingForApproval }
+  | { kind: Stop; reason: typeof StopReason.Done; pullRequestNumber: number }
+  | { kind: typeof NextStepKind.Steps; reason: RunReason; steps: StepName[]; replaceStaleLock: boolean };
 
 export function decideNextStep(flowState: FlowState, now: Date, lockStaleAfterMinutes: number): NextStep {
-  const { lockState, bodySha, plannedBodySha, planApproved, pullRequestExists } = flowState;
+  const { lockState, bodySha, plannedBodySha, planApproved, pullRequestNumber } = flowState;
+  const { held, heldSince } = lockState;
 
   // A label without a `labeled` event cannot be aged; treating it as stale keeps the issue from being stuck,
   // and is safe because the lock only saves work.
-  const lockFresh = lockState.held && lockState.heldSince !== null
-    && now.getTime() - lockState.heldSince.getTime() < lockStaleAfterMinutes * 60_000;
-  if (lockFresh) return { kind: 'stop', reason: 'already running' };
+  if (held && heldSince !== null) {
+    const staleAt = new Date(heldSince.getTime() + lockStaleAfterMinutes * 60_000);
+    if (now < staleAt) return { kind: NextStepKind.Stop, reason: StopReason.AlreadyRunning, heldSince, staleAt };
+  }
 
   // Checked before the plan: once the PR exists the flow is finished, even if the body changed afterwards.
-  if (pullRequestExists) return { kind: 'stop', reason: 'done' };
+  if (pullRequestNumber !== null) return { kind: NextStepKind.Stop, reason: StopReason.Done, pullRequestNumber };
 
-  const replaceStaleLock = lockState.held;
-  if (plannedBodySha !== bodySha) return { kind: 'steps', steps: ['explain', 'plan'], replaceStaleLock };
-  if (!planApproved) return { kind: 'stop', reason: 'waiting for approval' };
-  return { kind: 'steps', steps: ['implement'], replaceStaleLock };
+  const replaceStaleLock = held;
+  if (plannedBodySha !== bodySha) {
+    const reason = plannedBodySha === null ? RunReason.NoPlan : RunReason.PlanOutOfDate;
+    return { kind: NextStepKind.Steps, reason, steps: [StepName.Explain, StepName.Plan], replaceStaleLock };
+  }
+  if (!planApproved) return { kind: NextStepKind.Stop, reason: StopReason.WaitingForApproval };
+  return { kind: NextStepKind.Steps, reason: RunReason.PlanApproved, steps: [StepName.Implement], replaceStaleLock };
 }
