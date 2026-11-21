@@ -72,8 +72,8 @@ async function tryReleaseLock(issueNumber: number): Promise<void> {
 
 async function main(): Promise<void> {
   const issueNumber = parseIssueNumber(process.argv.slice(2));
-  const currentStep = await readFlowState(issueNumber);
-  const nextStep = decideNextStep(currentStep, new Date(), config.lockStaleAfterMinutes);
+  const flowState = await readFlowState(issueNumber);
+  const nextStep = decideNextStep(flowState, new Date(), config.lockStaleAfterMinutes);
   flowLog.nextStep(issueNumber, nextStep);
   if (nextStep.kind === NextStepKind.Stop) return;
 
