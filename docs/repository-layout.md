@@ -102,6 +102,23 @@ deploy/
   images/                                   how images are built: host.Dockerfile (one image per host),
                                             simulator.Dockerfile, migrations.Dockerfile + migrations-entrypoint.sh
                                             (idempotent EF scripts applied with sqlcmd by the Helm hook Job)
+tools/
+  agent-flow/                               automations that run Claude Code skills through the Agent SDK (epic #48).
+                                            One package.json, TypeScript run natively by Node (no build step, no tsc),
+                                            tests with node:test (`npm --prefix tools/agent-flow test`).
+                                            Not part of the product, references nothing in src/
+    shared/                                 github-client.ts (every gh call, argument arrays, JSON), skill-runner.ts (a
+                                            skill in a new or resumed SDK session, project settings only, turn and cost budget),
+                                            logger.ts (the only place that writes to the console; groups and ::error::
+                                            in GitHub Actions; formatting of cost, duration and time),
+                                            run-budget.ts (RunBudget: turns and cost spent against the run's limit),
+                                            config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
+                                            test/
+    issue-to-pr/                            orchestrator: main.ts (read GitHub state → next step → lock → steps →
+                                            release), next-step.ts (pure decision table), steps.ts (step → skill,
+                                            stub or not), flow-log.ts (the run's log lines: ids, names and numbers
+                                            only, CI logs are public), body-sha.ts, plan-marker.ts,
+                                            lock.ts (label agent:running, age from the issue timeline), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
