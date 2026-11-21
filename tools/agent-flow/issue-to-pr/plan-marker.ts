@@ -24,3 +24,13 @@ export function latestTrustedPlan(comments: IssueComment[], trustedAuthors: stri
   }
   return plan;
 }
+
+// Only the author's own plan can be edited (GitHub allows editing one's own comments only). Several plan comments
+// can exist if a rerun crashed between listing and creating; the last one is edited, the one latestTrustedPlan reads.
+export function findPlanCommentIdToEdit(comments: IssueComment[], authorLogin: string): number | null {
+  let commentId: number | null = null;
+  for (const comment of comments) {
+    if (comment.authorLogin === authorLogin && parsePlanMarker(comment.body) !== null) commentId = comment.id;
+  }
+  return commentId;
+}

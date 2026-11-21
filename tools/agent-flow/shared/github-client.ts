@@ -4,18 +4,20 @@ import { config } from './config.ts';
 
 const execFileAsync = promisify(execFile);
 
-export type IssueComment = { authorLogin: string; body: string };
+export type IssueComment = { id: number; authorLogin: string; body: string };
 export type TimelineEvent = { event: string; labelName: string | null; createdAt: string };
 export type Issue = { body: string; labels: string[] };
 
 // `action` names what was attempted, for the error message: "could not <action>: <gh stderr>".
-async function gh(args: string[], action: string): Promise<string> {
+async function gh(args: string[], action: string, stdin?: string): Promise<string> {
   try {
-    const { stdout } = await execFileAsync('gh', args, {
+    const execution = execFileAsync('gh', args, {
       cwd: config.repoRoot,
       maxBuffer: 64 * 1024 * 1024,
       windowsHide: true,
     });
+    execution.child.stdin?.end(stdin);
+    const { stdout } = await execution;
     return stdout;
   } catch (error) {
     const stderr = (error as { stderr?: string }).stderr?.trim() ?? '';
@@ -46,9 +48,25 @@ export async function getIssue(issueNumber: number): Promise<Issue> {
 }
 
 export async function getIssueComments(issueNumber: number): Promise<IssueComment[]> {
-  const raw = await ghApiAll<{ user: { login: string } | null; body: string | null }>(
+  const raw = await ghApiAll<{ id: number; user: { login: string } | null; body: string | null }>(
     `repos/{owner}/{repo}/issues/${issueNumber}/comments`, `read the comments of #${issueNumber}`);
-  return raw.map((comment) => ({ authorLogin: comment.user?.login ?? '', body: comment.body ?? '' }));
+  return raw.map((comment) => ({ id: comment.id, authorLogin: comment.user?.login ?? '', body: comment.body ?? '' }));
+}
+
+export async function getCurrentLogin(): Promise<string> {
+  const stdout = await gh(['api', 'user', '--jq', '.login'], 'read the current gh login');
+  return stdout.trim();
+}
+
+// The body goes through stdin as JSON: as an argument it could exceed the Windows command line limit.
+export async function createIssueComment(issueNumber: number, body: string): Promise<void> {
+  await gh(['api', `repos/{owner}/{repo}/issues/${issueNumber}/comments`, '--method', 'POST', '--input', '-'],
+    `comment on #${issueNumber}`, JSON.stringify({ body }));
+}
+
+export async function editIssueComment(commentId: number, body: string): Promise<void> {
+  await gh(['api', `repos/{owner}/{repo}/issues/comments/${commentId}`, '--method', 'PATCH', '--input', '-'],
+    `edit comment ${commentId}`, JSON.stringify({ body }));
 }
 
 export async function getIssueTimeline(issueNumber: number): Promise<TimelineEvent[]> {

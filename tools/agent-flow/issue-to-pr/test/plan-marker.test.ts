@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formatPlanMarker, latestTrustedPlan, parsePlanMarker } from '../plan-marker.ts';
+import { formatPlanMarker, latestTrustedPlan, parsePlanMarker, findPlanCommentIdToEdit } from '../plan-marker.ts';
 
 const sha = 'a'.repeat(64);
 const otherSha = 'b'.repeat(64);
@@ -30,4 +30,28 @@ test('the last plan comment from a trusted author wins', () => {
     { authorLogin: 'someone-else', body: formatPlanMarker(sha) },
   ];
   assert.deepEqual(latestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha });
+});
+
+test('the last plan comment of the author is the one to edit', () => {
+  const comments = [
+    { id: 1, authorLogin: 'owner', body: formatPlanMarker(sha) },
+    { id: 2, authorLogin: 'owner', body: 'a discussion comment' },
+    { id: 3, authorLogin: 'owner', body: formatPlanMarker(otherSha) },
+    { id: 4, authorLogin: 'owner', body: 'a later discussion comment' },
+  ];
+  assert.equal(findPlanCommentIdToEdit(comments, 'owner'), 3);
+});
+
+test('a plan comment of another author is never edited', () => {
+  const comments = [{ id: 1, authorLogin: 'someone-else', body: formatPlanMarker(sha) }];
+  assert.equal(findPlanCommentIdToEdit(comments, 'owner'), null);
+});
+
+test('a comment quoting the marker is not a plan comment', () => {
+  const comments = [{ id: 1, authorLogin: 'owner', body: `Quoting: ${formatPlanMarker(sha)}` }];
+  assert.equal(findPlanCommentIdToEdit(comments, 'owner'), null);
+});
+
+test('without a plan comment a new one is needed', () => {
+  assert.equal(findPlanCommentIdToEdit([], 'owner'), null);
 });
