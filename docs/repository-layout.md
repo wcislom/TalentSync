@@ -106,7 +106,8 @@ docs/                                       domain.md, architecture.md, reposito
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
 .github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary);
-                                            Admin app job (npm ci, build)
+                                            Admin app job (npm ci, build). The "Protect main" ruleset requires the
+                                            Build, Test and Admin app checks by job name: renaming a job blocks every merge
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue)
 .claude/settings.json                       permissions and hooks enforced by the harness

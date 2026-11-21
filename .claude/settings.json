@@ -20,6 +20,10 @@
     "deny": [
       "Bash(git commit *)",
       "Bash(git push *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr review *)",
+      "Bash(gh api -X PUT *)",
+      "Bash(gh api --method PUT *)",
       "Bash(dotnet user-secrets *)"
     ]
   },
