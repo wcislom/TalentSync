@@ -109,16 +109,25 @@ tools/
                                             Not part of the product, references nothing in src/
     shared/                                 github-client.ts (every gh call, argument arrays, JSON), skill-runner.ts (a
                                             skill in a new or resumed SDK session, project settings only, turn and cost budget),
-                                            logger.ts (the only place that writes to the console; groups and ::error::
+                                            logger.ts (the only place that writes log lines; groups and ::error::
                                             in GitHub Actions; formatting of cost, duration and time),
                                             run-budget.ts (RunBudget: turns and cost spent against the run's limit),
                                             config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
-                                            test/
-    issue-to-pr/                            orchestrator: main.ts (read GitHub state → next step → lock → steps →
+                                            body-sha.ts and plan-marker.ts (the plan comment's format: written by
+                                            skills/plan-ticket, read by the orchestrator),
+                                            issue-number.ts (the argument of single-issue commands),
+                                            command-runner.ts (runCommand: a command's error → one log line and exit
+                                            code 1; failProcess), test/
+    flows/issue-to-pr/                      orchestrator: main.ts (read GitHub state → next step → lock → steps →
                                             release), next-step.ts (pure decision table), steps.ts (step → skill,
                                             stub or not), flow-log.ts (the run's log lines: ids, names and numbers
-                                            only, CI logs are public), body-sha.ts, plan-marker.ts,
+                                            only, CI logs are public),
                                             lock.ts (label agent:running, age from the issue timeline), test/
+    skills/<skill>/                         tools a skill runs through Bash, one folder per skill in .claude/skills/
+                                            (the prompts stay there). One file per command, named after it.
+                                            plan-ticket/: print-body-sha.ts (hash of the body before the skill reads
+                                            it), publish-plan.ts (refuses a changed body, removes plan-approved,
+                                            edits the one plan comment in place)
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
@@ -128,7 +137,9 @@ docs/                                       domain.md, architecture.md, reposito
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a
-                                            summary and JSON findings anchored to diff lines, posts nothing)
+                                            summary and JSON findings anchored to diff lines, posts nothing),
+                                            plan-ticket (implementation plan of an issue, published as its one plan
+                                            comment through tools/agent-flow/skills/plan-ticket; changes no files)
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
