@@ -1,28 +1,18 @@
-import { config, getAgentBranch } from '../shared/config.ts';
-import { findPullRequestFrom, getIssue, getIssueComments, getIssueTimeline } from '../shared/github-client.ts';
-import { RunBudget } from '../shared/run-budget.ts';
-import { runSkill } from '../shared/skill-runner.ts';
-import type { Session } from '../shared/skill-runner.ts';
-import { hashIssueBody } from './body-sha.ts';
+import { hashIssueBody } from '../../shared/body-sha.ts';
+import { failProcess } from '../../shared/command-runner.ts';
+import { config, getAgentBranch } from '../../shared/config.ts';
+import { findPullRequestFrom, getIssue, getIssueComments, getIssueTimeline } from '../../shared/github-client.ts';
+import { parseIssueNumber } from '../../shared/issue-number.ts';
+import { findLatestTrustedPlan } from '../../shared/plan-marker.ts';
+import { RunBudget } from '../../shared/run-budget.ts';
+import { runSkill } from '../../shared/skill-runner.ts';
+import type { Session } from '../../shared/skill-runner.ts';
 import { flowLog } from './flow-log.ts';
 import { acquireLock, readLockState, releaseLock } from './lock.ts';
 import { decideNextStep, NextStepKind } from './next-step.ts';
 import type { FlowState } from './next-step.ts';
-import { latestTrustedPlan } from './plan-marker.ts';
 import { steps } from './steps.ts';
 import type { StepName } from './steps.ts';
-
-function parseIssueNumber(args: string[]): number {
-  if (args.length !== 1 || !/^[1-9][0-9]*$/.test(args[0])) {
-    throw new Error('usage: issue-to-pr <issue-number>');
-  }
-  return Number(args[0]);
-}
-
-// Sets the exit code instead of calling process.exit(), so the lock release and pending log output still finish.
-function failProcess(): void {
-  process.exitCode = 1;
-}
 
 async function readFlowState(issueNumber: number): Promise<FlowState> {
   const [issue, issueComments, timelineEvents, pullRequestNumber] = await Promise.all([
@@ -34,7 +24,7 @@ async function readFlowState(issueNumber: number): Promise<FlowState> {
   return {
     lockState: readLockState(issue.labels, timelineEvents, config.labels.agentRunning),
     bodySha: hashIssueBody(issue.body),
-    plannedBodySha: latestTrustedPlan(issueComments, config.trustedAuthors)?.plannedBodySha ?? null,
+    plannedBodySha: findLatestTrustedPlan(issueComments, config.trustedAuthors)?.plannedBodySha ?? null,
     planApproved: issue.labels.includes(config.labels.planApproved),
     pullRequestNumber,
   };
@@ -71,7 +61,7 @@ async function tryReleaseLock(issueNumber: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const issueNumber = parseIssueNumber(process.argv.slice(2));
+  const issueNumber = parseIssueNumber(process.argv.slice(2), 'issue-to-pr');
   const flowState = await readFlowState(issueNumber);
   const nextStep = decideNextStep(flowState, new Date(), config.lockStaleAfterMinutes);
   flowLog.nextStep(issueNumber, nextStep);

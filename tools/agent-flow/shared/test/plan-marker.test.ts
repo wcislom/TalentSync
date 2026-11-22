@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formatPlanMarker, latestTrustedPlan, parsePlanMarker, findPlanCommentIdToEdit } from '../plan-marker.ts';
+import { findLatestTrustedPlan, findPlanCommentIdToEdit, formatPlanMarker, parsePlanMarker } from '../plan-marker.ts';
 
 const sha = 'a'.repeat(64);
 const otherSha = 'b'.repeat(64);
@@ -19,7 +19,7 @@ test('a marker with a malformed hash is ignored', () => {
 
 test('plan comments from untrusted authors are ignored', () => {
   const comments = [{ authorLogin: 'someone-else', body: formatPlanMarker(sha) }];
-  assert.equal(latestTrustedPlan(comments, ['owner']), null);
+  assert.equal(findLatestTrustedPlan(comments, ['owner']), null);
 });
 
 test('the last plan comment from a trusted author wins', () => {
@@ -29,7 +29,7 @@ test('the last plan comment from a trusted author wins', () => {
     { authorLogin: 'owner', body: formatPlanMarker(otherSha) },
     { authorLogin: 'someone-else', body: formatPlanMarker(sha) },
   ];
-  assert.deepEqual(latestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha });
+  assert.deepEqual(findLatestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha });
 });
 
 test('the last plan comment of the author is the one to edit', () => {

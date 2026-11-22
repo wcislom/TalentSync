@@ -1,4 +1,4 @@
-// The only place that writes to the console. CI logs are public (#47): callers build lines from issue numbers,
+// The only place that writes log lines. CI logs are public (#47): callers build lines from issue numbers,
 // step and skill names, and numbers only, never from issue or comment text, so the body or a plan cannot leak.
 
 const inGitHubActions = process.env.GITHUB_ACTIONS === 'true';

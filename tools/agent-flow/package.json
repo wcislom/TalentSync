@@ -6,7 +6,9 @@
     "node": ">=26"
   },
   "scripts": {
-    "issue-to-pr": "node issue-to-pr/main.ts",
+    "issue-to-pr": "node flows/issue-to-pr/main.ts",
+    "print-body-sha": "node skills/plan-ticket/print-body-sha.ts",
+    "publish-plan": "node skills/plan-ticket/publish-plan.ts",
     "test": "node --test"
   },
   "dependencies": {
