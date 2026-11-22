@@ -137,7 +137,9 @@ docs/                                       domain.md, architecture.md, reposito
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a
-                                            summary and JSON findings anchored to diff lines, posts nothing)
+                                            summary and JSON findings anchored to diff lines, posts nothing),
+                                            plan-ticket (implementation plan of an issue, published as its one plan
+                                            comment through tools/agent-flow/skills/plan-ticket; changes no files)
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
