@@ -9,6 +9,7 @@
     "issue-to-pr": "node flows/issue-to-pr/main.ts",
     "print-body-sha": "node skills/plan-ticket/print-body-sha.ts",
     "publish-plan": "node skills/plan-ticket/publish-plan.ts",
+    "prepare-branch": "node skills/implement-ticket/prepare-branch.ts",
     "test": "node --test"
   },
   "dependencies": {

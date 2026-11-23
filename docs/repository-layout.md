@@ -114,7 +114,8 @@ tools/
                                             run-budget.ts (RunBudget: turns and cost spent against the run's limit),
                                             config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
                                             body-sha.ts and plan-marker.ts (the plan comment's format: written by
-                                            skills/plan-ticket, read by the orchestrator),
+                                            skills/plan-ticket, read by the orchestrator and skills/implement-ticket),
+                                            git-client.ts (every git call, argument arrays),
                                             issue-number.ts (the argument of single-issue commands),
                                             command-runner.ts (runCommand: a command's error → one log line and exit
                                             code 1; failProcess), test/
@@ -124,10 +125,15 @@ tools/
                                             only, CI logs are public),
                                             lock.ts (label agent:running, age from the issue timeline), test/
     skills/<skill>/                         tools a skill runs through Bash, one folder per skill in .claude/skills/
-                                            (the prompts stay there). One file per command, named after it.
+                                            (the prompts stay there). One file per command, named after it; pure
+                                            logic a command needs sits next to it, with its tests in test/.
                                             plan-ticket/: print-body-sha.ts (hash of the body before the skill reads
                                             it), publish-plan.ts (refuses a changed body, removes plan-approved,
-                                            edits the one plan comment in place)
+                                            edits the one plan comment in place).
+                                            implement-ticket/: prepare-branch.ts (refuses without an approved plan for
+                                            the current body or in a dirty checkout, switches to agent/issue-<n>,
+                                            prints the plan), implementation-gate.ts (the gate as a pure function:
+                                            open with the plan, or closed with the reason), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
@@ -139,7 +145,9 @@ docs/                                       domain.md, architecture.md, reposito
                                             review-pr (read-only review of a PR against the repo's rules; prints a
                                             summary and JSON findings anchored to diff lines, posts nothing),
                                             plan-ticket (implementation plan of an issue, published as its one plan
-                                            comment through tools/agent-flow/skills/plan-ticket; changes no files)
+                                            comment through tools/agent-flow/skills/plan-ticket; changes no files),
+                                            implement-ticket (an approved plan implemented tests first on
+                                            agent/issue-<n> in a clean checkout, then a PR)
 .claude/settings.json                       permissions and hooks enforced by the harness
 .claude/hooks/                              check-rules.sh: Teamtailor in Domain/Application, direct clock in src/
                                             (skips bin, obj, node_modules)
