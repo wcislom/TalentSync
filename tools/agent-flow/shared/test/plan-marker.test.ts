@@ -5,8 +5,9 @@ import { findLatestTrustedPlan, findPlanCommentIdToEdit, formatPlanMarker, parse
 const sha = 'a'.repeat(64);
 const otherSha = 'b'.repeat(64);
 
-test('a formatted marker parses back to its hash', () => {
-  assert.deepEqual(parsePlanMarker(`${formatPlanMarker(sha)}\n\nPlan text`), { plannedBodySha: sha });
+test('a formatted marker parses back to its hash and the plan text after it', () => {
+  assert.deepEqual(parsePlanMarker(`${formatPlanMarker(sha)}\n\n**Files**\n- a.ts\n`),
+    { plannedBodySha: sha, planText: '**Files**\n- a.ts' });
 });
 
 test('a marker that does not start the comment is ignored', () => {
@@ -26,10 +27,10 @@ test('the last plan comment from a trusted author wins', () => {
   const comments = [
     { authorLogin: 'owner', body: formatPlanMarker(sha) },
     { authorLogin: 'owner', body: 'a discussion comment' },
-    { authorLogin: 'owner', body: formatPlanMarker(otherSha) },
-    { authorLogin: 'someone-else', body: formatPlanMarker(sha) },
+    { authorLogin: 'owner', body: `${formatPlanMarker(otherSha)}\n\nLatest plan` },
+    { authorLogin: 'someone-else', body: `${formatPlanMarker(sha)}\n\nInjected plan` },
   ];
-  assert.deepEqual(findLatestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha });
+  assert.deepEqual(findLatestTrustedPlan(comments, ['owner']), { plannedBodySha: otherSha, planText: 'Latest plan' });
 });
 
 test('the last plan comment of the author is the one to edit', () => {

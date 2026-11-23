@@ -1,7 +1,7 @@
 import type { IssueComment } from './github-client.ts';
 
-// plannedBodySha: the hash of the issue body the plan was written for.
-export type Plan = { plannedBodySha: string };
+// plannedBodySha: the hash of the issue body the plan was written for. planText: the comment without the marker.
+export type Plan = { plannedBodySha: string; planText: string };
 
 const markerPattern = /^<!-- agent:plan body-sha=([0-9a-f]{64}) -->/;
 
@@ -11,7 +11,8 @@ export function formatPlanMarker(plannedBodySha: string): string {
 
 export function parsePlanMarker(commentBody: string): Plan | null {
   const match = markerPattern.exec(commentBody);
-  return match === null ? null : { plannedBodySha: match[1] };
+  if (match === null) return null;
+  return { plannedBodySha: match[1], planText: commentBody.slice(match[0].length).trim() };
 }
 
 // Anyone can post a comment with the marker; only a trusted author's plan may lead to implementation.
