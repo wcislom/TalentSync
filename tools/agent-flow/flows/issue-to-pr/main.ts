@@ -32,7 +32,8 @@ async function readFlowState(issueNumber: number): Promise<FlowState> {
 }
 
 async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: RunBudget): Promise<void> {
-  // Steps of one run share a session, so each sees what the previous one produced.
+  // All steps of one run use the same Claude session. So the Plan step can see what the Explain step found,
+  // without passing it through GitHub or the logs.
   let session: Session | undefined;
   for (const stepName of stepNames) {
     const step = steps[stepName];
@@ -50,7 +51,8 @@ async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: R
   }
 }
 
-// Never throws, so it cannot hide the error of the step before it.
+// It never throws. If a step failed and then releasing the lock failed too, an exception here would replace
+// the step's error, and we would lose the real reason.
 async function tryReleaseLock(issueNumber: number): Promise<void> {
   try {
     await releaseLock(issueNumber, config.labels.agentRunning);

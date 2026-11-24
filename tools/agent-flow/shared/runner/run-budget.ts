@@ -1,7 +1,7 @@
 import type { Budget } from '../config/config.ts';
 import type { SkillRun } from './skill-runner.ts';
 
-// What one orchestrator run has spent so far, against the limit for the whole run.
+// Counts the turns and the cost a flow run has used so far, and what is left of its limit.
 export class RunBudget {
   readonly #limit: Budget;
   #turns = 0;

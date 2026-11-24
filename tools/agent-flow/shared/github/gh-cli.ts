@@ -4,10 +4,11 @@ import { config } from '../config/config.ts';
 
 const execFileAsync = promisify(execFile);
 
-// `token`, when given, replaces the gh login for this one call (GH_TOKEN), e.g. to act as the agent's GitHub App.
+// `token`: when set, this one gh call uses that token (GH_TOKEN) instead of the logged-in user.
+// We use it to act as the agent's GitHub App.
 export type GhOptions = { stdin?: string; token?: string };
 
-// `action` names what was attempted, for the error message: "could not <action>: <gh stderr>".
+// `action` says what we tried to do. It is used in the error message: "could not <action>: <gh's error>".
 export async function gh(args: string[], action: string, options: GhOptions = {}): Promise<string> {
   const { stdin, token } = options;
   try {
@@ -31,12 +32,14 @@ export async function ghJson<T>(args: string[], action: string): Promise<T> {
   try {
     return JSON.parse(stdout) as T;
   } catch {
-    // JSON.parse quotes a piece of its input in the message, which could be issue text in a public log.
+    // We do not pass on JSON.parse's own message: it quotes part of the input, which could be issue text, and
+    // logs can be public.
     throw new Error(`could not ${action}: gh returned invalid JSON`);
   }
 }
 
-// --slurp wraps every page in one outer array, so pagination never yields concatenated JSON documents.
+// Reads every page of a list from the GitHub API. Without --slurp, gh prints each page as a separate JSON
+// document, one after another, which is not valid JSON. With --slurp we get one array of pages.
 export async function ghApiAll<T>(endpoint: string, action: string): Promise<T[]> {
   const pages = await ghJson<T[][]>(['api', endpoint, '--paginate', '--slurp'], action);
   return pages.flat();

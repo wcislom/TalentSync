@@ -16,7 +16,8 @@ export async function getIssueComments(issueNumber: number): Promise<IssueCommen
   return raw.map((comment) => ({ id: comment.id, authorLogin: comment.user?.login ?? '', body: comment.body ?? '' }));
 }
 
-// The body goes through stdin as JSON: as an argument it could exceed the Windows command line limit.
+// The comment text goes through stdin as JSON, not as a command argument: a long plan could be longer than the
+// Windows command line limit.
 export async function createIssueComment(issueNumber: number, body: string): Promise<void> {
   await gh(['api', `repos/{owner}/{repo}/issues/${issueNumber}/comments`, '--method', 'POST', '--input', '-'],
     `comment on #${issueNumber}`, { stdin: JSON.stringify({ body }) });

@@ -1,12 +1,15 @@
 // npm --prefix tools/agent-flow run prepare-branch <issue-number>
 //
-// Checks that the implement-ticket skill may start, puts the checkout on the agent's branch and prints the plan.
-// In order:
-//   1. Refuse unless a trusted author's plan for the current body is approved and no PR exists yet.
-//   2. Refuse if the working tree has uncommitted changes: the run must not mix with someone's work.
-//   3. Switch to agent/issue-<n>: from the remote branch if a previous run pushed it and crashed before
-//      opening the PR, otherwise from main.
-//   4. Print the plan. The skill reads it only from here, never from the issue's comments.
+// The first command the implement-ticket skill runs. It checks that the agent may start, moves the checkout to
+// the agent's branch and prints the approved plan for the skill.
+// Steps:
+//   1. Stop unless there is an approved plan from a trusted author, written for the current issue body, and no
+//      PR exists yet.
+//   2. Stop if the working tree has uncommitted changes. The agent must not mix its work with someone else's.
+//   3. Switch to the branch agent/issue-<n>. If an earlier run pushed this branch and then crashed before it
+//      opened the PR, start from that branch. Otherwise start from main.
+//   4. Print the plan. The skill takes the plan only from here, never from the issue comments, because anyone
+//      can post a comment.
 
 import { runCommand } from '../../shared/command/command-runner.ts';
 import { parseIssueNumber } from '../../shared/command/issue-number.ts';
@@ -33,7 +36,7 @@ async function main(): Promise<void> {
     findPullRequestFrom(agentBranch),
     hasUncommittedChanges(),
   ]);
-  // 1. Approved plan for the current body, no PR yet.
+  // 1. Is there an approved plan for the current body, and no PR yet?
   const gate = checkImplementationGate({
     bodySha: hashIssueBody(issue.body),
     plan: findLatestTrustedPlan(comments, config.trustedAuthors),
@@ -42,16 +45,17 @@ async function main(): Promise<void> {
   });
   if (!gate.open) throw new Error(`issue #${issueNumber}: ${gate.reason}`);
 
-  // 2. Clean working tree.
+  // 2. Is the working tree clean?
   if (uncommittedChanges) throw new Error('the working tree has uncommitted changes: run in a clean checkout');
 
-  // 3. The agent's branch.
+  // 3. Switch to the agent's branch.
   const baseBranch = await remoteBranchExists(agentBranch) ? agentBranch : config.mainBranch;
   await fetchBranch(baseBranch);
   await switchToNewBranch(agentBranch, baseBranch);
   logger.info(`issue #${issueNumber}: on ${agentBranch} from origin/${baseBranch}`);
 
-  // 4. The plan, as the command's output for the skill, not a log line: it is issue content.
+  // 4. Print the plan. It goes to stdout for the skill, not through the logger: it is issue content and must
+  //    not end up in public logs.
   process.stdout.write(`--- plan ---\n${gate.plan.planText}\n--- end of plan ---\n`);
 }
 

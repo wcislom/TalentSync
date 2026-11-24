@@ -1,5 +1,8 @@
-// Per file, the lines of the new version a review comment can be put on: added and context lines inside a hunk.
-// A comment on any other line makes GitHub reject the whole review.
+// GitHub lets you put a review comment only on a line that is shown in the PR's diff: a changed line, or one
+// of the few unchanged lines around a change. If even one comment points to another line (e.g. line 300 when
+// only lines 10-20 changed), GitHub rejects the whole review.
+// This function reads the diff and lists, for each file, the line numbers (in the new version of the file)
+// where a comment is allowed. Findings on other lines go into the review body instead.
 export type CommentableLines = Map<string, Set<number>>;
 
 const hunkHeaderPattern = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
@@ -16,7 +19,8 @@ export function parseCommentableLines(diff: string): CommentableLines {
       lines = null;
       continue;
     }
-    // Only in the header: inside a hunk, an added line whose text starts with "++" also starts with "+++ ".
+    // The file name comes from the "+++ b/<path>" line in the file's header. We look for it only in the header,
+    // because an added line of code (which starts with "+") can also start with "+++ ".
     if (inFileHeader) {
       if (diffLine.startsWith('+++ b/')) {
         lines = new Set();
@@ -30,7 +34,7 @@ export function parseCommentableLines(diff: string): CommentableLines {
       newLine = Number(hunkHeader[1]);
       continue;
     }
-    // A deleted file (+++ /dev/null) has no new version to comment on.
+    // A deleted file has no new version, so there is nothing to comment on.
     if (lines === null) continue;
     if (diffLine.startsWith('+') || diffLine.startsWith(' ')) {
       lines.add(newLine);

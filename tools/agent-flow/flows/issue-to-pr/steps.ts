@@ -3,7 +3,8 @@ export type StepName = (typeof StepName)[keyof typeof StepName];
 
 export type Step = { skill: string; stub: boolean };
 
-// A stub only logs what it would run.
+// A step marked as a stub does not run its skill: it only logs which skill it would run.
+// We used this while the skill for a step did not exist yet.
 export const steps: Record<StepName, Step> = {
   [StepName.Explain]: { skill: 'explain-ticket', stub: false },
   [StepName.Plan]: { skill: 'plan-ticket', stub: false },

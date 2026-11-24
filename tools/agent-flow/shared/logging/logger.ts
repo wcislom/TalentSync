@@ -1,10 +1,12 @@
-// The only place that writes log lines. CI logs are public (#47): callers build lines from issue numbers,
-// step and skill names, and numbers only, never from issue or comment text, so the body or a plan cannot leak.
+// All log lines go through this file. In GitHub Actions (#47) the logs are public, so a log line may hold only
+// numbers and names: issue numbers, step and skill names, counts, cost. Never issue text, comments or a plan,
+// because anyone can write anything there.
 
 const inGitHubActions = process.env.GITHUB_ACTIONS === 'true';
 let groupOpen = false;
 
-// Workflow commands end at a newline, and `%` starts an escape.
+// GitHub Actions reads special log lines like "::error::message". A newline ends such a line and "%" starts an
+// escape code, so both are encoded.
 export function escapeWorkflowCommand(text: string): string {
   return text.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
 }
@@ -19,7 +21,7 @@ export const logger = {
   info(line: string): void {
     console.log(line);
   },
-  // In Actions a group is a collapsible section; locally the lines simply follow each other.
+  // In GitHub Actions a group is a part of the log you can fold. Locally the lines are just printed.
   startGroup(title: string): void {
     endGroup();
     if (!inGitHubActions) return;
@@ -27,7 +29,7 @@ export const logger = {
     groupOpen = true;
   },
   endGroup,
-  // An ::error:: line also shows up in the job summary.
+  // In GitHub Actions an ::error:: line is also shown in the job summary, so it is easy to find.
   error(line: string): void {
     endGroup();
     console.error(inGitHubActions ? `::error::${escapeWorkflowCommand(line)}` : line);

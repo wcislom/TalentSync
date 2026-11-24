@@ -6,7 +6,7 @@ const execFileAsync = promisify(execFile);
 
 const remote = 'origin';
 
-// `action` names what was attempted, for the error message: "could not <action>: <git stderr>".
+// `action` says what we tried to do. It is used in the error message: "could not <action>: <git's error>".
 async function git(args: string[], action: string, extraEnvironment?: Record<string, string>): Promise<string> {
   try {
     const { stdout } = await execFileAsync('git', args, {
@@ -22,7 +22,8 @@ async function git(args: string[], action: string, extraEnvironment?: Record<str
   }
 }
 
-// Untracked files count: a switch would carry them onto the agent's branch and into its commit.
+// New files that git does not track yet count too. Otherwise they would move with us to the agent's branch
+// and end up in the agent's commit.
 export async function hasUncommittedChanges(): Promise<boolean> {
   const stdout = await git(['status', '--porcelain'], 'read the working tree status');
   return stdout.trim() !== '';
@@ -37,8 +38,9 @@ export async function fetchBranch(branch: string): Promise<void> {
   await git(['fetch', remote, branch], `fetch ${branch} from ${remote}`);
 }
 
-// -C resets a local branch of that name: a crashed run's commits that never reached the remote are dropped,
-// because the flow's state lives in GitHub, not in a checkout.
+// -C overwrites a local branch with the same name. If an earlier run crashed, its local commits that were never
+// pushed are dropped. That is on purpose: the flow keeps its state in GitHub, not in a local checkout, so we
+// always start from what is on GitHub.
 export async function switchToNewBranch(branch: string, baseBranch: string): Promise<void> {
   await git(['switch', '-C', branch, '--no-track', `${remote}/${baseBranch}`],
     `switch to ${branch} from ${remote}/${baseBranch}`);
@@ -60,11 +62,14 @@ export async function commitAll(message: string): Promise<void> {
   await git(['commit', '--message', message], 'commit the changes');
 }
 
-// Never forced: a parallel run that pushed first makes this push fail instead of being overwritten.
-// The token reaches this git process only, through its environment: not on the command line (other processes
-// can read it there) and not in .git/config. The empty values clear an extraheader set before (actions/checkout
-// sets one: two Authorization headers fail the push) and the credential helpers (a rejected token must fail,
-// not fall back to the user's own credentials).
+// Pushes as the agent's GitHub App, with its token.
+// - No force push. If another run pushed first, this push fails instead of overwriting that work.
+// - The token is given only to this git process, through environment variables. It is not on the command line
+//   (other programs can read command lines) and it is not saved in .git/config.
+// - The first, empty extraheader value removes an Authorization header set earlier. actions/checkout sets one
+//   in CI, and with two such headers the push fails.
+// - The empty credential.helper turns off saved logins. If the token is rejected, the push must fail. It must
+//   not quietly push with the user's own account.
 export async function pushBranch(branch: string, token: string): Promise<void> {
   const authorization = Buffer.from(`x-access-token:${token}`).toString('base64');
   const extraHeaderKey = 'http.https://github.com/.extraheader';

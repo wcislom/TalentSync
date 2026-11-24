@@ -1,7 +1,8 @@
 import { config } from '../../shared/config/config.ts';
 import type { Plan } from '../../shared/plan/plan-marker.ts';
 
-// What the gate reads from the issue. The approval is the issue's label, not part of the plan comment.
+// What the gate needs to know about the issue. The approval is a label on the issue (plan-approved), not part of
+// the plan comment.
 export type GateInput = {
   bodySha: string;
   plan: Plan | null;
@@ -11,8 +12,9 @@ export type GateInput = {
 
 export type Gate = { open: true; plan: Plan } | { open: false; reason: string };
 
-// The orchestrator makes the same decision before it runs the skill (next-step.ts); a skill run by hand
-// as /implement-ticket has only this gate between an unapproved plan and the code.
+// Decides whether the agent may start writing code for this issue. The orchestrator checks the same thing
+// before it runs the skill (next-step.ts). But someone can also run /implement-ticket by hand, and then this gate
+// is the only thing that stops work on a plan nobody approved.
 export function checkImplementationGate(gateInput: GateInput): Gate {
   const { bodySha, plan, planApproved, pullRequestNumber } = gateInput;
   if (pullRequestNumber !== null) {

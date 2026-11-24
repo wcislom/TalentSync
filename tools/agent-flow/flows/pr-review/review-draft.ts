@@ -13,8 +13,11 @@ export type ReviewDraftInput = {
   trustedAuthors: string[];
 };
 
-// Markers count only from trusted authors: anyone can comment on a PR, and a copied marker would otherwise
-// silence a finding or the whole review.
+// Hidden HTML comments (markers) in our reviews let a later run recognise its own work:
+// - agent:review marks a commit that was already reviewed, so a rerun does not review it again;
+// - agent:finding marks the rule of an inline comment, so a new push does not repeat the same finding.
+// We only trust markers written by trusted authors. Anyone can comment on a PR, and a copied marker must not
+// hide a finding or skip a review.
 function formatReviewMarker(headSha: string): string {
   return `<!-- agent:review head=${headSha} -->`;
 }
@@ -30,9 +33,11 @@ export function isAlreadyReviewed(reviews: PostedReview[], headSha: string, trus
   return reviews.some((review) => trustedAuthors.includes(review.authorLogin) && review.body.includes(marker));
 }
 
-// The findings are the model's text about an untrusted PR: an @mention in them must not notify anyone.
-function neutralizeMentions(text: string): string {
-  return text.replaceAll(/@(?=[A-Za-z0-9])/g, '@​');
+// The model wrote this text after reading an untrusted PR. So we:
+// - break @mentions, so nobody gets a notification;
+// - escape "<!--", so the text cannot hold a fake marker that hides a later finding or review.
+function sanitizeModelText(text: string): string {
+  return text.replaceAll(/@(?=[A-Za-z0-9])/g, '@​').replaceAll('<!--', '&lt;!--');
 }
 
 function findingKey(path: string, line: number, rule: string): string {
@@ -53,11 +58,19 @@ function formatFindingHeading(finding: Finding): string {
   return `**${finding.severity}** · ${finding.rule}`;
 }
 
-// A fence longer than any backtick run in the text, so the summary cannot close it.
-function fence(text: string): string {
-  const longestRun = Math.max(0, ...[...text.matchAll(/`+/g)].map((match) => match[0].length));
-  const marks = '`'.repeat(Math.max(3, longestRun + 1));
-  return `${marks}text\n${text}\n${marks}`;
+const summaryFieldPattern = /^([A-Z][A-Za-z ]*):\s+(.*)$/;
+
+// The skill writes lines like "Field:   value" and indents the lines that continue them.
+// We remove the indentation, because GitHub shows text indented by 4 spaces as code.
+// Field names become bold. GitHub keeps single line breaks in reviews.
+function formatSummary(summary: string): string {
+  return summary.split('\n').map((line) => {
+    const trimmed = line.trim();
+    const field = summaryFieldPattern.exec(trimmed);
+    if (field === null) return trimmed;
+    const [, name, value] = field;
+    return value.startsWith('- ') ? `**${name}:**\n${value}` : `**${name}:** ${value}`;
+  }).join('\n');
 }
 
 export function buildReviewDraft(input: ReviewDraftInput): ReviewDraft {
@@ -75,7 +88,7 @@ export function buildReviewDraft(input: ReviewDraftInput): ReviewDraft {
         path: finding.path,
         line: finding.line,
         side: 'RIGHT',
-        body: `${formatFindingHeading(finding)}\n\n${neutralizeMentions(finding.body)}\n\n`
+        body: `${formatFindingHeading(finding)}\n\n${sanitizeModelText(finding.body)}\n\n`
           + formatFindingMarker(finding.rule),
       });
     } else {
@@ -84,10 +97,10 @@ export function buildReviewDraft(input: ReviewDraftInput): ReviewDraft {
   }
 
   const bodyParts = [formatReviewMarker(headSha), `**Agent review** (review-pr) of ${headSha.slice(0, 7)}`,
-    fence(reviewOutput.summary)];
+    sanitizeModelText(formatSummary(reviewOutput.summary))];
   if (findingsInBody.length > 0) {
     const bullets = findingsInBody.map((finding) =>
-      `- ${formatFindingHeading(finding)} · \`${finding.path}:${finding.line}\`: ${neutralizeMentions(finding.body)}`);
+      `- ${formatFindingHeading(finding)} · \`${finding.path}:${finding.line}\`: ${sanitizeModelText(finding.body)}`);
     bodyParts.push(`**Findings on lines outside the diff**\n\n${bullets.join('\n')}`);
   }
   if (findingsRepeated > 0) {

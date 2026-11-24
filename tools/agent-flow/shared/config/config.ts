@@ -8,9 +8,10 @@ export const config = {
     planApproved: 'plan-approved',
   },
   lockStaleAfterMinutes: 60,
-  // Only their plan comments count. The workflow bot (#47) joins this list once it exists.
+  // Accounts whose plan comments and reviews we trust. Anyone can comment on a public repo, so comments from
+  // other accounts are ignored. The bot that runs the flow in GitHub Actions is added here in #47.
   trustedAuthors: ['wcislom'],
-  // Per orchestrator run, shared by all its steps.
+  // The limit for one run of a flow (issue-to-pr or pr-review). All steps of the run share it.
   budget: {
     maxTurns: 80,
     maxBudgetUsd: 5,
@@ -19,9 +20,9 @@ export const config = {
 
 export type Budget = typeof config.budget;
 
-// The branch name is how a rerun finds the existing PR, so it is derived from the issue number alone.
-// A type (feat/fix) from a label or the title could change between runs and lead to a second PR;
-// the type goes in the PR title, which becomes the squash commit message.
+// A rerun finds the existing PR by this branch name, so the name must never change for an issue. That is why
+// it uses only the issue number. A prefix like feat/ or fix/ taken from a label or the title could change
+// between runs and create a second PR. The type (feat, fix, ...) goes into the PR title instead.
 export function getAgentBranch(issueNumber: number): string {
   return `agent/issue-${issueNumber}`;
 }

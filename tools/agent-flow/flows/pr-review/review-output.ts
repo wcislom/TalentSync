@@ -4,15 +4,16 @@ export type Severity = (typeof Severity)[keyof typeof Severity];
 export type Finding = { path: string; line: number; rule: string; severity: Severity; body: string };
 export type ReviewOutput = { summary: string; findings: Finding[] };
 
-// The skill's contract: a plain-text summary, then a fenced json block with the anchored findings.
+// The skill's output format: a plain-text summary, then a ```json block with the findings.
 const findingsBlockPattern = /```json[ \t]*\r?\n([\s\S]*?)\r?\n```/g;
-// The rule goes into a hidden HTML comment on the review comment, so it must not be able to close it.
+// The rule is put into a hidden HTML comment, so it must not contain characters that could close it.
 export const rulePattern = /^[A-Za-z0-9 ._-]{1,40}$/;
 const pathPattern = /^[^`\r\n]+$/;
 const severities: readonly string[] = Object.values(Severity);
 
-// The output is the model's, and the model read an untrusted PR: anything off the contract is refused, not
-// repaired. Errors name the finding's index and field, never its content, because they end up in public CI logs.
+// The model read an untrusted PR, so we never fix bad output: we reject it.
+// Error messages show only the finding number and the field name, never the content,
+// because CI logs are public.
 export function parseReviewOutput(resultText: string): ReviewOutput {
   const lastBlock = [...resultText.matchAll(findingsBlockPattern)].at(-1);
   if (lastBlock === undefined) throw new Error('the skill output has no json block of findings');

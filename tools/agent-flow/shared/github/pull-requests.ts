@@ -3,7 +3,7 @@ import { gh, ghJson } from './gh-cli.ts';
 export type PullRequest = { state: string; isDraft: boolean; isCrossRepository: boolean; headSha: string };
 export type NewPullRequest = { head: string; base: string; title: string; body: string };
 
-// Any state counts, closed and merged included: the branch already produced its PR.
+// PRs in any state count, also closed and merged ones: this branch already has its PR.
 export async function findPullRequestFrom(branch: string): Promise<number | null> {
   const pullRequests = await ghJson<{ number: number }[]>(
     ['pr', 'list', '--head', branch, '--state', 'all', '--json', 'number'], `list the PRs from ${branch}`);
@@ -21,7 +21,7 @@ export async function getPullRequestDiff(pullRequestNumber: number): Promise<str
   return gh(['pr', 'diff', String(pullRequestNumber), '--color', 'never'], `read the diff of PR #${pullRequestNumber}`);
 }
 
-// Ready for review, not a draft. Returns the PR's URL.
+// Opens the PR as ready for review (not a draft). Returns the PR's URL.
 export async function createPullRequest(pullRequest: NewPullRequest, token: string): Promise<string> {
   const { head, base, title, body } = pullRequest;
   const stdout = await gh(['pr', 'create', '--head', head, '--base', base, '--title', title, '--body-file', '-'],

@@ -1,16 +1,20 @@
 // npm --prefix tools/agent-flow run pr-review <pr-number>
 //
-// Runs the review-pr skill on a PR and publishes its findings as one review with event COMMENT. The skill only
-// reads: the PR is untrusted input, so the skill gets no tool that writes, and this flow publishes its output
-// after checking it against the skill's contract. Publishes with the gh login (locally the user, in Actions
-// GITHUB_TOKEN, which cannot approve while the repository does not allow it). In order:
-//   1. Stop unless the PR is open, ready for review and from this repository (a fork's PR is not reviewed).
-//   2. Stop if a trusted author already published the agent's review for this head commit.
+// Runs the review-pr skill on one PR and publishes the result as one review (event COMMENT).
+// Anyone can open a PR, so its content is not trusted. That is why the skill can only read.
+// This script checks the skill's output and publishes it. The skill never gets a token.
+// The review is published with the current gh login: your account locally, GITHUB_TOKEN in Actions.
+// GITHUB_TOKEN cannot approve a PR unless the repository settings allow it.
+//
+// Steps:
+//   1. Skip the PR if it is closed, a draft or from a fork.
+//   2. Skip it if this commit already has our review.
 //   3. Run /review-pr <n>.
-//   4. Read the PR again: if the head moved during the review, publish nothing (the new head gets its own run).
-//   5. Anchored findings on a diff line become inline comments; others go into the review body; a finding with
-//      an unresolved thread from an earlier run on the same path, line and rule is not repeated.
-//   6. Publish the review in one call.
+//   4. Read the PR again. If someone pushed during the review, publish nothing:
+//      the new commit gets its own run.
+//   5. Sort the findings. A finding on a diff line becomes an inline comment. Other findings go into the
+//      review body. A finding that already has an open thread (same file, line and rule) is skipped.
+//   6. Publish the review in one API call.
 
 import { runCommand } from '../../shared/command/command-runner.ts';
 import { parseIssueNumber } from '../../shared/command/issue-number.ts';
@@ -40,20 +44,20 @@ async function main(): Promise<void> {
     getPullRequestReviews(pullRequestNumber),
   ]);
 
-  // 1. Reviewable.
+  // 1. Can we review it?
   const skipReason = findSkipReason(pullRequest);
   if (skipReason !== null) {
     logger.info(`PR #${pullRequestNumber}: skipped, ${skipReason}`);
     return;
   }
 
-  // 2. Not reviewed yet at this head.
+  // 2. Already reviewed?
   if (isAlreadyReviewed(reviews, pullRequest.headSha, config.trustedAuthors)) {
     logger.info(`PR #${pullRequestNumber}: skipped, already reviewed at ${pullRequest.headSha.slice(0, 7)}`);
     return;
   }
 
-  // 3. The skill.
+  // 3. Run the skill.
   logger.startGroup(`/${skill} ${pullRequestNumber}`);
   const skillRun = await runSkill(skill, String(pullRequestNumber), config.budget);
   logger.info(`/${skill} ${pullRequestNumber}: ${formatSkillRun(skillRun)}`);
@@ -61,7 +65,7 @@ async function main(): Promise<void> {
   if (!skillRun.succeeded) throw new Error(`/${skill} stopped: ${skillRun.outcome}`);
   const reviewOutput = parseReviewOutput(skillRun.resultText);
 
-  // 4. Same head.
+  // 4. Did the head change?
   const [currentPullRequest, diff, openThreads] = await Promise.all([
     getPullRequest(pullRequestNumber),
     getPullRequestDiff(pullRequestNumber),
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 5. Inline, in the body, or already open.
+  // 5. Sort the findings.
   const reviewDraft = buildReviewDraft({
     headSha: pullRequest.headSha,
     reviewOutput,
@@ -81,7 +85,7 @@ async function main(): Promise<void> {
     trustedAuthors: config.trustedAuthors,
   });
 
-  // 6. One call.
+  // 6. Publish.
   await createReview(pullRequestNumber, reviewDraft);
   logger.info(`PR #${pullRequestNumber}: review published at ${pullRequest.headSha.slice(0, 7)}, `
     + `${reviewDraft.comments.length} inline, ${reviewDraft.findingsInBody} in the body, `

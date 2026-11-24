@@ -1,7 +1,7 @@
 import { gh, ghApiAll, ghJson } from './gh-cli.ts';
 
 export type PostedReview = { authorLogin: string; body: string };
-// An unresolved review thread, by its first comment.
+// An open (unresolved) review thread, described by its first comment.
 export type OpenThread = { path: string; line: number | null; authorLogin: string; body: string };
 export type ReviewComment = { path: string; line: number; side: 'RIGHT'; body: string };
 export type NewReview = { commitId: string; body: string; comments: ReviewComment[] };
@@ -12,7 +12,8 @@ export async function getPullRequestReviews(pullRequestNumber: number): Promise<
   return raw.map((review) => ({ authorLogin: review.user?.login ?? '', body: review.body ?? '' }));
 }
 
-// REST has no "resolved" flag on review comments, hence GraphQL. A thread's first comment carries the finding.
+// The REST API does not say if a thread is resolved, so we use GraphQL.
+// The first comment of a thread holds the finding.
 const reviewThreadsQuery = `
 query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
   repository(owner: $owner, name: $name) {
@@ -51,7 +52,8 @@ export async function getUnresolvedReviewThreads(pullRequestNumber: number): Pro
     });
 }
 
-// One call with event COMMENT: the review is published whole or not at all, and never approves or requests changes.
+// One API call with event COMMENT: the review is published completely or not at all.
+// It never approves and never requests changes.
 export async function createReview(pullRequestNumber: number, review: NewReview): Promise<void> {
   const { commitId, body, comments } = review;
   await gh(['api', `repos/{owner}/{repo}/pulls/${pullRequestNumber}/reviews`, '--method', 'POST', '--input', '-'],

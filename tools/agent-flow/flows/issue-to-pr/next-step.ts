@@ -34,14 +34,15 @@ export function decideNextStep(flowState: FlowState, now: Date, lockStaleAfterMi
   const { lockState, bodySha, plannedBodySha, planApproved, pullRequestNumber } = flowState;
   const { held, heldSince } = lockState;
 
-  // A label without a `labeled` event cannot be aged; treating it as stale keeps the issue from being stuck,
-  // and is safe because the lock only saves work.
+  // If we cannot find when the lock label was added, we cannot tell its age. We treat it as stale, so the issue
+  // is not blocked forever. This is safe because the lock only saves work (see lock.ts).
   if (held && heldSince !== null) {
     const staleAt = new Date(heldSince.getTime() + lockStaleAfterMinutes * 60_000);
     if (now < staleAt) return { kind: NextStepKind.Stop, reason: StopReason.AlreadyRunning, heldSince, staleAt };
   }
 
-  // Checked before the plan: once the PR exists the flow is finished, even if the body changed afterwards.
+  // This comes before the plan checks. Once the PR exists, the flow is finished for this issue, even if
+  // someone edits the issue body later.
   if (pullRequestNumber !== null) return { kind: NextStepKind.Stop, reason: StopReason.Done, pullRequestNumber };
 
   const replaceStaleLock = held;

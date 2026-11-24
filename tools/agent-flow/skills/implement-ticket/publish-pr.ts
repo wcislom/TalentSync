@@ -1,16 +1,19 @@
 // npm --prefix tools/agent-flow run publish-pr <issue-number> < pr.md
 //
-// Commits the implement-ticket skill's change and opens its PR as the agent's GitHub App. The title is the first
-// line on stdin, the body the rest. In order:
-//   1. Refuse unless the checkout is on agent/issue-<n> (prepare-branch put it there).
-//   2. Check the gate again: the approval may have been removed, the body edited or a PR opened while the skill
-//      worked.
-//   3. Get the App's installation token, before anything is committed: a missing variable changes nothing.
-//   4. Commit everything with the PR title as the message. Nothing to commit and no earlier commit = refuse.
+// The last command the implement-ticket skill runs. It commits the agent's change and opens a PR as the agent's
+// GitHub App. The skill sends the PR title on the first line of stdin and the PR body after it.
+// Steps:
+//   1. Stop unless the checkout is on agent/issue-<n>, where prepare-branch put it.
+//   2. Check the gate again. While the agent was working, someone may have removed the approval, edited the
+//      issue or opened a PR.
+//   3. Get the App's token before committing anything. If an environment variable is missing, we stop with
+//      nothing changed.
+//   4. Commit all changes, with the PR title as the commit message. Stop if there is nothing to commit and no
+//      earlier commit on the branch.
 //   5. Push without force.
-//   6. Open the PR, ready for review, with `Closes #<n>`, and print its URL.
-// A crash between 5 and 6 leaves the branch pushed and no PR: the next run starts from the remote branch
-// (prepare-branch), and this command opens the PR.
+//   6. Open the PR (ready for review, with `Closes #<n>`) and print its URL.
+// If the process crashes after step 5 and before step 6, the branch is on GitHub but there is no PR. The next
+// run continues from that branch (see prepare-branch) and this command opens the PR.
 
 import { runCommand } from '../../shared/command/command-runner.ts';
 import { parseIssueNumber } from '../../shared/command/issue-number.ts';
@@ -43,13 +46,14 @@ async function main(): Promise<void> {
   const pullRequestText = parsePullRequestText(await readStdin(), issueNumber);
   const agentBranch = getAgentBranch(issueNumber);
 
-  // 1. The agent's branch.
+  // 1. Are we on the agent's branch?
   const currentBranch = await getCurrentBranch();
   if (currentBranch !== agentBranch) {
     throw new Error(`the checkout is on ${currentBranch || 'a detached HEAD'}, not ${agentBranch}: run prepare-branch`);
   }
 
-  // 2. The gate, again. A change after this check and before the PR opens is not caught: a few requests long.
+  // 2. Check the gate again. A change made after this check and before the PR opens is not caught, but that
+  //    window is only a few requests long.
   const [issue, comments, pullRequestNumber] = await Promise.all([
     getIssue(issueNumber),
     getIssueComments(issueNumber),
@@ -63,7 +67,7 @@ async function main(): Promise<void> {
   });
   if (!gate.open) throw new Error(`issue #${issueNumber}: ${gate.reason}`);
 
-  // 3. Token.
+  // 3. Get the App's token.
   const token = await getInstallationToken();
 
   // 4. Commit.
@@ -76,7 +80,7 @@ async function main(): Promise<void> {
   // 5. Push.
   await pushBranch(agentBranch, token);
 
-  // 6. PR. Its URL is the skill's output; it holds only the repository and the PR number.
+  // 6. Open the PR. Its URL is safe to log: it holds only the repository name and the PR number.
   const pullRequestUrl = await createPullRequest(
     { head: agentBranch, base: config.mainBranch, ...pullRequestText }, token);
   logger.info(`issue #${issueNumber}: PR opened ${pullRequestUrl}`);

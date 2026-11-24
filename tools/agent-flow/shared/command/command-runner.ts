@@ -1,12 +1,13 @@
 import { format, logger } from '../logging/logger.ts';
 
-// Sets the exit code instead of calling process.exit(), so pending output (and the orchestrator's lock release)
-// still finish.
+// Marks the process as failed (exit code 1) without stopping it at once. process.exit() would stop it
+// immediately, and log lines not yet written, or the orchestrator's lock release, would be lost.
 export function failProcess(): void {
   process.exitCode = 1;
 }
 
-// The entry point of a command run through npm: an error becomes one log line and exit code 1.
+// Every npm command (prepare-branch, publish-pr, ...) starts through this function. If the command throws,
+// the user sees one clear log line instead of a stack trace, and the exit code is 1.
 export function runCommand(commandName: string, main: () => Promise<void>): void {
   main().catch((error: unknown) => {
     logger.error(`${commandName} failed: ${format.errorMessage(error)}`);
