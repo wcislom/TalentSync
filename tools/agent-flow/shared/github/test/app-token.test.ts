@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readAppCredentials } from '../github-app-token.ts';
+import { readAppCredentials } from '../app-token.ts';
 
 const environment = {
   AGENT_APP_ID: '5',

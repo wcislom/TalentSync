@@ -1,20 +1,22 @@
 // npm --prefix tools/agent-flow run print-body-sha <issue-number>
 //
-// Prints `body-sha: <hash>` of the issue body. The plan-ticket skill runs it before it reads the body and passes the
-// hash to publish-plan, which refuses to publish if the body changed while the plan was being written.
+// Prints `body-sha: <hash>`, a hash of the issue body. The plan-ticket skill runs it before it reads the body,
+// and later gives the hash to publish-plan. If the body changed while the plan was being written, publish-plan
+// refuses to publish, because the plan would describe an older version of the issue.
 //
-// The skill cannot compute the hash itself: `gh ... | sha256sum` treats a trailing newline and CRLF differently
-// from hashIssueBody, which the orchestrator uses to tell whether a plan is up to date.
+// The skill cannot compute the hash itself, e.g. with `gh ... | sha256sum`: that treats line endings and a
+// trailing newline differently from hashIssueBody, and the orchestrator compares hashes made by hashIssueBody
+// to decide whether a plan is up to date.
 
-import { hashIssueBody } from '../../shared/body-sha.ts';
-import { runCommand } from '../../shared/command-runner.ts';
-import { getIssue } from '../../shared/github-client.ts';
-import { parseIssueNumber } from '../../shared/issue-number.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { parseIssueNumber } from '../../shared/command/issue-number.ts';
+import { getIssue } from '../../shared/github/issues.ts';
+import { hashIssueBody } from '../../shared/plan/body-sha.ts';
 
 async function main(): Promise<void> {
   const issueNumber = parseIssueNumber(process.argv.slice(2), 'print-body-sha');
   const issue = await getIssue(issueNumber);
-  // The command's output for the skill, not a log line, so it bypasses the logger.
+  // This is output for the skill, not a log line, so it goes straight to stdout, not through the logger.
   process.stdout.write(`body-sha: ${hashIssueBody(issue.body)}\n`);
 }
 

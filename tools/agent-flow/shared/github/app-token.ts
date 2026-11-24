@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { createAppAuth } from '@octokit/auth-app';
 
-// The GitHub App the agent pushes and opens PRs as, so a PR is not the reviewer's own and can be approved by them.
+// The agent pushes and opens PRs as a GitHub App, not as the user. GitHub does not let you approve your own PR,
+// so if the agent used the user's account, the user could not approve the agent's PRs.
+// These environment variables say which App to use and where its private key is.
 export const appVariableNames = {
   appId: 'AGENT_APP_ID',
   installationId: 'AGENT_APP_INSTALLATION_ID',
@@ -12,7 +14,7 @@ export type AppCredentials = { appId: number; installationId: number; privateKey
 
 type Environment = Record<string, string | undefined>;
 
-// Errors name the variable, never its value.
+// Error messages name the variable but never show its value, because logs can be public.
 export function readAppCredentials(environment: Environment): AppCredentials {
   const read = (name: string): string => {
     const value = environment[name]?.trim();
@@ -31,8 +33,9 @@ export function readAppCredentials(environment: Environment): AppCredentials {
   };
 }
 
-// The token is valid for an hour and only for the repositories the App is installed on. It is passed to one
-// git or gh process at a time through its environment, never to the skill's session.
+// Gets a short-lived token for the App: it works for one hour, and only on repositories where the App is
+// installed. We give it to one git or gh process at a time, through its environment. The Claude session never
+// sees it.
 export async function getInstallationToken(): Promise<string> {
   const credentials = readAppCredentials(process.env);
   let privateKey: string;
@@ -41,7 +44,8 @@ export async function getInstallationToken(): Promise<string> {
   } catch {
     throw new Error(`could not read the private key named by ${appVariableNames.privateKeyPath}`);
   }
-  // The PKCS#1 key GitHub generates is converted to PKCS#8 by the library on Node.
+  // GitHub gives the key in PKCS#1 format. The library needs PKCS#8, but on Node it converts the key itself,
+  // so the .pem file from GitHub works as it is.
   const auth = createAppAuth({ appId: credentials.appId, privateKey });
   const authentication = await auth({ type: 'installation', installationId: credentials.installationId });
   return authentication.token;

@@ -1,7 +1,8 @@
 export type PullRequestText = { title: string; body: string };
 
-// The skill writes the title on the first line and the body after it. `Closes #<n>` is added here, not left to
-// the model, because it is what closes the issue on merge.
+// Splits the skill's text into the PR title (the first line) and the body (the rest).
+// We add `Closes #<n>` here instead of asking the model to write it: this line makes GitHub close the issue when
+// the PR is merged, so it must always be there.
 export function parsePullRequestText(text: string, issueNumber: number): PullRequestText {
   const [firstLine, ...bodyLines] = text.replaceAll('\r\n', '\n').split('\n');
   const title = firstLine.trim();

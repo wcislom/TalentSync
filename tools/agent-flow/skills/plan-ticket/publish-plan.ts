@@ -1,25 +1,28 @@
 // npm --prefix tools/agent-flow run publish-plan <issue-number> <body-sha> < plan.md
 //
-// Publishes the plan-ticket skill's plan as the issue's one plan comment. <body-sha> comes from print-body-sha,
-// run before the skill read the body. In order:
-//   1. Refuse if the body changed since then: the plan would be for an older version of the issue.
-//   2. Refuse if the gh user is not a trusted author: the orchestrator would ignore the plan and plan again.
-//   3. Remove plan-approved, so an approval always belongs to the plan the approver read.
-//   4. Edit the existing plan comment, or create one if there is none. Other comments are never touched.
+// The last command the plan-ticket skill runs. It publishes the plan as the issue's plan comment. Each issue has
+// one plan comment, edited in place. <body-sha> comes from print-body-sha, which the skill ran before it read
+// the issue body.
+// Steps:
+//   1. Stop if the issue body changed since then: the plan would describe an older version of the issue.
+//   2. Stop if the logged-in gh user is not a trusted author: the orchestrator would ignore the plan and write
+//      a new one.
+//   3. Remove the plan-approved label. An approval must always belong to the plan the person actually read.
+//   4. Edit the existing plan comment, or create one if there is none. Other comments are never changed.
 
-import { hashIssueBody } from '../../shared/body-sha.ts';
-import { runCommand } from '../../shared/command-runner.ts';
-import { config } from '../../shared/config.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { config } from '../../shared/config/config.ts';
+import { getCurrentLogin } from '../../shared/github/gh-cli.ts';
 import {
   createIssueComment,
   editIssueComment,
-  getCurrentLogin,
   getIssue,
   getIssueComments,
   removeLabel,
-} from '../../shared/github-client.ts';
-import { logger } from '../../shared/logger.ts';
-import { findPlanCommentIdToEdit, formatPlanMarker } from '../../shared/plan-marker.ts';
+} from '../../shared/github/issues.ts';
+import { logger } from '../../shared/logging/logger.ts';
+import { hashIssueBody } from '../../shared/plan/body-sha.ts';
+import { findPlanCommentIdToEdit, formatPlanMarker } from '../../shared/plan/plan-marker.ts';
 
 type PublishArguments = { issueNumber: number; plannedBodySha: string };
 
@@ -53,24 +56,25 @@ async function main(): Promise<void> {
     getCurrentLogin(),
   ]);
 
-  // 1. Body unchanged.
+  // 1. Is the body unchanged?
   if (hashIssueBody(issue.body) !== plannedBodySha) {
     throw new Error(`the body of #${issueNumber} changed after print-body-sha: plan again`);
   }
 
-  // 2. Trusted author.
+  // 2. Is the gh user a trusted author?
   if (!config.trustedAuthors.includes(login)) {
     throw new Error(`${login} is not a trusted author: the orchestrator would ignore this plan`);
   }
 
-  // 3. Approval removed, before the comment changes. A crash between the two leaves the old plan unapproved and
-  // with the old body sha, so the next run plans again; the other order could leave the old approval on the new plan.
-  // Not closed: an approval added after the labels were read and before the comment is written covers a plan
-  // the approver has not seen. The window is a few requests long.
+  // 3. Remove the approval before changing the comment.
+  //    If we crash between the two, the old plan stays without approval, so the next run plans again. In the
+  //    other order, a crash could leave the old approval on the new plan.
+  //    Known gap: if someone adds the approval after we read the labels and before we write the comment, the
+  //    approval covers a plan they have not seen. That window is only a few requests long.
   const hadApproval = issue.labels.includes(config.labels.planApproved);
   if (hadApproval) await removeLabel(issueNumber, config.labels.planApproved);
 
-  // 4. One plan comment, edited in place.
+  // 4. Write the plan: edit the existing comment, or create the first one.
   const commentBody = formatPlanComment(plannedBodySha, planText);
   const existingCommentId = findPlanCommentIdToEdit(comments, login);
   if (existingCommentId === null) {
