@@ -1,4 +1,4 @@
-import type { Budget } from './config.ts';
+import type { Budget } from '../config/config.ts';
 import type { SkillRun } from './skill-runner.ts';
 
 // What one orchestrator run has spent so far, against the limit for the whole run.

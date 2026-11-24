@@ -1,5 +1,5 @@
-import type { TimelineEvent } from '../../shared/github-client.ts';
-import { addLabel, removeLabel } from '../../shared/github-client.ts';
+import { addLabel, removeLabel } from '../../shared/github/issues.ts';
+import type { TimelineEvent } from '../../shared/github/issues.ts';
 
 // The lock only saves work, it does not guarantee mutual exclusion: reading the label and adding it are two
 // separate requests, so two runs that start together can both see no label and both proceed.

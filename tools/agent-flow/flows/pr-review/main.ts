@@ -12,19 +12,14 @@
 //      an unresolved thread from an earlier run on the same path, line and rule is not repeated.
 //   6. Publish the review in one call.
 
-import { runCommand } from '../../shared/command-runner.ts';
-import { config } from '../../shared/config.ts';
-import {
-  createReview,
-  getPullRequest,
-  getPullRequestDiff,
-  getPullRequestReviews,
-  getUnresolvedReviewThreads,
-} from '../../shared/github-client.ts';
-import type { PullRequest } from '../../shared/github-client.ts';
-import { parseIssueNumber } from '../../shared/issue-number.ts';
-import { logger } from '../../shared/logger.ts';
-import { formatSkillRun, runSkill } from '../../shared/skill-runner.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { parseIssueNumber } from '../../shared/command/issue-number.ts';
+import { config } from '../../shared/config/config.ts';
+import { getPullRequest, getPullRequestDiff } from '../../shared/github/pull-requests.ts';
+import type { PullRequest } from '../../shared/github/pull-requests.ts';
+import { createReview, getPullRequestReviews, getUnresolvedReviewThreads } from '../../shared/github/reviews.ts';
+import { logger } from '../../shared/logging/logger.ts';
+import { formatSkillRun, runSkill } from '../../shared/runner/skill-runner.ts';
 import { parseCommentableLines } from './diff-lines.ts';
 import { buildReviewDraft, isAlreadyReviewed } from './review-draft.ts';
 import { parseReviewOutput } from './review-output.ts';

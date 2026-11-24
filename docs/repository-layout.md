@@ -107,24 +107,30 @@ tools/
                                             One package.json, TypeScript run natively by Node (no build step, no tsc),
                                             tests with node:test (`npm --prefix tools/agent-flow test`).
                                             Not part of the product, references nothing in src/
-    shared/                                 github-client.ts (every gh call, argument arrays, JSON; a call can run as
-                                            the agent's GitHub App), skill-runner.ts (a skill in a new or resumed SDK
-                                            session, project settings only, turn and cost budget, its final text;
-                                            formatSkillRun: the run's one-line summary),
-                                            logger.ts (the only place that writes log lines; groups and ::error::
-                                            in GitHub Actions; formatting of cost, duration and time),
-                                            run-budget.ts (RunBudget: turns and cost spent against the run's limit),
-                                            config.ts (main branch, labels, stale lock minutes, trusted authors, budget,
-                                            agent branch),
-                                            body-sha.ts and plan-marker.ts (the plan comment's format: written by
-                                            skills/plan-ticket, read by the orchestrator and skills/implement-ticket),
-                                            git-client.ts (every git call, argument arrays; the push takes the App's
-                                            token through the process environment, never forced),
-                                            github-app-token.ts (installation token of the agent's GitHub App from
-                                            AGENT_APP_ID, AGENT_APP_INSTALLATION_ID, AGENT_APP_PRIVATE_KEY_PATH),
-                                            issue-number.ts (the argument of single-issue and single-PR commands),
-                                            command-runner.ts (runCommand: a command's error → one log line and exit
-                                            code 1; failProcess), test/
+    shared/                                 code the flows and skills' tools share, by concern; each folder keeps its
+                                            tests in test/:
+      github/                               gh-cli.ts (every gh call: argument arrays, errors, JSON, pagination; a
+                                            call can run as the agent's GitHub App), issues.ts (issue, comments,
+                                            timeline, labels), pull-requests.ts (find, read, diff, open),
+                                            reviews.ts (reviews, unresolved threads through GraphQL, publish one
+                                            COMMENT review), app-token.ts (installation token of the agent's GitHub
+                                            App from AGENT_APP_ID, AGENT_APP_INSTALLATION_ID,
+                                            AGENT_APP_PRIVATE_KEY_PATH)
+      git/                                  git-client.ts (every git call, argument arrays; the push takes the App's
+                                            token through the process environment, never forced)
+      runner/                               skill-runner.ts (a skill in a new or resumed SDK session, project
+                                            settings only, turn and cost budget, its final text; formatSkillRun: the
+                                            run's one-line summary), run-budget.ts (RunBudget: turns and cost spent
+                                            against the run's limit)
+      config/                               config.ts (repo root, main branch, labels, stale lock minutes, trusted
+                                            authors, budget, agent branch)
+      logging/                              logger.ts (the only place that writes log lines; groups and ::error:: in
+                                            GitHub Actions; formatting of cost, duration and time)
+      command/                              command-runner.ts (runCommand: a command's error → one log line and exit
+                                            code 1; failProcess), issue-number.ts (the argument of single-issue and
+                                            single-PR commands)
+      plan/                                 body-sha.ts and plan-marker.ts (the plan comment's format: written by
+                                            skills/plan-ticket, read by the orchestrator and skills/implement-ticket)
     flows/issue-to-pr/                      orchestrator: main.ts (read GitHub state → next step → lock → steps →
                                             release), next-step.ts (pure decision table), steps.ts (step → skill,
                                             stub or not), flow-log.ts (the run's log lines: ids, names and numbers

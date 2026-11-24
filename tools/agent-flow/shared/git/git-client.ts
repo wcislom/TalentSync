@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { config } from './config.ts';
+import { config } from '../config/config.ts';
 
 const execFileAsync = promisify(execFile);
 

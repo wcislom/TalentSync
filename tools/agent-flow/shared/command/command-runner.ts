@@ -1,4 +1,4 @@
-import { format, logger } from './logger.ts';
+import { format, logger } from '../logging/logger.ts';
 
 // Sets the exit code instead of calling process.exit(), so pending output (and the orchestrator's lock release)
 // still finish.

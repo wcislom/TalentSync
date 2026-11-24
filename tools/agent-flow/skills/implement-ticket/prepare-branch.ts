@@ -8,14 +8,20 @@
 //      opening the PR, otherwise from main.
 //   4. Print the plan. The skill reads it only from here, never from the issue's comments.
 
-import { hashIssueBody } from '../../shared/body-sha.ts';
-import { runCommand } from '../../shared/command-runner.ts';
-import { config, getAgentBranch } from '../../shared/config.ts';
-import { fetchBranch, hasUncommittedChanges, remoteBranchExists, switchToNewBranch } from '../../shared/git-client.ts';
-import { findPullRequestFrom, getIssue, getIssueComments } from '../../shared/github-client.ts';
-import { parseIssueNumber } from '../../shared/issue-number.ts';
-import { logger } from '../../shared/logger.ts';
-import { findLatestTrustedPlan } from '../../shared/plan-marker.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { parseIssueNumber } from '../../shared/command/issue-number.ts';
+import { config, getAgentBranch } from '../../shared/config/config.ts';
+import {
+  fetchBranch,
+  hasUncommittedChanges,
+  remoteBranchExists,
+  switchToNewBranch,
+} from '../../shared/git/git-client.ts';
+import { getIssue, getIssueComments } from '../../shared/github/issues.ts';
+import { findPullRequestFrom } from '../../shared/github/pull-requests.ts';
+import { logger } from '../../shared/logging/logger.ts';
+import { hashIssueBody } from '../../shared/plan/body-sha.ts';
+import { findLatestTrustedPlan } from '../../shared/plan/plan-marker.ts';
 import { checkImplementationGate } from './implementation-gate.ts';
 
 async function main(): Promise<void> {

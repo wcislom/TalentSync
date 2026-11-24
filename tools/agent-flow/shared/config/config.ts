@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 export const config = {
-  repoRoot: path.resolve(import.meta.dirname, '..', '..', '..'),
+  repoRoot: path.resolve(import.meta.dirname, '..', '..', '..', '..'),
   mainBranch: 'main',
   labels: {
     agentRunning: 'agent:running',

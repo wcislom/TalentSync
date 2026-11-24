@@ -1,5 +1,5 @@
-import { config } from '../../shared/config.ts';
-import type { Plan } from '../../shared/plan-marker.ts';
+import { config } from '../../shared/config/config.ts';
+import type { Plan } from '../../shared/plan/plan-marker.ts';
 
 // What the gate reads from the issue. The approval is the issue's label, not part of the plan comment.
 export type GateInput = {

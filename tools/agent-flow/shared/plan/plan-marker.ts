@@ -1,4 +1,4 @@
-import type { IssueComment } from './github-client.ts';
+import type { IssueComment } from '../github/issues.ts';
 
 // plannedBodySha: the hash of the issue body the plan was written for. planText: the comment without the marker.
 export type Plan = { plannedBodySha: string; planText: string };

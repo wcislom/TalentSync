@@ -7,19 +7,19 @@
 //   3. Remove plan-approved, so an approval always belongs to the plan the approver read.
 //   4. Edit the existing plan comment, or create one if there is none. Other comments are never touched.
 
-import { hashIssueBody } from '../../shared/body-sha.ts';
-import { runCommand } from '../../shared/command-runner.ts';
-import { config } from '../../shared/config.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { config } from '../../shared/config/config.ts';
+import { getCurrentLogin } from '../../shared/github/gh-cli.ts';
 import {
   createIssueComment,
   editIssueComment,
-  getCurrentLogin,
   getIssue,
   getIssueComments,
   removeLabel,
-} from '../../shared/github-client.ts';
-import { logger } from '../../shared/logger.ts';
-import { findPlanCommentIdToEdit, formatPlanMarker } from '../../shared/plan-marker.ts';
+} from '../../shared/github/issues.ts';
+import { logger } from '../../shared/logging/logger.ts';
+import { hashIssueBody } from '../../shared/plan/body-sha.ts';
+import { findPlanCommentIdToEdit, formatPlanMarker } from '../../shared/plan/plan-marker.ts';
 
 type PublishArguments = { issueNumber: number; plannedBodySha: string };
 

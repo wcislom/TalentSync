@@ -1,8 +1,8 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
-import { config } from './config.ts';
-import { format } from './logger.ts';
-import type { Budget } from './config.ts';
+import { config } from '../config/config.ts';
+import type { Budget } from '../config/config.ts';
+import { format } from '../logging/logger.ts';
 
 export type Session = { id: string; totalCostUsd: number };
 export type SkillRun = {

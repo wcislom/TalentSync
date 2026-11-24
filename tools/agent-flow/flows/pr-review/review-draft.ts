@@ -1,4 +1,4 @@
-import type { NewReview, OpenThread, PostedReview, ReviewComment } from '../../shared/github-client.ts';
+import type { NewReview, OpenThread, PostedReview, ReviewComment } from '../../shared/github/reviews.ts';
 import type { CommentableLines } from './diff-lines.ts';
 import { rulePattern } from './review-output.ts';
 import type { Finding, ReviewOutput } from './review-output.ts';

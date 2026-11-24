@@ -1,9 +1,9 @@
-import { config, getAgentBranch } from '../../shared/config.ts';
-import type { Budget } from '../../shared/config.ts';
-import { format, logger } from '../../shared/logger.ts';
-import type { RunBudget } from '../../shared/run-budget.ts';
-import { formatSkillRun } from '../../shared/skill-runner.ts';
-import type { SkillRun } from '../../shared/skill-runner.ts';
+import { config, getAgentBranch } from '../../shared/config/config.ts';
+import type { Budget } from '../../shared/config/config.ts';
+import { format, logger } from '../../shared/logging/logger.ts';
+import type { RunBudget } from '../../shared/runner/run-budget.ts';
+import { formatSkillRun } from '../../shared/runner/skill-runner.ts';
+import type { SkillRun } from '../../shared/runner/skill-runner.ts';
 import { NextStepKind, RunReason, StopReason } from './next-step.ts';
 import type { NextStep } from './next-step.ts';
 import type { StepName } from './steps.ts';

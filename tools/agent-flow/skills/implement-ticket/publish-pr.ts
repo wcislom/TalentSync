@@ -12,21 +12,22 @@
 // A crash between 5 and 6 leaves the branch pushed and no PR: the next run starts from the remote branch
 // (prepare-branch), and this command opens the PR.
 
-import { hashIssueBody } from '../../shared/body-sha.ts';
-import { runCommand } from '../../shared/command-runner.ts';
-import { config, getAgentBranch } from '../../shared/config.ts';
+import { runCommand } from '../../shared/command/command-runner.ts';
+import { parseIssueNumber } from '../../shared/command/issue-number.ts';
+import { config, getAgentBranch } from '../../shared/config/config.ts';
 import {
   commitAll,
   countCommitsAhead,
   getCurrentBranch,
   hasUncommittedChanges,
   pushBranch,
-} from '../../shared/git-client.ts';
-import { getInstallationToken } from '../../shared/github-app-token.ts';
-import { createPullRequest, findPullRequestFrom, getIssue, getIssueComments } from '../../shared/github-client.ts';
-import { parseIssueNumber } from '../../shared/issue-number.ts';
-import { logger } from '../../shared/logger.ts';
-import { findLatestTrustedPlan } from '../../shared/plan-marker.ts';
+} from '../../shared/git/git-client.ts';
+import { getInstallationToken } from '../../shared/github/app-token.ts';
+import { getIssue, getIssueComments } from '../../shared/github/issues.ts';
+import { createPullRequest, findPullRequestFrom } from '../../shared/github/pull-requests.ts';
+import { logger } from '../../shared/logging/logger.ts';
+import { hashIssueBody } from '../../shared/plan/body-sha.ts';
+import { findLatestTrustedPlan } from '../../shared/plan/plan-marker.ts';
 import { checkImplementationGate } from './implementation-gate.ts';
 import { parsePullRequestText } from './pull-request-text.ts';
 
