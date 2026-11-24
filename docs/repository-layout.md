@@ -136,13 +136,15 @@ tools/
                                             stub or not), flow-log.ts (the run's log lines: ids, names and numbers
                                             only, CI logs are public),
                                             lock.ts (label agent:running, age from the issue timeline), test/
-    flows/pr-review/                        review of one PR: main.ts (skips a closed, draft or fork PR and a head
+    flows/pr-review/                        review of one PR: main.ts (skips a closed, draft or fork PR and a commit
                                             already reviewed → /review-pr → publishes one COMMENT review with the
-                                            gh login; the skill only reads, the flow publishes), review-output.ts
-                                            (the skill's summary and JSON findings, refused when off the contract),
-                                            diff-lines.ts (the lines of the new version a comment can be put on),
-                                            review-draft.ts (inline comments, findings off the diff in the body,
-                                            findings with an open thread not repeated; hidden markers), test/
+                                            gh login; the skill only reads, the flow publishes),
+                                            skill-output-parser.ts (the skill's summary and JSON findings, rejected
+                                            when off the format), diff-parser.ts (the lines of each file a review
+                                            comment may go on), review-markers.ts (hidden markers: commit already
+                                            reviewed, findings with an open thread), review-builder.ts (inline
+                                            comments, findings off the diff in the body, the summary as markdown,
+                                            the model's text sanitized), test/
     skills/<skill>/                         tools a skill runs through Bash, one folder per skill in .claude/skills/
                                             (the prompts stay there). One file per command, named after it; pure
                                             logic a command needs sits next to it, with its tests in test/.

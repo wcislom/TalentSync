@@ -1,57 +1,23 @@
-import type { NewReview, OpenThread, PostedReview, ReviewComment } from '../../shared/github/reviews.ts';
-import type { CommentableLines } from './diff-lines.ts';
-import { rulePattern } from './review-output.ts';
-import type { Finding, ReviewOutput } from './review-output.ts';
+import type { NewReview, OpenThread, ReviewComment } from '../../shared/github/reviews.ts';
+import type { CommentableLines } from './diff-parser.ts';
+import { findingKey, findOpenFindingKeys, formatFindingMarker, formatReviewMarker } from './review-markers.ts';
+import type { Finding, SkillOutput } from './skill-output-parser.ts';
 
-export type ReviewDraft = NewReview & { findingsInBody: number; findingsRepeated: number };
+export type BuiltReview = NewReview & { findingsInBody: number; findingsRepeated: number };
 
-export type ReviewDraftInput = {
+export type ReviewInput = {
   headSha: string;
-  reviewOutput: ReviewOutput;
+  skillOutput: SkillOutput;
   commentableLines: CommentableLines;
   openThreads: OpenThread[];
   trustedAuthors: string[];
 };
-
-// Hidden HTML comments (markers) in our reviews let a later run recognise its own work:
-// - agent:review marks a commit that was already reviewed, so a rerun does not review it again;
-// - agent:finding marks the rule of an inline comment, so a new push does not repeat the same finding.
-// We only trust markers written by trusted authors. Anyone can comment on a PR, and a copied marker must not
-// hide a finding or skip a review.
-function formatReviewMarker(headSha: string): string {
-  return `<!-- agent:review head=${headSha} -->`;
-}
-
-function formatFindingMarker(rule: string): string {
-  return `<!-- agent:finding rule=${rule} -->`;
-}
-
-const findingMarkerPattern = new RegExp(`<!-- agent:finding rule=(${rulePattern.source.slice(1, -1)}) -->`);
-
-export function isAlreadyReviewed(reviews: PostedReview[], headSha: string, trustedAuthors: string[]): boolean {
-  const marker = formatReviewMarker(headSha);
-  return reviews.some((review) => trustedAuthors.includes(review.authorLogin) && review.body.includes(marker));
-}
 
 // The model wrote this text after reading an untrusted PR. So we:
 // - break @mentions, so nobody gets a notification;
 // - escape "<!--", so the text cannot hold a fake marker that hides a later finding or review.
 function sanitizeModelText(text: string): string {
   return text.replaceAll(/@(?=[A-Za-z0-9])/g, '@​').replaceAll('<!--', '&lt;!--');
-}
-
-function findingKey(path: string, line: number, rule: string): string {
-  return JSON.stringify([path, line, rule]);
-}
-
-function openFindingKeys(openThreads: OpenThread[], trustedAuthors: string[]): Set<string> {
-  const keys = new Set<string>();
-  for (const thread of openThreads) {
-    const rule = findingMarkerPattern.exec(thread.body)?.[1];
-    if (rule === undefined || thread.line === null || !trustedAuthors.includes(thread.authorLogin)) continue;
-    keys.add(findingKey(thread.path, thread.line, rule));
-  }
-  return keys;
 }
 
 function formatFindingHeading(finding: Finding): string {
@@ -73,14 +39,18 @@ function formatSummary(summary: string): string {
   }).join('\n');
 }
 
-export function buildReviewDraft(input: ReviewDraftInput): ReviewDraft {
-  const { headSha, reviewOutput, commentableLines, openThreads, trustedAuthors } = input;
-  const openKeys = openFindingKeys(openThreads, trustedAuthors);
+// Turns the skill's findings into one review:
+// - a finding on a line shown in the diff becomes an inline comment;
+// - a finding on any other line goes into the review body, so it is not lost;
+// - a finding that already has an open thread from an earlier review is skipped.
+export function buildReview(input: ReviewInput): BuiltReview {
+  const { headSha, skillOutput, commentableLines, openThreads, trustedAuthors } = input;
+  const openKeys = findOpenFindingKeys(openThreads, trustedAuthors);
   const comments: ReviewComment[] = [];
   const findingsInBody: Finding[] = [];
   let findingsRepeated = 0;
 
-  for (const finding of reviewOutput.findings) {
+  for (const finding of skillOutput.findings) {
     if (openKeys.has(findingKey(finding.path, finding.line, finding.rule))) {
       findingsRepeated += 1;
     } else if (commentableLines.get(finding.path)?.has(finding.line)) {
@@ -97,7 +67,7 @@ export function buildReviewDraft(input: ReviewDraftInput): ReviewDraft {
   }
 
   const bodyParts = [formatReviewMarker(headSha), `**Agent review** (review-pr) of ${headSha.slice(0, 7)}`,
-    sanitizeModelText(formatSummary(reviewOutput.summary))];
+    sanitizeModelText(formatSummary(skillOutput.summary))];
   if (findingsInBody.length > 0) {
     const bullets = findingsInBody.map((finding) =>
       `- ${formatFindingHeading(finding)} · \`${finding.path}:${finding.line}\`: ${sanitizeModelText(finding.body)}`);

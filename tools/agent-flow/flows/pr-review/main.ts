@@ -24,9 +24,10 @@ import type { PullRequest } from '../../shared/github/pull-requests.ts';
 import { createReview, getPullRequestReviews, getUnresolvedReviewThreads } from '../../shared/github/reviews.ts';
 import { logger } from '../../shared/logging/logger.ts';
 import { formatSkillRun, runSkill } from '../../shared/runner/skill-runner.ts';
-import { parseCommentableLines } from './diff-lines.ts';
-import { buildReviewDraft, isAlreadyReviewed } from './review-draft.ts';
-import { parseReviewOutput } from './review-output.ts';
+import { parseCommentableLines } from './diff-parser.ts';
+import { buildReview } from './review-builder.ts';
+import { isAlreadyReviewed } from './review-markers.ts';
+import { parseSkillOutput } from './skill-output-parser.ts';
 
 const skill = 'review-pr';
 
@@ -63,7 +64,7 @@ async function main(): Promise<void> {
   logger.info(`/${skill} ${pullRequestNumber}: ${formatSkillRun(skillRun)}`);
   logger.endGroup();
   if (!skillRun.succeeded) throw new Error(`/${skill} stopped: ${skillRun.outcome}`);
-  const reviewOutput = parseReviewOutput(skillRun.resultText);
+  const skillOutput = parseSkillOutput(skillRun.resultText);
 
   // 4. Did the head change?
   const [currentPullRequest, diff, openThreads] = await Promise.all([
@@ -77,19 +78,19 @@ async function main(): Promise<void> {
   }
 
   // 5. Sort the findings.
-  const reviewDraft = buildReviewDraft({
+  const review = buildReview({
     headSha: pullRequest.headSha,
-    reviewOutput,
+    skillOutput,
     commentableLines: parseCommentableLines(diff),
     openThreads,
     trustedAuthors: config.trustedAuthors,
   });
 
   // 6. Publish.
-  await createReview(pullRequestNumber, reviewDraft);
+  await createReview(pullRequestNumber, review);
   logger.info(`PR #${pullRequestNumber}: review published at ${pullRequest.headSha.slice(0, 7)}, `
-    + `${reviewDraft.comments.length} inline, ${reviewDraft.findingsInBody} in the body, `
-    + `${reviewDraft.findingsRepeated} already open`);
+    + `${review.comments.length} inline, ${review.findingsInBody} in the body, `
+    + `${review.findingsRepeated} already open`);
 }
 
 runCommand('pr-review', main);

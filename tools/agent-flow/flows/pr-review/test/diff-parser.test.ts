@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseCommentableLines } from '../diff-lines.ts';
+import { parseCommentableLines } from '../diff-parser.ts';
 
 const diff = [
   'diff --git a/src/A.cs b/src/A.cs',
