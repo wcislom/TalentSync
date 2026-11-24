@@ -7,7 +7,7 @@
 //   1. Stop if the issue body changed since then: the plan would describe an older version of the issue.
 //   2. Stop if the logged-in gh user is not a trusted author: the orchestrator would ignore the plan and write
 //      a new one.
-//   3. Remove the plan-approved label. An approval must always belong to the plan the person actually read.
+//   3. Remove the agent:plan-approved label. An approval must always belong to the plan the person actually read.
 //   4. Edit the existing plan comment, or create one if there is none. Other comments are never changed.
 
 import { runCommand } from '../../shared/command/command-runner.ts';
