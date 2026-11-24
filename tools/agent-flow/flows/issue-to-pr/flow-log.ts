@@ -2,6 +2,7 @@ import { config, getAgentBranch } from '../../shared/config.ts';
 import type { Budget } from '../../shared/config.ts';
 import { format, logger } from '../../shared/logger.ts';
 import type { RunBudget } from '../../shared/run-budget.ts';
+import { formatSkillRun } from '../../shared/skill-runner.ts';
 import type { SkillRun } from '../../shared/skill-runner.ts';
 import { NextStepKind, RunReason, StopReason } from './next-step.ts';
 import type { NextStep } from './next-step.ts';
@@ -50,11 +51,8 @@ export const flowLog = {
     logger.info(`[${stepName}] skipped: ${command(skill, issueNumber)} is a stub`);
   },
   stepFinished(stepName: StepName, skill: string, issueNumber: number, skillRun: SkillRun, budgetLeft: Budget): void {
-    const result = skillRun.succeeded ? 'done' : `stopped (${skillRun.outcome})`;
-    const denials = skillRun.deniedTools.length === 0 ? '' : `; permission denied: ${skillRun.deniedTools.join(', ')}`;
-    logger.info(`[${stepName}] ${command(skill, issueNumber)}: ${result} in ${format.duration(skillRun.durationMs)}, `
-      + `${skillRun.turns} turns, ${format.usd(skillRun.stepCostUsd)} `
-      + `(budget left: ${budgetLeft.maxTurns} turns, ${format.usd(budgetLeft.maxBudgetUsd)})${denials}`);
+    logger.info(`[${stepName}] ${command(skill, issueNumber)}: ${formatSkillRun(skillRun)} `
+      + `(budget left: ${budgetLeft.maxTurns} turns, ${format.usd(budgetLeft.maxBudgetUsd)})`);
     logger.endGroup();
   },
   lockReleased(issueNumber: number): void {

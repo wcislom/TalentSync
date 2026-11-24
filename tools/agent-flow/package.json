@@ -11,6 +11,7 @@
     "publish-plan": "node skills/plan-ticket/publish-plan.ts",
     "prepare-branch": "node skills/implement-ticket/prepare-branch.ts",
     "publish-pr": "node skills/implement-ticket/publish-pr.ts",
+    "pr-review": "node flows/pr-review/main.ts",
     "test": "node --test"
   },
   "dependencies": {

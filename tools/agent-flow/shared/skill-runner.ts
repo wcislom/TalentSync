@@ -1,6 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import type { SDKResultMessage } from '@anthropic-ai/claude-agent-sdk';
 import { config } from './config.ts';
+import { format } from './logger.ts';
 import type { Budget } from './config.ts';
 
 export type Session = { id: string; totalCostUsd: number };
@@ -11,6 +12,8 @@ export type SkillRun = {
   turns: number;
   stepCostUsd: number;
   durationMs: number;
+  // The skill's final message, '' when it stopped early. Issue or PR content: never a log line.
+  resultText: string;
   // Tool names only: the denied calls' inputs can hold issue content.
   deniedTools: string[];
   session: Session;
@@ -71,7 +74,16 @@ export async function runSkill(
     turns: resultMessage.num_turns,
     stepCostUsd: reportedTotal >= previousTotal ? reportedTotal - previousTotal : reportedTotal,
     durationMs: resultMessage.duration_ms,
+    resultText: resultMessage.subtype === 'success' ? resultMessage.result : '',
     deniedTools: [...new Set(resultMessage.permission_denials.map((denial) => denial.tool_name))],
     session: { id: resultMessage.session_id, totalCostUsd: Math.max(reportedTotal, previousTotal) },
   };
+}
+
+// e.g. "done in 4 min 51 s, 16 turns, $0.6083; permission denied: Bash"
+export function formatSkillRun(skillRun: SkillRun): string {
+  const result = skillRun.succeeded ? 'done' : `stopped (${skillRun.outcome})`;
+  const denials = skillRun.deniedTools.length === 0 ? '' : `; permission denied: ${skillRun.deniedTools.join(', ')}`;
+  return `${result} in ${format.duration(skillRun.durationMs)}, ${skillRun.turns} turns, `
+    + `${format.usd(skillRun.stepCostUsd)}${denials}`;
 }

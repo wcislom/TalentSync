@@ -109,7 +109,8 @@ tools/
                                             Not part of the product, references nothing in src/
     shared/                                 github-client.ts (every gh call, argument arrays, JSON; a call can run as
                                             the agent's GitHub App), skill-runner.ts (a skill in a new or resumed SDK
-                                            session, project settings only, turn and cost budget),
+                                            session, project settings only, turn and cost budget, its final text;
+                                            formatSkillRun: the run's one-line summary),
                                             logger.ts (the only place that writes log lines; groups and ::error::
                                             in GitHub Actions; formatting of cost, duration and time),
                                             run-budget.ts (RunBudget: turns and cost spent against the run's limit),
@@ -121,7 +122,7 @@ tools/
                                             token through the process environment, never forced),
                                             github-app-token.ts (installation token of the agent's GitHub App from
                                             AGENT_APP_ID, AGENT_APP_INSTALLATION_ID, AGENT_APP_PRIVATE_KEY_PATH),
-                                            issue-number.ts (the argument of single-issue commands),
+                                            issue-number.ts (the argument of single-issue and single-PR commands),
                                             command-runner.ts (runCommand: a command's error → one log line and exit
                                             code 1; failProcess), test/
     flows/issue-to-pr/                      orchestrator: main.ts (read GitHub state → next step → lock → steps →
@@ -129,6 +130,13 @@ tools/
                                             stub or not), flow-log.ts (the run's log lines: ids, names and numbers
                                             only, CI logs are public),
                                             lock.ts (label agent:running, age from the issue timeline), test/
+    flows/pr-review/                        review of one PR: main.ts (skips a closed, draft or fork PR and a head
+                                            already reviewed → /review-pr → publishes one COMMENT review with the
+                                            gh login; the skill only reads, the flow publishes), review-output.ts
+                                            (the skill's summary and JSON findings, refused when off the contract),
+                                            diff-lines.ts (the lines of the new version a comment can be put on),
+                                            review-draft.ts (inline comments, findings off the diff in the body,
+                                            findings with an open thread not repeated; hidden markers), test/
     skills/<skill>/                         tools a skill runs through Bash, one folder per skill in .claude/skills/
                                             (the prompts stay there). One file per command, named after it; pure
                                             logic a command needs sits next to it, with its tests in test/.
@@ -150,7 +158,8 @@ docs/                                       domain.md, architecture.md, reposito
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a
-                                            summary and JSON findings anchored to diff lines, posts nothing),
+                                            summary and JSON findings anchored to diff lines, posts nothing;
+                                            tools/agent-flow/flows/pr-review publishes them),
                                             plan-ticket (implementation plan of an issue, published as its one plan
                                             comment through tools/agent-flow/skills/plan-ticket; changes no files),
                                             implement-ticket (an approved plan implemented tests first on

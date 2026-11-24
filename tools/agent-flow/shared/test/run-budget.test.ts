@@ -12,6 +12,7 @@ function skillRun(turns: number, stepCostUsd: number): SkillRun {
     turns,
     stepCostUsd,
     durationMs: 1000,
+    resultText: '',
     deniedTools: [],
     session: { id: 'session', totalCostUsd: stepCostUsd },
   };
