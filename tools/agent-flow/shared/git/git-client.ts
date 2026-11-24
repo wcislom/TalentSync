@@ -7,7 +7,7 @@ const execFileAsync = promisify(execFile);
 const remote = 'origin';
 
 // `action` says what we tried to do. It is used in the error message: "could not <action>: <git's error>".
-async function git(args: string[], action: string, extraEnvironment?: Record<string, string>): Promise<string> {
+async function runGit(args: string[], action: string, extraEnvironment?: Record<string, string>): Promise<string> {
   try {
     const { stdout } = await execFileAsync('git', args, {
       cwd: config.repoRoot,
@@ -25,41 +25,41 @@ async function git(args: string[], action: string, extraEnvironment?: Record<str
 // New files that git does not track yet count too. Otherwise they would move with us to the agent's branch
 // and end up in the agent's commit.
 export async function hasUncommittedChanges(): Promise<boolean> {
-  const stdout = await git(['status', '--porcelain'], 'read the working tree status');
+  const stdout = await runGit(['status', '--porcelain'], 'read the working tree status');
   return stdout.trim() !== '';
 }
 
 export async function remoteBranchExists(branch: string): Promise<boolean> {
-  const stdout = await git(['ls-remote', '--heads', remote, branch], `look up ${branch} on ${remote}`);
+  const stdout = await runGit(['ls-remote', '--heads', remote, branch], `look up ${branch} on ${remote}`);
   return stdout.trim() !== '';
 }
 
 export async function fetchBranch(branch: string): Promise<void> {
-  await git(['fetch', remote, branch], `fetch ${branch} from ${remote}`);
+  await runGit(['fetch', remote, branch], `fetch ${branch} from ${remote}`);
 }
 
 // -C overwrites a local branch with the same name. If an earlier run crashed, its local commits that were never
 // pushed are dropped. That is on purpose: the flow keeps its state in GitHub, not in a local checkout, so we
 // always start from what is on GitHub.
 export async function switchToNewBranch(branch: string, baseBranch: string): Promise<void> {
-  await git(['switch', '-C', branch, '--no-track', `${remote}/${baseBranch}`],
+  await runGit(['switch', '-C', branch, '--no-track', `${remote}/${baseBranch}`],
     `switch to ${branch} from ${remote}/${baseBranch}`);
 }
 
 export async function getCurrentBranch(): Promise<string> {
-  const stdout = await git(['branch', '--show-current'], 'read the current branch');
+  const stdout = await runGit(['branch', '--show-current'], 'read the current branch');
   return stdout.trim();
 }
 
 export async function countCommitsAhead(baseBranch: string): Promise<number> {
-  const stdout = await git(['rev-list', '--count', `${remote}/${baseBranch}..HEAD`],
+  const stdout = await runGit(['rev-list', '--count', `${remote}/${baseBranch}..HEAD`],
     `count the commits ahead of ${remote}/${baseBranch}`);
   return Number(stdout.trim());
 }
 
 export async function commitAll(message: string): Promise<void> {
-  await git(['add', '--all'], 'stage the changes');
-  await git(['commit', '--message', message], 'commit the changes');
+  await runGit(['add', '--all'], 'stage the changes');
+  await runGit(['commit', '--message', message], 'commit the changes');
 }
 
 // Pushes as the agent's GitHub App, with its token.
@@ -73,7 +73,7 @@ export async function commitAll(message: string): Promise<void> {
 export async function pushBranch(branch: string, token: string): Promise<void> {
   const authorization = Buffer.from(`x-access-token:${token}`).toString('base64');
   const extraHeaderKey = 'http.https://github.com/.extraheader';
-  await git(['push', remote, `${branch}:refs/heads/${branch}`], `push ${branch} to ${remote}`, {
+  await runGit(['push', remote, `${branch}:refs/heads/${branch}`], `push ${branch} to ${remote}`, {
     GIT_TERMINAL_PROMPT: '0',
     GIT_CONFIG_COUNT: '3',
     GIT_CONFIG_KEY_0: extraHeaderKey,

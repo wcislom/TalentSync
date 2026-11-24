@@ -38,15 +38,15 @@ async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: R
   for (const stepName of stepNames) {
     const step = steps[stepName];
     if (step.stub) {
-      flowLog.stepStubbed(stepName, step.skill, issueNumber);
+      flowLog.logStepStubbed(stepName, step.skill, issueNumber);
       continue;
     }
     if (runBudget.isSpent()) throw new Error(`budget spent before step ${stepName}`);
-    flowLog.stepStarted(stepName, step.skill, issueNumber);
-    const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.remaining(), session);
+    flowLog.logStepStarted(stepName, step.skill, issueNumber);
+    const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.getRemaining(), session);
     runBudget.record(skillRun);
     session = skillRun.session;
-    flowLog.stepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.remaining());
+    flowLog.logStepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.getRemaining());
     if (!skillRun.succeeded) throw new Error(`step ${stepName} stopped: ${skillRun.outcome}`);
   }
 }
@@ -56,9 +56,9 @@ async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: R
 async function tryReleaseLock(issueNumber: number): Promise<void> {
   try {
     await releaseLock(issueNumber, config.labels.agentRunning);
-    flowLog.lockReleased(issueNumber);
+    flowLog.logLockReleased(issueNumber);
   } catch (error) {
-    flowLog.lockReleaseFailed(issueNumber, error);
+    flowLog.logLockReleaseFailed(issueNumber, error);
     failProcess();
   }
 }
@@ -67,21 +67,21 @@ async function main(): Promise<void> {
   const issueNumber = parseIssueNumber(process.argv.slice(2), 'issue-to-pr');
   const flowState = await readFlowState(issueNumber);
   const nextStep = decideNextStep(flowState, new Date(), config.lockStaleAfterMinutes);
-  flowLog.nextStep(issueNumber, nextStep);
+  flowLog.logNextStep(issueNumber, nextStep);
   if (nextStep.kind === NextStepKind.Stop) return;
 
   await acquireLock(issueNumber, config.labels.agentRunning, nextStep.replaceStaleLock);
-  flowLog.lockTaken(issueNumber, nextStep.replaceStaleLock);
+  flowLog.logLockTaken(issueNumber, nextStep.replaceStaleLock);
   const runBudget = new RunBudget(config.budget);
   try {
     await runSteps(issueNumber, nextStep.steps, runBudget);
   } finally {
     await tryReleaseLock(issueNumber);
-    flowLog.runFinished(issueNumber, runBudget);
+    flowLog.logRunFinished(issueNumber, runBudget);
   }
 }
 
 main().catch((error: unknown) => {
-  flowLog.failed(error);
+  flowLog.logFailure(error);
   failProcess();
 });

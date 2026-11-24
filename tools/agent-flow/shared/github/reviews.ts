@@ -1,4 +1,4 @@
-import { gh, ghApiAll, ghJson } from './gh-cli.ts';
+import { runGh, runGhApiAll, runGhJson } from './gh-cli.ts';
 
 export type PostedReview = { authorLogin: string; body: string };
 // An open (unresolved) review thread, described by its first comment.
@@ -7,7 +7,7 @@ export type ReviewComment = { path: string; line: number; side: 'RIGHT'; body: s
 export type NewReview = { commitId: string; body: string; comments: ReviewComment[] };
 
 export async function getPullRequestReviews(pullRequestNumber: number): Promise<PostedReview[]> {
-  const raw = await ghApiAll<{ user: { login: string } | null; body: string | null }>(
+  const raw = await runGhApiAll<{ user: { login: string } | null; body: string | null }>(
     `repos/{owner}/{repo}/pulls/${pullRequestNumber}/reviews`, `read the reviews of PR #${pullRequestNumber}`);
   return raw.map((review) => ({ authorLogin: review.user?.login ?? '', body: review.body ?? '' }));
 }
@@ -36,7 +36,7 @@ type ReviewThreadsPage = {
 };
 
 export async function getUnresolvedReviewThreads(pullRequestNumber: number): Promise<OpenThread[]> {
-  const pages = await ghJson<ReviewThreadsPage[]>(['api', 'graphql', '--paginate', '--slurp',
+  const pages = await runGhJson<ReviewThreadsPage[]>(['api', 'graphql', '--paginate', '--slurp',
     '-f', `query=${reviewThreadsQuery}`, '-F', 'owner={owner}', '-F', 'name={repo}',
     '-F', `number=${pullRequestNumber}`], `read the review threads of PR #${pullRequestNumber}`);
   return pages.flatMap((page) => page.data.repository.pullRequest.reviewThreads.nodes)
@@ -56,7 +56,7 @@ export async function getUnresolvedReviewThreads(pullRequestNumber: number): Pro
 // It never approves and never requests changes.
 export async function createReview(pullRequestNumber: number, review: NewReview): Promise<void> {
   const { commitId, body, comments } = review;
-  await gh(['api', `repos/{owner}/{repo}/pulls/${pullRequestNumber}/reviews`, '--method', 'POST', '--input', '-'],
+  await runGh(['api', `repos/{owner}/{repo}/pulls/${pullRequestNumber}/reviews`, '--method', 'POST', '--input', '-'],
     `publish the review of PR #${pullRequestNumber}`,
     { stdin: JSON.stringify({ commit_id: commitId, event: 'COMMENT', body, comments }) });
 }

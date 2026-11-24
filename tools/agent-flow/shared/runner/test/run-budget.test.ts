@@ -22,7 +22,7 @@ test('a new budget has spent nothing and has the whole limit left', () => {
   const runBudget = new RunBudget(limit);
   assert.equal(runBudget.turns, 0);
   assert.equal(runBudget.costUsd, 0);
-  assert.deepEqual(runBudget.remaining(), limit);
+  assert.deepEqual(runBudget.getRemaining(), limit);
   assert.equal(runBudget.isSpent(), false);
 });
 
@@ -32,7 +32,7 @@ test('recorded skill runs add up and reduce what is left', () => {
   runBudget.record(skillRun(5, 0.25));
   assert.equal(runBudget.turns, 15);
   assert.equal(runBudget.costUsd, 0.75);
-  assert.deepEqual(runBudget.remaining(), { maxTurns: 65, maxBudgetUsd: 4.25 });
+  assert.deepEqual(runBudget.getRemaining(), { maxTurns: 65, maxBudgetUsd: 4.25 });
 });
 
 test('the budget is spent when either turns or cost reach the limit', () => {

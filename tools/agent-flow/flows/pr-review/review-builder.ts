@@ -1,6 +1,6 @@
 import type { NewReview, OpenThread, ReviewComment } from '../../shared/github/reviews.ts';
 import type { CommentableLines } from './diff-parser.ts';
-import { findingKey, findOpenFindingKeys, formatFindingMarker, formatReviewMarker } from './review-markers.ts';
+import { createFindingKey, findOpenFindingKeys, formatFindingMarker, formatReviewMarker } from './review-markers.ts';
 import type { Finding, SkillOutput } from './skill-output-parser.ts';
 
 export type BuiltReview = NewReview & { findingsInBody: number; findingsRepeated: number };
@@ -51,7 +51,7 @@ export function buildReview(input: ReviewInput): BuiltReview {
   let findingsRepeated = 0;
 
   for (const finding of skillOutput.findings) {
-    if (openKeys.has(findingKey(finding.path, finding.line, finding.rule))) {
+    if (openKeys.has(createFindingKey(finding.path, finding.line, finding.rule))) {
       findingsRepeated += 1;
     } else if (commentableLines.get(finding.path)?.has(finding.line)) {
       comments.push({

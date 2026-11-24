@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findOpenFindingKeys, findingKey, isAlreadyReviewed } from '../review-markers.ts';
+import { findOpenFindingKeys, createFindingKey, isAlreadyReviewed } from '../review-markers.ts';
 
 const headSha = 'abcdef1234567890';
 
@@ -20,5 +20,5 @@ ${marker}` },
     { path: 'c.cs', line: null, authorLogin: 'owner', body: marker },
     { path: 'd.cs', line: 4, authorLogin: 'owner', body: 'no marker' },
   ], ['owner']);
-  assert.deepEqual([...keys], [findingKey('a.cs', 1, 'inv 3')]);
+  assert.deepEqual([...keys], [createFindingKey('a.cs', 1, 'inv 3')]);
 });

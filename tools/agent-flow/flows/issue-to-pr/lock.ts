@@ -12,10 +12,10 @@ export type LockState = { held: boolean; heldSince: Date | null };
 
 export function readLockState(labels: string[], timelineEvents: TimelineEvent[], lockLabel: string): LockState {
   const held = labels.includes(lockLabel);
-  return { held, heldSince: held ? lastLabeledAt(timelineEvents, lockLabel) : null };
+  return { held, heldSince: held ? findLastLabeledAt(timelineEvents, lockLabel) : null };
 }
 
-function lastLabeledAt(timelineEvents: TimelineEvent[], label: string): Date | null {
+function findLastLabeledAt(timelineEvents: TimelineEvent[], label: string): Date | null {
   let latest: Date | null = null;
   for (const event of timelineEvents) {
     if (event.event !== 'labeled' || event.labelName !== label) continue;

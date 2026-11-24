@@ -14,7 +14,7 @@ const runReasonText: Record<RunReason, string> = {
   [RunReason.PlanApproved]: 'plan approved',
 };
 
-function stopText(issueNumber: number, nextStep: NextStep & { kind: typeof NextStepKind.Stop }): string {
+function formatStopReason(issueNumber: number, nextStep: NextStep & { kind: typeof NextStepKind.Stop }): string {
   switch (nextStep.reason) {
     case StopReason.AlreadyRunning:
       return `already running since ${format.utcTime(nextStep.heldSince)} `
@@ -26,46 +26,48 @@ function stopText(issueNumber: number, nextStep: NextStep & { kind: typeof NextS
   }
 }
 
-function command(skill: string, issueNumber: number): string {
+function formatCommand(skill: string, issueNumber: number): string {
   return `/${skill} ${issueNumber}`;
 }
 
 export const flowLog = {
-  nextStep(issueNumber: number, nextStep: NextStep): void {
+  logNextStep(issueNumber: number, nextStep: NextStep): void {
     if (nextStep.kind === NextStepKind.Stop) {
-      logger.info(`issue #${issueNumber}: stop, ${stopText(issueNumber, nextStep)}`);
+      logger.info(`issue #${issueNumber}: stop, ${formatStopReason(issueNumber, nextStep)}`);
       return;
     }
     logger.info(`issue #${issueNumber}: ${runReasonText[nextStep.reason]} → ${nextStep.steps.join(', ')}`);
   },
-  lockTaken(issueNumber: number, replacedStaleLock: boolean): void {
+  logLockTaken(issueNumber: number, replacedStaleLock: boolean): void {
     const action = replacedStaleLock ? 'stale lock replaced' : 'lock taken';
     logger.info(`issue #${issueNumber}: ${action} (${config.labels.agentRunning})`);
   },
-  stepStarted(stepName: StepName, skill: string, issueNumber: number): void {
-    logger.startGroup(`[${stepName}] ${command(skill, issueNumber)}`);
-    logger.info(`[${stepName}] running ${command(skill, issueNumber)}`);
+  logStepStarted(stepName: StepName, skill: string, issueNumber: number): void {
+    logger.startGroup(`[${stepName}] ${formatCommand(skill, issueNumber)}`);
+    logger.info(`[${stepName}] running ${formatCommand(skill, issueNumber)}`);
   },
-  stepStubbed(stepName: StepName, skill: string, issueNumber: number): void {
+  logStepStubbed(stepName: StepName, skill: string, issueNumber: number): void {
     logger.endGroup();
-    logger.info(`[${stepName}] skipped: ${command(skill, issueNumber)} is a stub`);
+    logger.info(`[${stepName}] skipped: ${formatCommand(skill, issueNumber)} is a stub`);
   },
-  stepFinished(stepName: StepName, skill: string, issueNumber: number, skillRun: SkillRun, budgetLeft: Budget): void {
-    logger.info(`[${stepName}] ${command(skill, issueNumber)}: ${formatSkillRun(skillRun)} `
+  logStepFinished(
+    stepName: StepName, skill: string, issueNumber: number, skillRun: SkillRun, budgetLeft: Budget,
+  ): void {
+    logger.info(`[${stepName}] ${formatCommand(skill, issueNumber)}: ${formatSkillRun(skillRun)} `
       + `(budget left: ${budgetLeft.maxTurns} turns, ${format.usd(budgetLeft.maxBudgetUsd)})`);
     logger.endGroup();
   },
-  lockReleased(issueNumber: number): void {
+  logLockReleased(issueNumber: number): void {
     logger.info(`issue #${issueNumber}: lock released (${config.labels.agentRunning})`);
   },
-  lockReleaseFailed(issueNumber: number, cause: unknown): void {
+  logLockReleaseFailed(issueNumber: number, cause: unknown): void {
     logger.error(`issue #${issueNumber}: failed to release the lock (${config.labels.agentRunning}), `
       + `it goes stale after ${config.lockStaleAfterMinutes} min: ${format.errorMessage(cause)}`);
   },
-  runFinished(issueNumber: number, runBudget: RunBudget): void {
+  logRunFinished(issueNumber: number, runBudget: RunBudget): void {
     logger.info(`issue #${issueNumber}: total ${runBudget.turns} turns, ${format.usd(runBudget.costUsd)}`);
   },
-  failed(cause: unknown): void {
+  logFailure(cause: unknown): void {
     logger.error(`issue-to-pr failed: ${format.errorMessage(cause)}`);
   },
 };

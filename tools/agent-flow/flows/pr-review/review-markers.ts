@@ -23,7 +23,7 @@ export function isAlreadyReviewed(reviews: PostedReview[], headSha: string, trus
 }
 
 // A finding is identified by its file, line and rule. Two findings with the same key are the same problem.
-export function findingKey(path: string, line: number, rule: string): string {
+export function createFindingKey(path: string, line: number, rule: string): string {
   return JSON.stringify([path, line, rule]);
 }
 
@@ -33,7 +33,7 @@ export function findOpenFindingKeys(openThreads: OpenThread[], trustedAuthors: s
   for (const thread of openThreads) {
     const rule = findingMarkerPattern.exec(thread.body)?.[1];
     if (rule === undefined || thread.line === null || !trustedAuthors.includes(thread.authorLogin)) continue;
-    keys.add(findingKey(thread.path, thread.line, rule));
+    keys.add(createFindingKey(thread.path, thread.line, rule));
   }
   return keys;
 }

@@ -24,7 +24,7 @@ export class RunBudget {
     this.#costUsd += skillRun.stepCostUsd;
   }
 
-  remaining(): Budget {
+  getRemaining(): Budget {
     return {
       maxTurns: this.#limit.maxTurns - this.#turns,
       maxBudgetUsd: this.#limit.maxBudgetUsd - this.#costUsd,
@@ -32,7 +32,7 @@ export class RunBudget {
   }
 
   isSpent(): boolean {
-    const remaining = this.remaining();
+    const remaining = this.getRemaining();
     return remaining.maxTurns <= 0 || remaining.maxBudgetUsd <= 0;
   }
 }

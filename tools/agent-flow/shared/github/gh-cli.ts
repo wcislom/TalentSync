@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 export type GhOptions = { stdin?: string; token?: string };
 
 // `action` says what we tried to do. It is used in the error message: "could not <action>: <gh's error>".
-export async function gh(args: string[], action: string, options: GhOptions = {}): Promise<string> {
+export async function runGh(args: string[], action: string, options: GhOptions = {}): Promise<string> {
   const { stdin, token } = options;
   try {
     const execution = execFileAsync('gh', args, {
@@ -27,8 +27,8 @@ export async function gh(args: string[], action: string, options: GhOptions = {}
   }
 }
 
-export async function ghJson<T>(args: string[], action: string): Promise<T> {
-  const stdout = await gh(args, action);
+export async function runGhJson<T>(args: string[], action: string): Promise<T> {
+  const stdout = await runGh(args, action);
   try {
     return JSON.parse(stdout) as T;
   } catch {
@@ -40,12 +40,12 @@ export async function ghJson<T>(args: string[], action: string): Promise<T> {
 
 // Reads every page of a list from the GitHub API. Without --slurp, gh prints each page as a separate JSON
 // document, one after another, which is not valid JSON. With --slurp we get one array of pages.
-export async function ghApiAll<T>(endpoint: string, action: string): Promise<T[]> {
-  const pages = await ghJson<T[][]>(['api', endpoint, '--paginate', '--slurp'], action);
+export async function runGhApiAll<T>(endpoint: string, action: string): Promise<T[]> {
+  const pages = await runGhJson<T[][]>(['api', endpoint, '--paginate', '--slurp'], action);
   return pages.flat();
 }
 
 export async function getCurrentLogin(): Promise<string> {
-  const stdout = await gh(['api', 'user', '--jq', '.login'], 'read the current gh login');
+  const stdout = await runGh(['api', 'user', '--jq', '.login'], 'read the current gh login');
   return stdout.trim();
 }
