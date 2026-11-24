@@ -107,15 +107,20 @@ tools/
                                             One package.json, TypeScript run natively by Node (no build step, no tsc),
                                             tests with node:test (`npm --prefix tools/agent-flow test`).
                                             Not part of the product, references nothing in src/
-    shared/                                 github-client.ts (every gh call, argument arrays, JSON), skill-runner.ts (a
-                                            skill in a new or resumed SDK session, project settings only, turn and cost budget),
+    shared/                                 github-client.ts (every gh call, argument arrays, JSON; a call can run as
+                                            the agent's GitHub App), skill-runner.ts (a skill in a new or resumed SDK
+                                            session, project settings only, turn and cost budget),
                                             logger.ts (the only place that writes log lines; groups and ::error::
                                             in GitHub Actions; formatting of cost, duration and time),
                                             run-budget.ts (RunBudget: turns and cost spent against the run's limit),
-                                            config.ts (labels, stale lock minutes, trusted authors, budget, agent branch),
+                                            config.ts (main branch, labels, stale lock minutes, trusted authors, budget,
+                                            agent branch),
                                             body-sha.ts and plan-marker.ts (the plan comment's format: written by
                                             skills/plan-ticket, read by the orchestrator and skills/implement-ticket),
-                                            git-client.ts (every git call, argument arrays),
+                                            git-client.ts (every git call, argument arrays; the push takes the App's
+                                            token through the process environment, never forced),
+                                            github-app-token.ts (installation token of the agent's GitHub App from
+                                            AGENT_APP_ID, AGENT_APP_INSTALLATION_ID, AGENT_APP_PRIVATE_KEY_PATH),
                                             issue-number.ts (the argument of single-issue commands),
                                             command-runner.ts (runCommand: a command's error → one log line and exit
                                             code 1; failProcess), test/
@@ -132,8 +137,10 @@ tools/
                                             edits the one plan comment in place).
                                             implement-ticket/: prepare-branch.ts (refuses without an approved plan for
                                             the current body or in a dirty checkout, switches to agent/issue-<n>,
-                                            prints the plan), implementation-gate.ts (the gate as a pure function:
-                                            open with the plan, or closed with the reason), test/
+                                            prints the plan), publish-pr.ts (checks the gate again, commits, pushes
+                                            and opens the PR as the agent's GitHub App), implementation-gate.ts (the
+                                            gate as a pure function: open with the plan, or closed with the reason),
+                                            pull-request-text.ts (title and body from stdin, adds Closes #<n>), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)

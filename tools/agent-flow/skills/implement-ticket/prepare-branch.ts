@@ -18,8 +18,6 @@ import { logger } from '../../shared/logger.ts';
 import { findLatestTrustedPlan } from '../../shared/plan-marker.ts';
 import { checkImplementationGate } from './implementation-gate.ts';
 
-const mainBranch = 'main';
-
 async function main(): Promise<void> {
   const issueNumber = parseIssueNumber(process.argv.slice(2), 'prepare-branch');
   const agentBranch = getAgentBranch(issueNumber);
@@ -42,7 +40,7 @@ async function main(): Promise<void> {
   if (uncommittedChanges) throw new Error('the working tree has uncommitted changes: run in a clean checkout');
 
   // 3. The agent's branch.
-  const baseBranch = await remoteBranchExists(agentBranch) ? agentBranch : mainBranch;
+  const baseBranch = await remoteBranchExists(agentBranch) ? agentBranch : config.mainBranch;
   await fetchBranch(baseBranch);
   await switchToNewBranch(agentBranch, baseBranch);
   logger.info(`issue #${issueNumber}: on ${agentBranch} from origin/${baseBranch}`);
