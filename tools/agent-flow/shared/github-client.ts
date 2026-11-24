@@ -8,11 +8,16 @@ export type IssueComment = { id: number; authorLogin: string; body: string };
 export type TimelineEvent = { event: string; labelName: string | null; createdAt: string };
 export type Issue = { body: string; labels: string[] };
 
+// `token`, when given, replaces the gh login for this one call (GH_TOKEN), e.g. to act as the agent's GitHub App.
+type GhOptions = { stdin?: string; token?: string };
+
 // `action` names what was attempted, for the error message: "could not <action>: <gh stderr>".
-async function gh(args: string[], action: string, stdin?: string): Promise<string> {
+async function gh(args: string[], action: string, options: GhOptions = {}): Promise<string> {
+  const { stdin, token } = options;
   try {
     const execution = execFileAsync('gh', args, {
       cwd: config.repoRoot,
+      env: token === undefined ? undefined : { ...process.env, GH_TOKEN: token },
       maxBuffer: 64 * 1024 * 1024,
       windowsHide: true,
     });
@@ -61,12 +66,12 @@ export async function getCurrentLogin(): Promise<string> {
 // The body goes through stdin as JSON: as an argument it could exceed the Windows command line limit.
 export async function createIssueComment(issueNumber: number, body: string): Promise<void> {
   await gh(['api', `repos/{owner}/{repo}/issues/${issueNumber}/comments`, '--method', 'POST', '--input', '-'],
-    `comment on #${issueNumber}`, JSON.stringify({ body }));
+    `comment on #${issueNumber}`, { stdin: JSON.stringify({ body }) });
 }
 
 export async function editIssueComment(commentId: number, body: string): Promise<void> {
   await gh(['api', `repos/{owner}/{repo}/issues/comments/${commentId}`, '--method', 'PATCH', '--input', '-'],
-    `edit comment ${commentId}`, JSON.stringify({ body }));
+    `edit comment ${commentId}`, { stdin: JSON.stringify({ body }) });
 }
 
 export async function getIssueTimeline(issueNumber: number): Promise<TimelineEvent[]> {
@@ -93,4 +98,14 @@ export async function addLabel(issueNumber: number, label: string): Promise<void
 export async function removeLabel(issueNumber: number, label: string): Promise<void> {
   await gh(['issue', 'edit', String(issueNumber), '--remove-label', label],
     `remove the label ${label} from #${issueNumber}`);
+}
+
+export type NewPullRequest = { head: string; base: string; title: string; body: string };
+
+// Ready for review, not a draft. Returns the PR's URL.
+export async function createPullRequest(pullRequest: NewPullRequest, token: string): Promise<string> {
+  const { head, base, title, body } = pullRequest;
+  const stdout = await gh(['pr', 'create', '--head', head, '--base', base, '--title', title, '--body-file', '-'],
+    `open a PR from ${head}`, { stdin: body, token });
+  return stdout.trim();
 }
