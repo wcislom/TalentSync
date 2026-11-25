@@ -160,9 +160,12 @@ tools/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
-.github/workflows/ci.yml                    on PRs and main: Build job, then Test job ("Test results" check, coverage summary);
-                                            Admin app job (npm ci, build). The "Protect main" ruleset requires the
-                                            Build, Test and Admin app checks by job name: renaming a job blocks every merge
+.github/workflows/ci.yml                    on PRs and main: Build job (build, format, .claude/hooks/check-rules.sh), then Test
+                                            job ("Test results" check, coverage summary); Admin app job (npm ci, build);
+                                            on PRs that are ready and not from a fork, Agent review job after Build
+                                            (pr-review with tools from main; not a required check). The "Protect main"
+                                            ruleset requires the Build, Test and Admin app checks by job name: renaming a
+                                            job blocks every merge
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a

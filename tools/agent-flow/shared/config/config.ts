@@ -8,9 +8,13 @@ export const config = {
     planApproved: 'agent:plan-approved',
   },
   lockStaleAfterMinutes: 60,
-  // Accounts whose plan comments and reviews we trust. Anyone can comment on a public repo, so comments from
-  // other accounts are ignored. The bot that runs the flow in GitHub Actions is added here in #47.
+  // Accounts whose plan comments we trust. Anyone can comment on a public repo, so comments from other accounts
+  // are ignored. The bot that runs the flow in GitHub Actions is added here in #47.
   trustedAuthors: ['wcislom'],
+  // Accounts whose agent reviews we trust: you locally, GITHUB_TOKEN in Actions. A separate list, so a workflow
+  // token cannot publish a plan that the flow trusts. GitHub returns the Actions login in two forms: with
+  // "[bot]" in the REST API (reviews) and without it in GraphQL (review threads).
+  trustedReviewAuthors: ['wcislom', 'github-actions[bot]', 'github-actions'],
   // The limit for one run of a flow (issue-to-pr or pr-review). All steps of the run share it.
   budget: {
     maxTurns: 80,
