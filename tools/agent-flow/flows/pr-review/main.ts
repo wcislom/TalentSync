@@ -53,7 +53,7 @@ async function main(): Promise<void> {
   }
 
   // 2. Already reviewed?
-  if (isAlreadyReviewed(reviews, pullRequest.headSha, config.trustedAuthors)) {
+  if (isAlreadyReviewed(reviews, pullRequest.headSha, config.trustedReviewAuthors)) {
     logger.info(`PR #${pullRequestNumber}: skipped, already reviewed at ${pullRequest.headSha.slice(0, 7)}`);
     return;
   }
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     skillOutput,
     commentableLines: parseCommentableLines(diff),
     openThreads,
-    trustedAuthors: config.trustedAuthors,
+    trustedAuthors: config.trustedReviewAuthors,
   });
 
   // 6. Publish.

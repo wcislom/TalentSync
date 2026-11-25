@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    # ready_for_review: a draft that becomes ready gets its agent review.
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -37,6 +39,10 @@ jobs:
 
       - name: Check formatting
         run: dotnet format --verify-no-changes --no-restore
+
+      # The same check that runs after every edit in Claude Code: forbidden names and direct clock use.
+      - name: Check repo rules
+        run: bash .claude/hooks/check-rules.sh
 
   # No tests yet: the Scenarios page has none on purpose (ADR 012); the parking lot tests come with that page.
   admin-web:
@@ -128,3 +134,50 @@ jobs:
             TestResults/*.trx
             TestResults/*.html
             CoverageReport/
+
+  # The agent's review of a PR (tools/agent-flow/flows/pr-review). It needs Build, so a PR that does not build,
+  # is not formatted or breaks a repo rule costs no Claude run. It is not a required check: a Claude outage
+  # must not block merges.
+  agent-review:
+    name: Agent review
+    needs: build
+    if: >-
+      github.event_name == 'pull_request'
+      && !github.event.pull_request.draft
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Enough to publish a review. It cannot approve: the repository settings do not allow GitHub Actions to
+      # approve pull requests. It cannot merge: the ruleset "Agent branches only" lets only admins change main.
+      pull-requests: write
+
+    steps:
+      # The tools, the skill and .claude/settings.json come from main, never from the PR. A PR could change them,
+      # for example give the skill Bash, and read the Claude token. The skill reads the PR through gh pr diff.
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.base_ref }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: tools/agent-flow/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: tools/agent-flow
+
+      - name: Review
+        run: npm --prefix tools/agent-flow run pr-review "$PULL_REQUEST_NUMBER"
+        env:
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          # The subscription token from `claude setup-token`, a repository secret.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
