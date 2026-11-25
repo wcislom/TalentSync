@@ -149,7 +149,7 @@ tools/
                                             (the prompts stay there). One file per command, named after it; pure
                                             logic a command needs sits next to it, with its tests in test/.
                                             plan-ticket/: print-body-sha.ts (hash of the body before the skill reads
-                                            it), publish-plan.ts (refuses a changed body, removes plan-approved,
+                                            it), publish-plan.ts (refuses a changed body, removes agent:plan-approved,
                                             edits the one plan comment in place).
                                             implement-ticket/: prepare-branch.ts (refuses without an approved plan for
                                             the current body or in a dirty checkout, switches to agent/issue-<n>,

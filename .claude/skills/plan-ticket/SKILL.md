@@ -1,6 +1,6 @@
 ---
 name: plan-ticket
-description: Turn a GitHub issue into a short implementation plan and publish it as the issue's one plan comment. Removes plan-approved. Changes no files.
+description: Turn a GitHub issue into a short implementation plan and publish it as the issue's one plan comment. Removes agent:plan-approved. Changes no files.
 argument-hint: "[issue-number]"
 disable-model-invocation: true
 allowed-tools: Read Grep Glob Bash(gh issue view *) Bash(npm --prefix tools/agent-flow run print-body-sha *) Bash(npm --prefix tools/agent-flow run publish-plan *)
@@ -8,7 +8,7 @@ disallowed-tools: Edit Write NotebookEdit Agent WebFetch WebSearch
 ---
 
 Write an implementation plan for GitHub issue #$ARGUMENTS and publish it as the issue's plan comment. The plan is
-the first human gate: the user reads it and approves it with the label `plan-approved` before any code is written.
+the first human gate: the user reads it and approves it with the label `agent:plan-approved` before any code is written.
 Change no files. Run no commands other than the three below.
 
 Its tools are in `tools/agent-flow/skills/plan-ticket/`: `print-body-sha` and `publish-plan`.

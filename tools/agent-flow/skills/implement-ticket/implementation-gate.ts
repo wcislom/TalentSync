@@ -1,7 +1,7 @@
 import { config } from '../../shared/config/config.ts';
 import type { Plan } from '../../shared/plan/plan-marker.ts';
 
-// What the gate needs to know about the issue. The approval is a label on the issue (plan-approved), not part of
+// What the gate needs to know about the issue. The approval is a label on the issue (agent:plan-approved), not part of
 // the plan comment.
 export type GateInput = {
   bodySha: string;

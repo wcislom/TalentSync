@@ -5,7 +5,7 @@ export const config = {
   mainBranch: 'main',
   labels: {
     agentRunning: 'agent:running',
-    planApproved: 'plan-approved',
+    planApproved: 'agent:plan-approved',
   },
   lockStaleAfterMinutes: 60,
   // Accounts whose plan comments and reviews we trust. Anyone can comment on a public repo, so comments from
