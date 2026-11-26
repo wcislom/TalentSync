@@ -116,15 +116,16 @@ tools/
                                             reviews.ts (reviews, unresolved threads through GraphQL, publish one
                                             COMMENT review), app-token.ts (installation token of the agent's GitHub
                                             App from AGENT_APP_ID, AGENT_APP_INSTALLATION_ID,
-                                            AGENT_APP_PRIVATE_KEY_PATH)
-      git/                                  git-client.ts (every git call, argument arrays; the push takes the App's
-                                            token through the process environment, never forced)
+                                            AGENT_APP_PRIVATE_KEY_PATH, or a ready AGENT_APP_TOKEN in Actions)
+      git/                                  git-client.ts (every git call, argument arrays; the commit is authored by
+                                            the agent's bot; the push takes the App's token through the process
+                                            environment, never forced)
       runner/                               skill-runner.ts (a skill in a new or resumed SDK session, project
                                             settings only, turn and cost budget, its final text; formatSkillRun: the
                                             run's one-line summary), run-budget.ts (RunBudget: turns and cost spent
                                             against the run's limit; BudgetSpentError: a run that reached it)
-      config/                               config.ts (repo root, main branch, labels, stale lock minutes, trusted
-                                            authors and author associations, budget, agent branch)
+      config/                               config.ts (repo root, main branch, labels, stale lock minutes, the agent's
+                                            bot, trusted authors and author associations, budget, agent branch)
       logging/                              logger.ts (the only place that writes log lines; groups, ::warning::
                                             and ::error:: in GitHub Actions; formatting of cost, duration and time)
       command/                              command-runner.ts (runCommand: a command's error → one log line and exit
@@ -151,7 +152,7 @@ tools/
                                             logic a command needs sits next to it, with its tests in test/.
                                             plan-ticket/: print-body-sha.ts (hash of the body before the skill reads
                                             it), publish-plan.ts (refuses a changed body, removes agent:plan-approved,
-                                            edits the one plan comment in place).
+                                            edits the bot's one plan comment in place, as the agent's GitHub App).
                                             implement-ticket/: prepare-branch.ts (refuses without an approved plan for
                                             the current body or in a dirty checkout, switches to agent/issue-<n>,
                                             prints the plan), publish-pr.ts (checks the gate again, commits, pushes
@@ -165,9 +166,9 @@ docs/                                       domain.md, architecture.md, reposito
                                             job ("Test results" check, coverage summary); Admin app job (npm ci, build);
                                             Agent flow tests job (npm ci, npm test in tools/agent-flow);
                                             on PRs that are ready and not from a fork, Agent review job after Build
-                                            (pr-review with tools from main; not a required check). The "Protect main"
-                                            ruleset requires the Build, Test and Admin app checks by job name: renaming a
-                                            job blocks every merge
+                                            (pr-review with tools from main; not a required check). The "Protect
+                                            main" ruleset requires the Build, Test, Admin app and Agent flow tests
+                                            checks by job name: renaming a job blocks every merge
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a

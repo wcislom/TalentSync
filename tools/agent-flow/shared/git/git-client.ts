@@ -57,9 +57,18 @@ export async function countCommitsAhead(baseBranch: string): Promise<number> {
   return Number(stdout.trim());
 }
 
+// The commit is authored by the agent's bot, not by whoever runs the flow. The e-mail is the bot's noreply
+// address, so GitHub shows the bot as the author. Only this one git process gets the identity.
 export async function commitAll(message: string): Promise<void> {
+  const { login, userId } = config.agentBot;
+  const email = `${userId}+${login}@users.noreply.github.com`;
   await runGit(['add', '--all'], 'stage the changes');
-  await runGit(['commit', '--message', message], 'commit the changes');
+  await runGit(['commit', '--message', message], 'commit the changes', {
+    GIT_AUTHOR_NAME: login,
+    GIT_AUTHOR_EMAIL: email,
+    GIT_COMMITTER_NAME: login,
+    GIT_COMMITTER_EMAIL: email,
+  });
 }
 
 // Pushes as the agent's GitHub App, with its token.

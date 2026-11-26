@@ -3,8 +3,11 @@ import { createAppAuth } from '@octokit/auth-app';
 
 // The agent pushes and opens PRs as a GitHub App, not as the user. GitHub does not let you approve your own PR,
 // so if the agent used the user's account, the user could not approve the agent's PRs.
-// These environment variables say which App to use and where its private key is.
+// These environment variables say which App to use and where its private key is. In GitHub Actions the workflow
+// creates the token before the run and passes only the token, so the private key never reaches the job where
+// the model runs.
 export const appVariableNames = {
+  token: 'AGENT_APP_TOKEN',
   appId: 'AGENT_APP_ID',
   installationId: 'AGENT_APP_INSTALLATION_ID',
   privateKeyPath: 'AGENT_APP_PRIVATE_KEY_PATH',
@@ -37,6 +40,8 @@ export function readAppCredentials(environment: Environment): AppCredentials {
 // installed. We give it to one git or gh process at a time, through its environment. The Claude session never
 // sees it.
 export async function getInstallationToken(): Promise<string> {
+  const readyToken = process.env[appVariableNames.token]?.trim();
+  if (readyToken) return readyToken;
   const credentials = readAppCredentials(process.env);
   let privateKey: string;
   try {

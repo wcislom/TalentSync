@@ -24,14 +24,15 @@ export async function getIssueComments(issueNumber: number): Promise<IssueCommen
 
 // The comment text goes through stdin as JSON, not as a command argument: a long plan could be longer than the
 // Windows command line limit.
-export async function createIssueComment(issueNumber: number, body: string): Promise<void> {
+// `token`: when set, the call runs as the agent's GitHub App instead of the logged-in user.
+export async function createIssueComment(issueNumber: number, body: string, token?: string): Promise<void> {
   await runGh(['api', `repos/{owner}/{repo}/issues/${issueNumber}/comments`, '--method', 'POST', '--input', '-'],
-    `comment on #${issueNumber}`, { stdin: JSON.stringify({ body }) });
+    `comment on #${issueNumber}`, { stdin: JSON.stringify({ body }), token });
 }
 
-export async function editIssueComment(commentId: number, body: string): Promise<void> {
+export async function editIssueComment(commentId: number, body: string, token?: string): Promise<void> {
   await runGh(['api', `repos/{owner}/{repo}/issues/comments/${commentId}`, '--method', 'PATCH', '--input', '-'],
-    `edit comment ${commentId}`, { stdin: JSON.stringify({ body }) });
+    `edit comment ${commentId}`, { stdin: JSON.stringify({ body }), token });
 }
 
 export async function getIssueTimeline(issueNumber: number): Promise<TimelineEvent[]> {
@@ -49,7 +50,7 @@ export async function addLabel(issueNumber: number, label: string): Promise<void
     `add the label ${label} to #${issueNumber}`);
 }
 
-export async function removeLabel(issueNumber: number, label: string): Promise<void> {
+export async function removeLabel(issueNumber: number, label: string, token?: string): Promise<void> {
   await runGh(['issue', 'edit', String(issueNumber), '--remove-label', label],
-    `remove the label ${label} from #${issueNumber}`);
+    `remove the label ${label} from #${issueNumber}`, { token });
 }

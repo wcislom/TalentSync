@@ -1,5 +1,9 @@
 import path from 'node:path';
 
+// The bot account of the agent's GitHub App, as GitHub shows it. The agent publishes plans, commits, pushes and
+// opens PRs under this name, locally and in GitHub Actions.
+const agentBot = { login: 'talentsync-agent[bot]', userId: 360571911 };
+
 export const config = {
   repoRoot: path.resolve(import.meta.dirname, '..', '..', '..', '..'),
   mainBranch: 'main',
@@ -11,9 +15,10 @@ export const config = {
     planApproved: 'agent:plan-approved',
   },
   lockStaleAfterMinutes: 60,
+  agentBot,
   // Accounts whose plan comments we trust. Anyone can comment on a public repo, so comments from other accounts
-  // are ignored. The bot that runs the flow in GitHub Actions is added here in #47.
-  trustedAuthors: ['wcislom'],
+  // are ignored. The agent publishes plans as its bot. Plans you wrote by hand stay trusted too.
+  trustedAuthors: ['wcislom', agentBot.login],
   // The flow runs only on issues opened by someone from the repo. The author can edit the body at any time, also
   // during a run, so an issue from anyone else must first be copied into a new issue by someone from the repo.
   trustedAuthorAssociations: ['OWNER', 'MEMBER', 'COLLABORATOR'],
