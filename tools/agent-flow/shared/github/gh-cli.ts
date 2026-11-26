@@ -44,8 +44,3 @@ export async function runGhApiAll<T>(endpoint: string, action: string): Promise<
   const pages = await runGhJson<T[][]>(['api', endpoint, '--paginate', '--slurp'], action);
   return pages.flat();
 }
-
-export async function getCurrentLogin(): Promise<string> {
-  const stdout = await runGh(['api', 'user', '--jq', '.login'], 'read the current gh login');
-  return stdout.trim();
-}
