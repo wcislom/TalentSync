@@ -1,7 +1,7 @@
 import { config, getAgentBranch } from '../../shared/config/config.ts';
 import type { Budget } from '../../shared/config/config.ts';
 import { format, logger } from '../../shared/logging/logger.ts';
-import type { RunBudget } from '../../shared/runner/run-budget.ts';
+import type { BudgetSpentError, RunBudget } from '../../shared/runner/run-budget.ts';
 import { formatSkillRun } from '../../shared/runner/skill-runner.ts';
 import type { SkillRun } from '../../shared/runner/skill-runner.ts';
 import { NextStepKind, RunReason, StopReason } from './next-step.ts';
@@ -16,6 +16,10 @@ const runReasonText: Record<RunReason, string> = {
 
 function formatStopReason(issueNumber: number, nextStep: NextStep & { kind: typeof NextStepKind.Stop }): string {
   switch (nextStep.reason) {
+    case StopReason.NotAssigned:
+      return `not assigned: add the label ${config.labels.agentAssigned} to start the flow`;
+    case StopReason.UntrustedAuthor:
+      return 'the author is not from this repo: copy the issue into a new one to run the flow on it';
     case StopReason.AlreadyRunning:
       return `already running since ${format.utcTime(nextStep.heldSince)} `
         + `(stale after ${format.utcTime(nextStep.staleAt)})`;
@@ -66,6 +70,9 @@ export const flowLog = {
   },
   logRunFinished(issueNumber: number, runBudget: RunBudget): void {
     logger.info(`issue #${issueNumber}: total ${runBudget.turns} turns, ${format.usd(runBudget.costUsd)}`);
+  },
+  logBudgetSpent(cause: BudgetSpentError): void {
+    logger.warning(`issue-to-pr stopped by its budget: ${cause.message}`);
   },
   logFailure(cause: unknown): void {
     logger.error(`issue-to-pr failed: ${format.errorMessage(cause)}`);

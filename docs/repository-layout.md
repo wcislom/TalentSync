@@ -105,7 +105,8 @@ deploy/
 tools/
   agent-flow/                               automations that run Claude Code skills through the Agent SDK (epic #48).
                                             One package.json, TypeScript run natively by Node (no build step, no tsc),
-                                            tests with node:test (`npm --prefix tools/agent-flow test`).
+                                            tests with node:test (`npm --prefix tools/agent-flow test`), Node version in
+                                            .nvmrc.
                                             Not part of the product, references nothing in src/
     shared/                                 code the flows and skills' tools share, by concern; each folder keeps its
                                             tests in test/:
@@ -121,11 +122,11 @@ tools/
       runner/                               skill-runner.ts (a skill in a new or resumed SDK session, project
                                             settings only, turn and cost budget, its final text; formatSkillRun: the
                                             run's one-line summary), run-budget.ts (RunBudget: turns and cost spent
-                                            against the run's limit)
+                                            against the run's limit; BudgetSpentError: a run that reached it)
       config/                               config.ts (repo root, main branch, labels, stale lock minutes, trusted
-                                            authors, budget, agent branch)
-      logging/                              logger.ts (the only place that writes log lines; groups and ::error:: in
-                                            GitHub Actions; formatting of cost, duration and time)
+                                            authors and author associations, budget, agent branch)
+      logging/                              logger.ts (the only place that writes log lines; groups, ::warning::
+                                            and ::error:: in GitHub Actions; formatting of cost, duration and time)
       command/                              command-runner.ts (runCommand: a command's error → one log line and exit
                                             code 1; failProcess), issue-number.ts (the argument of single-issue and
                                             single-PR commands)
@@ -162,6 +163,7 @@ docs/                                       domain.md, architecture.md, reposito
                                             images/ (screenshots for the README)
 .github/workflows/ci.yml                    on PRs and main: Build job (build, format, .claude/hooks/check-rules.sh), then Test
                                             job ("Test results" check, coverage summary); Admin app job (npm ci, build);
+                                            Agent flow tests job (npm ci, npm test in tools/agent-flow);
                                             on PRs that are ready and not from a fork, Agent review job after Build
                                             (pr-review with tools from main; not a required check). The "Protect main"
                                             ruleset requires the Build, Test and Admin app checks by job name: renaming a

@@ -1,13 +1,19 @@
 import { runGh, runGhApiAll, runGhJson } from './gh-cli.ts';
 
-export type Issue = { body: string; labels: string[] };
+// authorAssociation is the author's relation to the repo as GitHub reports it, e.g. OWNER, COLLABORATOR or NONE.
+export type Issue = { body: string; labels: string[]; authorAssociation: string };
 export type IssueComment = { id: number; authorLogin: string; body: string };
 export type TimelineEvent = { event: string; labelName: string | null; createdAt: string };
 
+// Reads the issue from the REST API, because `gh issue view --json` does not return author_association.
 export async function getIssue(issueNumber: number): Promise<Issue> {
-  const raw = await runGhJson<{ body: string | null; labels: { name: string }[] }>(
-    ['issue', 'view', String(issueNumber), '--json', 'body,labels'], `read issue #${issueNumber}`);
-  return { body: raw.body ?? '', labels: raw.labels.map((label) => label.name) };
+  const raw = await runGhJson<{ body: string | null; labels: { name: string }[]; author_association: string }>(
+    ['api', `repos/{owner}/{repo}/issues/${issueNumber}`], `read issue #${issueNumber}`);
+  return {
+    body: raw.body ?? '',
+    labels: raw.labels.map((label) => label.name),
+    authorAssociation: raw.author_association,
+  };
 }
 
 export async function getIssueComments(issueNumber: number): Promise<IssueComment[]> {

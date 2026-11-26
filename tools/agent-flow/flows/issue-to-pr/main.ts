@@ -5,7 +5,7 @@ import { getIssue, getIssueComments, getIssueTimeline } from '../../shared/githu
 import { findPullRequestFrom } from '../../shared/github/pull-requests.ts';
 import { hashIssueBody } from '../../shared/plan/body-sha.ts';
 import { findLatestTrustedPlan } from '../../shared/plan/plan-marker.ts';
-import { RunBudget } from '../../shared/runner/run-budget.ts';
+import { BudgetSpentError, RunBudget } from '../../shared/runner/run-budget.ts';
 import { runSkill } from '../../shared/runner/skill-runner.ts';
 import type { Session } from '../../shared/runner/skill-runner.ts';
 import { flowLog } from './flow-log.ts';
@@ -23,6 +23,8 @@ async function readFlowState(issueNumber: number): Promise<FlowState> {
     findPullRequestFrom(getAgentBranch(issueNumber)),
   ]);
   return {
+    assigned: issue.labels.includes(config.labels.agentAssigned),
+    authorTrusted: config.trustedAuthorAssociations.includes(issue.authorAssociation),
     lockState: readLockState(issue.labels, timelineEvents, config.labels.agentRunning),
     bodySha: hashIssueBody(issue.body),
     plannedBodySha: findLatestTrustedPlan(issueComments, config.trustedAuthors)?.plannedBodySha ?? null,
@@ -41,12 +43,13 @@ async function runSteps(issueNumber: number, stepNames: StepName[], runBudget: R
       flowLog.logStepStubbed(stepName, step.skill, issueNumber);
       continue;
     }
-    if (runBudget.isSpent()) throw new Error(`budget spent before step ${stepName}`);
+    if (runBudget.isSpent()) throw new BudgetSpentError(`budget spent before step ${stepName}`);
     flowLog.logStepStarted(stepName, step.skill, issueNumber);
     const skillRun = await runSkill(step.skill, String(issueNumber), runBudget.getRemaining(), session);
     runBudget.record(skillRun);
     session = skillRun.session;
     flowLog.logStepFinished(stepName, step.skill, issueNumber, skillRun, runBudget.getRemaining());
+    if (skillRun.stoppedByBudget) throw new BudgetSpentError(`step ${stepName} stopped: ${skillRun.outcome}`);
     if (!skillRun.succeeded) throw new Error(`step ${stepName} stopped: ${skillRun.outcome}`);
   }
 }
@@ -81,7 +84,13 @@ async function main(): Promise<void> {
   }
 }
 
+// A run that reached its budget ends without a failure: the limit did its job. The next label event or a
+// manual run starts again.
 main().catch((error: unknown) => {
+  if (error instanceof BudgetSpentError) {
+    flowLog.logBudgetSpent(error);
+    return;
+  }
   flowLog.logFailure(error);
   failProcess();
 });

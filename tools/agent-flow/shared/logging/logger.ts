@@ -29,6 +29,12 @@ export const logger = {
     groupOpen = true;
   },
   endGroup,
+  // For a stop that is expected, like a run that reached its budget. In GitHub Actions it is shown in the job
+  // summary like an error, but in yellow.
+  warning(line: string): void {
+    endGroup();
+    console.error(inGitHubActions ? `::warning::${escapeWorkflowCommand(line)}` : line);
+  },
   // In GitHub Actions an ::error:: line is also shown in the job summary, so it is easy to find.
   error(line: string): void {
     endGroup();
