@@ -1,0 +1,93 @@
+name: Agent flow
+
+# Runs the agent flow orchestrator (tools/agent-flow/flows/issue-to-pr) on one issue:
+# - the label agent:assigned starts explain and plan;
+# - the label agent:plan-approved starts implement, which ends with a PR from the agent's bot;
+# - "Run workflow" in the Actions tab runs it again by hand, for example after a run stopped by its budget.
+# The orchestrator decides what to do from the issue itself, and stops when agent:assigned is missing or the
+# author is not from this repo. So a label event can start a run, but only the issue state decides what it does.
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: Issue number
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  issue-to-pr:
+    name: Issue to PR
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event.label.name == 'agent:assigned'
+      || github.event.label.name == 'agent:plan-approved'
+    runs-on: ubuntu-latest
+    # Shorter than the lock's stale time (lockStaleAfterMinutes, 60 min), so a run never outlives its lock.
+    timeout-minutes: 55
+    # Two label events on one issue wait for each other. The agent:running label also keeps a local run and a
+    # CI run apart.
+    concurrency:
+      group: agent-issue-${{ github.event.issue.number || inputs.issue-number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      # The lock label and reading the issue. Pushing, the plan comment and the PR use the App's token instead.
+      issues: write
+      pull-requests: read
+
+    steps:
+      # Issue events always run the workflow and the code from main, so nobody can change the tools for a run.
+      # Full history, because the implement step compares the agent's branch with main.
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The implement step builds and tests the code it writes.
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: tools/agent-flow/.nvmrc
+          cache: npm
+          cache-dependency-path: tools/agent-flow/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: tools/agent-flow
+
+      # A token of the agent's GitHub App, valid for one hour. Only this step sees the private key. The token can
+      # do only what the agent needs: no workflows, no administration. It cannot merge into main or push outside
+      # agent/**: the rulesets stop it.
+      - name: Create the App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.AGENT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      # The issue number goes through an environment variable, never straight into the script, so nothing from
+      # the event is run as shell code.
+      - name: Run the orchestrator
+        run: npm --prefix tools/agent-flow run issue-to-pr "$ISSUE_NUMBER"
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue-number }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          AGENT_APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          # The subscription token from `claude setup-token`, a repository secret.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

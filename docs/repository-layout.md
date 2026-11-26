@@ -169,6 +169,10 @@ docs/                                       domain.md, architecture.md, reposito
                                             (pr-review with tools from main; not a required check). The "Protect
                                             main" ruleset requires the Build, Test, Admin app and Agent flow tests
                                             checks by job name: renaming a job blocks every merge
+.github/workflows/agent-flow.yml            on the label agent:assigned or agent:plan-approved (or by hand with an issue
+                                            number): runs issue-to-pr from main in one job, with an App token made for
+                                            the run (AGENT_APP_CLIENT_ID, secret AGENT_APP_PRIVATE_KEY) and the
+                                            subscription token (secret CLAUDE_CODE_OAUTH_TOKEN)
 .claude/rules/                              topic rules, some load only for matching paths
 .claude/skills/                             slash commands: explain-ticket (read-only explanation of a GitHub issue),
                                             review-pr (read-only review of a PR against the repo's rules; prints a
