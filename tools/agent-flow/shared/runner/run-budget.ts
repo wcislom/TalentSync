@@ -1,6 +1,10 @@
 import type { Budget } from '../config/config.ts';
 import type { SkillRun } from './skill-runner.ts';
 
+// Thrown when a flow run stops because it reached its budget. The flow catches it by type, to log a warning
+// instead of an error.
+export class BudgetSpentError extends Error {}
+
 // Counts the turns and the cost a flow run has used so far, and what is left of its limit.
 export class RunBudget {
   readonly #limit: Budget;

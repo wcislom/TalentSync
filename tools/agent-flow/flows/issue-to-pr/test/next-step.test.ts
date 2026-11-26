@@ -9,6 +9,8 @@ const staleAfterMinutes = 60;
 const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
 
 const noPlan: FlowState = {
+  assigned: true,
+  authorTrusted: true,
   lockState: { held: false, heldSince: null },
   bodySha: 'current',
   plannedBodySha: null,
@@ -17,6 +19,18 @@ const noPlan: FlowState = {
 };
 const currentPlan: FlowState = { ...noPlan, plannedBodySha: 'current' };
 const explainAndPlan = [StepName.Explain, StepName.Plan];
+
+test('an issue without agent:assigned stops the run, even with an approved plan', () => {
+  const flowState = { ...currentPlan, planApproved: true, assigned: false };
+  assert.deepEqual(decideNextStep(flowState, now, staleAfterMinutes),
+    { kind: NextStepKind.Stop, reason: StopReason.NotAssigned });
+});
+
+test('an issue from an author outside the repo stops the run, even when assigned', () => {
+  const flowState = { ...noPlan, authorTrusted: false };
+  assert.deepEqual(decideNextStep(flowState, now, staleAfterMinutes),
+    { kind: NextStepKind.Stop, reason: StopReason.UntrustedAuthor });
+});
 
 test('a lock younger than the limit stops the run, with when it goes stale', () => {
   const flowState = { ...currentPlan, planApproved: true, lockState: { held: true, heldSince: minutesAgo(59) } };

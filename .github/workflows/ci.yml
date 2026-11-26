@@ -70,6 +70,33 @@ jobs:
       - name: Build
         run: npm run build
 
+  # Unit tests of the agent flow tools (tools/agent-flow). They run on every PR, like the other checks, because
+  # the flow's gates (trust, lock, plan approval) live in this code.
+  agent-flow-tests:
+    name: Agent flow tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tools/agent-flow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: tools/agent-flow/.nvmrc
+          cache: npm
+          cache-dependency-path: tools/agent-flow/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
   # Builds again instead of passing bin/ between jobs: a restore and build take under a minute, artifacts of
   # every project's output would be slower and fragile.
   test:
@@ -165,7 +192,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
-          node-version: 26
+          node-version-file: tools/agent-flow/.nvmrc
           cache: npm
           cache-dependency-path: tools/agent-flow/package-lock.json
 

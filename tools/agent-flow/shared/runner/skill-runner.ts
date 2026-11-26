@@ -9,6 +9,8 @@ export type SkillRun = {
   succeeded: boolean;
   // How the run ended, as the SDK reports it, e.g. success or error_max_budget_usd.
   outcome: string;
+  // The run hit its turn or cost limit. The limit worked as intended, so this is not a failure of the flow.
+  stoppedByBudget: boolean;
   turns: number;
   stepCostUsd: number;
   durationMs: number;
@@ -77,6 +79,7 @@ export async function runSkill(
   return {
     succeeded: resultMessage.subtype === 'success' && !resultMessage.is_error,
     outcome: resultMessage.is_error ? `${resultMessage.subtype} (error)` : resultMessage.subtype,
+    stoppedByBudget: resultMessage.subtype === 'error_max_turns' || resultMessage.subtype === 'error_max_budget_usd',
     turns: resultMessage.num_turns,
     stepCostUsd: reportedTotal >= previousTotal ? reportedTotal - previousTotal : reportedTotal,
     durationMs: resultMessage.duration_ms,
