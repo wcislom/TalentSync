@@ -180,6 +180,16 @@ The code is written in small steps with a coding agent. `CLAUDE.md` and `.claude
 `docs/acceptance-scenarios.md` are the definition of done: written by hand before the code, never edited to make
 a test pass.
 
+## Agent flow
+
+- `agent:assigned` starts explain and plan; the agent posts the plan as a comment.
+- `agent:plan-approved` starts the implementation, which ends as a PR from the agent's bot.
+- `agent:running` is set by the flow while it works; do not add it by hand.
+- The PR needs the repository owner's approval to merge.
+
+Details: [`.github/workflows/agent-flow.yml`](.github/workflows/agent-flow.yml) and
+[`docs/repository-layout.md`](docs/repository-layout.md).
+
 ---
 
 Not affiliated with Teamtailor; built from its public documentation.
