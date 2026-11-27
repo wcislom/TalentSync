@@ -31,14 +31,10 @@ Key decisions:
 - **LLM results stored** by candidate, CV hash and prompt version before the profile upsert, so retries replay the
   same decision.
 
-More: [architecture](docs/architecture.md), [diagrams](docs/diagrams.md), [domain](docs/domain.md),
-[acceptance scenarios](docs/acceptance-scenarios.md).
 
 Stack: .NET 10, Azure Event Hubs SDK (no messaging framework), SQL Server 2025 + EF Core,
 `Microsoft.Extensions.Http.Resilience` (Polly v8), `Microsoft.Extensions.AI` with the Anthropic SDK (Claude),
 OpenTelemetry + Aspire Dashboard, xUnit v3 + Testcontainers, Docker Compose, GitHub Actions.
-
-## Observability
 
 One webhook is one trace across the three hosts, through the outbox and Event Hubs
 ([ADR 010](docs/adr/010-observability.md)). Below: a job application reaches the qualified stage. Ingress stores
@@ -48,147 +44,54 @@ Sync.Worker ignores `job_application.*` events, so its branch is only a checkpoi
 
 ![Trace of a qualified job application in the Aspire Dashboard](docs/images/trace-application-qualified.jpeg)
 
-## Testing
+## Agent flow: issue → PR
 
-- **Acceptance scenarios** ([docs/acceptance-scenarios.md](docs/acceptance-scenarios.md)) are the definition of done:
-  Given/When/Then examples of the domain rules and invariants, written before the code. Each automated scenario has
-  exactly one integration test named after its ID, e.g. `S4` (CRM outage delays but does not lose events) or `M3`
-  (LLM timeout yields a `NotEnriched` profile). The tests run the three hosts and the simulators in process against
-  SQL Server, Azurite and the Event Hubs emulator in Testcontainers, and break the simulators on purpose.
-- **Unit tests** per project: the domain model, use cases, failure classification in the consumer skeleton, HTTP
-  clients and their resilience, the Teamtailor anti-corruption layer.
-- **CI** (GitHub Actions) builds and runs everything on every PR, with a test report and a coverage summary.
-- **Prompt evaluation** ([ADR 009](docs/adr/009-prompt-evaluation.md)): the enrichment prompt is scored offline
-  against a golden set of fictional CVs (`eval/cases/`, including a prompt injection and a Polish CV) for validity,
-  recall, precision, hallucinations, seniority and stability. Run by hand, never in CI, because it calls the real
-  model; reports are in [`eval/reports/`](eval/reports/). CI only checks that a report exists for the current prompt.
+The code is written in small steps with a coding agent (Claude Code). An issue with the right label becomes a PR,
+with two human gates: the plan and the merge ([ADR 013](docs/adr/013-agent-flow.md)).
 
-## Decisions
+```mermaid
+flowchart LR
+  issue["Issue<br/>+ agent:assigned"] --> plan["Explain + plan<br/>(comment)"]
+  plan --> gate1{{"Human:<br/>agent:plan-approved"}}
+  gate1 --> impl["Implement<br/>tests first"] --> pr["PR from<br/>talentsync-agent[bot]"]
+  pr --> ci["CI + agent review"] --> gate2{{"Human:<br/>approve, merge"}}
+```
 
-The reasoning is in [architecture decision records](docs/adr/README.md):
+- **The gates are code and repository settings, not prompts.** A tested script decides each step from the issue
+  state. Rulesets stop the agent from merging or pushing outside `agent/**`.
+- **An approval is for one version of the issue.** If the body changes, the agent writes a new plan, and it must
+  be approved again.
+- **Only trusted issues.** The issue needs a label and an author from the repo. Issue, PR and comment text is
+  treated as data, never as instructions.
+- **Its own identity.** The agent works as a GitHub App with a one-hour token and a budget per run.
+- **Rules for the agent:** `CLAUDE.md` and `.claude/rules/` hold its instructions. `.claude/settings.json` and a hook
+  enforce what must hold every time. The scenarios in `docs/acceptance-scenarios.md` are the definition of done:
+  written by hand before the code, never edited to make a test pass.
 
-| ADR | Decision |
-|---|---|
-| [001](docs/adr/001-project-structure.md) | Project structure by context, then by layer; a project wherever the compiler should enforce a rule |
-| [002](docs/adr/002-event-hubs-over-service-bus.md) | Event Hubs over Service Bus: replay and independent consumers, at the cost of a DLQ |
-| [003](docs/adr/003-notify-then-fetch.md) | Notify-then-fetch: the event is a signal, the API state is the truth |
-| [004](docs/adr/004-transactional-outbox.md) | Transactional outbox in Ingress, one relay |
-| [005](docs/adr/005-idempotency.md) | Idempotent effects, per-worker inbox, checkpoint after processing, stored LLM results |
-| [006](docs/adr/006-partition-key-candidate-id.md) | Partition key = `candidateId`: ordering per candidate |
-| [007](docs/adr/007-llm-enrichment.md) | LLM enrichment: own port, PII masking, validation, timeout and fallback to `NotEnriched` |
-| [008](docs/adr/008-source-of-truth-and-sync-direction.md) | One-way sync from Teamtailor, ownership per field |
-| [009](docs/adr/009-prompt-evaluation.md) | Offline evaluation of the enrichment prompt |
-| [010](docs/adr/010-observability.md) | OpenTelemetry, one trace per webhook through the outbox and Event Hubs |
-| [011](docs/adr/011-kubernetes-deployment.md) | Kubernetes: our hosts only, one Helm chart, one relay pod |
+Example: issue #68 → PR #69, $0.33 in total. Details and setup: [`tools/agent-flow`](tools/agent-flow/README.md).
 
-## Running locally
+## Quick start
 
-Requires .NET 10 SDK and Docker.
-
-Tests need nothing else: the integration tests start SQL Server, Azurite and the Event Hubs emulator with
-Testcontainers and run the hosts and simulators in process.
+Requires .NET 10 SDK and Docker. The integration tests start SQL Server, Azurite and the Event Hubs emulator with
+Testcontainers and run the hosts and simulators in process:
 
 ```bash
 dotnet test
 ```
 
-For a manual run, set the SQL password once in `deploy/infra/.env` (copy `deploy/infra/.env.example`) and give the three hosts
-the connection string in user secrets:
+To click through the scenarios by hand, in Kubernetes too: [running locally](docs/running-locally.md).
 
-```bash
-for p in Ingress/TalentSync.Ingress.Api Sync/TalentSync.Sync.Worker Matching/TalentSync.Matching.Worker; do
-  dotnet user-secrets set "ConnectionStrings:Sql" \
-    "Server=localhost,1433;Database=TalentSync;User Id=sa;Password=<SQL_SA_PASSWORD>;TrustServerCertificate=True" \
-    --project src/$p
-done
-```
+## Documentation
 
-`Llm:Provider` is `Fake` by default, so the system runs without an LLM key. For Claude, keep the key in user secrets
-and switch the provider (every real call is billed):
-
-```bash
-dotnet user-secrets set "Llm:Anthropic:ApiKey" "<key>" --project src/Matching/TalentSync.Matching.Worker
-dotnet user-secrets set "Llm:Provider" "Anthropic" --project src/Matching/TalentSync.Matching.Worker
-```
-
-To click through the whole flow by hand (success, CRM outage, candidate without a CV, poison event), run
-`deploy/local/run.sh` (Git Bash, Node 22.22.3+, 24.15+ or 26). It starts the containers, builds, applies the EF
-migrations and starts the three hosts and the Admin app (on Windows each in its own Windows Terminal tab). Then open
-the Scenarios page of the Admin app at [http://localhost:4200](http://localhost:4200) (ADR 012). Traces, metrics and
-logs of the three hosts are in the Aspire Dashboard at [http://localhost:18888](http://localhost:18888) (ADR 010).
-
-### In a local Kubernetes cluster
-
-Requires [kind](https://kind.sigs.k8s.io/), Helm and `kubectl`. Only the three hosts run in the cluster; SQL Server,
-Event Hubs, Azurite, the simulators and the Aspire Dashboard stay in docker compose (ADR 011).
-
-```bash
-docker compose -f deploy/infra/docker-compose.yml up -d
-kind create cluster --name talentsync --config deploy/kubernetes/kind/cluster.yaml
-deploy/kubernetes/deploy.sh
-```
-
-`deploy.sh` creates the Secret from `deploy/infra/.env`, builds the images, loads them into kind and runs
-`helm upgrade --install`, which applies the migrations before any host starts. Run it again after a code change.
-Extra arguments go to Helm, e.g. `deploy/kubernetes/deploy.sh --set llm.provider=Anthropic` (needs
-`ANTHROPIC_API_KEY` in `deploy/infra/.env`; every real call is billed).
-
-Ingress.Api listens on host port 5065 in both modes, so stop the `dotnet run` hosts first. The Admin app (`npm start`
-in `src/Admin/TalentSync.Admin.Web`) and the Aspire Dashboard work the same way. To clean up:
-
-```bash
-helm uninstall talentsync --kube-context kind-talentsync   # remove the hosts, keep the cluster
-kind delete cluster --name talentsync                      # remove the cluster
-```
-
-### After a Docker restart
-
-The Event Hubs emulator loses its events on restart, but the checkpoints in Azurite survive. A checkpoint then points
-past the end of the new log, and the workers log `The supplied offset '…' is invalid` and read nothing from that
-partition, in both modes. Reset both containers and restart the workers:
-
-```bash
-docker compose -f deploy/infra/docker-compose.yml up -d --force-recreate -V azurite eventhubs
-kubectl --context kind-talentsync rollout restart deployment/sync-worker deployment/matching-worker   # in kind
-```
-
-With `dotnet run`, restart the two worker hosts instead. Events published before the reset are gone; run
-the scenarios again (each run uses a new candidate id).
-
-## Simplifications
-
-- Teamtailor, the CRM and the Matching Platform are **in-memory simulators** (`simulators/`) that can be broken
-  on purpose and report their calls.
-- **CV as plain text**: the real Teamtailor API exposes a file (`original-resume`); the simulator exposes a
-  plain-text attribute `resume-text`.
-- Undocumented Teamtailor behaviour is an explicit assumption, isolated in the adapter: candidate id in job
-  application webhooks, `404` = deleted resource, stage via `include=stage`.
-
-## Known limitations
-
-Accepted for the MVP and listed in [architecture](docs/architecture.md#known-limitations-to-be-covered-by-adrs), e.g.:
-
-- If SQL Server is down when a webhook arrives, Ingress returns 503 and Teamtailor may not retry, so the event is
-  lost. A reconciliation job against the API would close this gap.
-- One outbox relay replica: several would publish a candidate's events out of order.
-- A profile is not refreshed when the candidate's CV changes, only on the next qualification.
-
-## Working with a coding agent
-
-The code is written in small steps with a coding agent. `CLAUDE.md` and `.claude/rules/` hold its instructions,
-`.claude/settings.json` enforces the rules that must hold every time, and the scenarios in
-`docs/acceptance-scenarios.md` are the definition of done: written by hand before the code, never edited to make
-a test pass.
-
-## Agent flow
-
-- `agent:assigned` starts explain and plan; the agent posts the plan as a comment.
-- `agent:plan-approved` starts the implementation, which ends as a PR from the agent's bot.
-- `agent:running` is set by the flow while it works; do not add it by hand.
-- The PR needs the repository owner's approval to merge.
-
-Details: [`.github/workflows/agent-flow.yml`](.github/workflows/agent-flow.yml) and
-[`docs/repository-layout.md`](docs/repository-layout.md).
+1. [Running locally](docs/running-locally.md): manual run, Claude instead of the fake LLM, kind, Docker restart
+2. [Testing](docs/testing.md): acceptance scenarios, unit tests, CI, prompt evaluation
+3. [Architecture](docs/architecture.md): containers, dependency rules, key flow, simplifications, known limitations
+4. [Domain](docs/domain.md): business context, glossary, rules D1–D6
+5. [Acceptance scenarios](docs/acceptance-scenarios.md): expected behaviour, including failures
+6. [Decisions](docs/adr/README.md): architecture decision records
+7. [Diagrams](docs/diagrams.md): containers and the key flow
+8. [Agent flow](tools/agent-flow/README.md): how issue → PR works, setup
+9. [Repository layout](docs/repository-layout.md): every project and folder
 
 ---
 

@@ -31,7 +31,7 @@ if [ ! -f "$admin/node_modules/.package-lock.json" ] || [ "$admin/package-lock.j
 fi
 
 # Before the hosts start, so neither the relay nor a worker meets a missing table. Applies only pending migrations.
-# The connection string comes from each host's user secrets (README, "Running locally").
+# The connection string comes from each host's user secrets (docs/running-locally.md).
 echo "Applying migrations..."
 dotnet tool restore >/dev/null
 dotnet ef database update --no-build --project src/Ingress/TalentSync.Ingress.Api --context IngressDbContext

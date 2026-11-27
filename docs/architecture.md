@@ -100,6 +100,15 @@ The rules are invariants 1–13 in `.claude/rules/invariants.md`. In short: at-l
 idempotent effects keyed by `candidateId`, LLM results stored before the effect, ordering per candidate within a
 partition. Notify-then-fetch makes stale or reordered events harmless: each worker acts on the current API state.
 
+## Simplifications
+
+- Teamtailor, the CRM and the Matching Platform are **in-memory simulators** (`simulators/`) that can be broken
+  on purpose and report their calls.
+- **CV as plain text**: the real Teamtailor API exposes a file (`original-resume`); the simulator exposes a
+  plain-text attribute `resume-text`.
+- Undocumented Teamtailor behaviour is an explicit assumption, isolated in the adapter: candidate id in job
+  application webhooks, `404` = deleted resource, stage via `include=stage`.
+
 ## Known limitations (to be covered by ADRs)
 
 - If SQL Server is down at ingress, the webhook gets 503 and Teamtailor may not retry: the event is lost.
