@@ -4,7 +4,7 @@ Descriptive: once code exists, the code is current. Keep this file true when a p
 moved or removed. Dependency rules between these projects: `docs/architecture.md` (normative).
 
 ```
-README.md                                   for humans: overview, running locally, simplifications
+README.md                                   for humans: overview, diagram, trace screenshot, agent flow, quick start, links
 TalentSync.slnx                             solution, folders mirror the directories below
 global.json                                 SDK pin, test runner = Microsoft.Testing.Platform
 dotnet-tools.json                           local tool manifest: dotnet-ef (migrations, used by deploy/local/run.sh)
@@ -106,7 +106,7 @@ tools/
   agent-flow/                               automations that run Claude Code skills through the Agent SDK (epic #48).
                                             One package.json, TypeScript run natively by Node (no build step, no tsc),
                                             tests with node:test (`npm --prefix tools/agent-flow test`), Node version in
-                                            .nvmrc.
+                                            .nvmrc. README.md: how the flows work, how to run them, setup (ADR 013).
                                             Not part of the product, references nothing in src/
     shared/                                 code the flows and skills' tools share, by concern; each folder keeps its
                                             tests in test/:
@@ -160,6 +160,7 @@ tools/
                                             gate as a pure function: open with the plan, or closed with the reason),
                                             pull-request-text.ts (title and body from stdin, adds Closes #<n>), test/
 docs/                                       domain.md, architecture.md, repository-layout.md, acceptance-scenarios.md, diagrams.md,
+                                            running-locally.md, testing.md (for humans),
                                             adr/ (index: adr/README.md),
                                             images/ (screenshots for the README)
 .github/workflows/ci.yml                    on PRs and main: Build job (build, format, .claude/hooks/check-rules.sh), then Test

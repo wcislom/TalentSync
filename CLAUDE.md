@@ -21,7 +21,7 @@ under failure: duplicates, retries, crashes, outages.
 | Other `.claude/rules/*.md` | Rules for specific paths (`paths:` frontmatter) | When a matching file is read or written |
 | `simulators/CLAUDE.md` | Rules for the fake external systems | When a file in `simulators/` is read or written |
 | `.claude/settings.json`, `.claude/hooks/` | Enforced by the harness: permissions, and a hook that reports forbidden names and direct clock use after every edit | Always, as configuration, not as text |
-| `README.md`, `docs/diagrams.md` | For humans, descriptive: overview, mermaid diagrams | Not needed for work. Keep them true when the layout or a flow changes |
+| `README.md`, `docs/diagrams.md`, `docs/running-locally.md`, `docs/testing.md`, `tools/agent-flow/README.md` | For humans, descriptive: overview, mermaid diagrams, how to run and test, the agent flow and its setup | Not needed for work. Keep them true when the layout or a flow changes |
 
 Path-scoped rules load only when a matching file is touched, so the first file created in a directory would be
 written without them. **Before creating the first file in a project, read the rule files whose `paths:` cover it.**

@@ -55,8 +55,8 @@ If `$ARGUMENTS` is not a single issue number, say so and stop.
   - Never change `docs/acceptance-scenarios.md`, ADRs or the rules in `docs/domain.md`. Never change a scenario's
     Then. If the work needs it, stop and say so.
   - No new NuGet or npm packages, projects or project references. If the work needs one, stop and say which.
-  - Descriptive docs (`docs/repository-layout.md`, `README.md`, `docs/diagrams.md`) follow the change in the
-    same PR.
+  - Descriptive docs (`docs/repository-layout.md`, `README.md`, `docs/running-locally.md`, `docs/diagrams.md`)
+    follow the change in the same PR.
   - A "Rule check failed" message from the hook means your code breaks a rule: fix the code.
 - Never touch `.github/`, `.claude/settings.json`, `.claude/hooks/` or `tools/agent-flow/`: CI, permissions and
   this flow are not the issue's to change.

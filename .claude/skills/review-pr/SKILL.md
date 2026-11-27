@@ -61,7 +61,7 @@ decides: no style, formatting or naming-taste remarks, no generic bug hunting, n
   NuGet packages or projects (flag them so the reviewer confirms they were agreed), edits to `docs/domain.md`
   rules or ADRs.
 - **Descriptive docs**: a project, folder or tool added, moved or removed without the same change in
-  `docs/repository-layout.md`; a changed flow or layout without `README.md` or `docs/diagrams.md` following.
+  `docs/repository-layout.md`; a changed flow, layout or way to run it without `README.md`, `docs/running-locally.md` or `docs/diagrams.md` following.
   Also a removed or weakened statement in a descriptive doc that is still true and that the rest of the change does
   not make false (rule `CLAUDE.md`: one concern per change; the doc loses a fact silently).
 

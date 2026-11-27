@@ -62,7 +62,7 @@ implementation. Do not share this code with the simulator: a shared bug would ma
   How the ACL waits and retries: `.claude/rules/resilience.md`.
 - Pagination `page[size]` max 30 (not needed in the MVP).
 - CV: real API exposes `original-resume` (file) and `resume-summary`. **ASSUMPTION:** our fake exposes the CV as
-  plain text in attribute `resume-text`. Documented as a simplification in the README.
+  plain text in attribute `resume-text`. Documented under "Simplifications" in `docs/architecture.md`.
 
 ## Port and ACL rules
 
